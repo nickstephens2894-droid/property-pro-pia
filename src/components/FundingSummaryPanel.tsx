@@ -250,7 +250,7 @@ export const FundingSummaryPanel = () => {
                 )}
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>LVR</span>
-                  <span>{totalPurchaseCost > 0 ? ((mainLoanAmount / totalPurchaseCost) * 100).toFixed(1) : 0}%</span>
+                  <span>{purchaseCosts > 0 ? ((mainLoanAmount / purchaseCosts) * 100).toFixed(1) : 0}%</span>
                 </div>
               </CollapsibleContent>
             </Collapsible>
@@ -377,13 +377,13 @@ export const FundingSummaryPanel = () => {
                 <div>
                   <span className="text-muted-foreground">Main LVR:</span>
                   <div className="font-medium">
-                    {totalPurchaseCost > 0 ? ((mainLoanAmount / totalPurchaseCost) * 100).toFixed(1) : 0}%
+                    {purchaseCosts > 0 ? ((mainLoanAmount / purchaseCosts) * 100).toFixed(1) : 0}%
                   </div>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Total LVR:</span>
                   <div className="font-medium">
-                    {totalPurchaseCost > 0 ? (((mainLoanAmount + equityLoanAmount) / totalPurchaseCost) * 100).toFixed(1) : 0}%
+                    {purchaseCosts > 0 ? (((mainLoanAmount + equityLoanAmount) / purchaseCosts) * 100).toFixed(1) : 0}%
                   </div>
                 </div>
               </div>
