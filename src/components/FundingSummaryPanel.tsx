@@ -35,14 +35,15 @@ export const FundingSummaryPanel = ({ propertyData }: FundingSummaryProps) => {
       )
     : 0;
   
-  const totalLoans = mainLoanAmount + equityLoanAmount;
-  const cashRequired = Math.max(0, totalPurchaseCost - totalLoans);
-  const fundingCoverage = totalPurchaseCost > 0 ? (totalLoans / totalPurchaseCost) * 100 : 0;
-  const fundingShortfall = Math.max(0, totalPurchaseCost - totalLoans);
+  // Use the actual deposit amount entered by the user
+  const cashDeposit = propertyData.depositAmount;
+  const totalFunding = mainLoanAmount + equityLoanAmount + cashDeposit;
+  const fundingCoverage = totalPurchaseCost > 0 ? (totalFunding / totalPurchaseCost) * 100 : 0;
+  const fundingShortfall = Math.max(0, totalPurchaseCost - totalFunding);
 
   const getFundingStatus = () => {
     if (fundingShortfall === 0) return 'complete';
-    if (fundingShortfall <= cashRequired * 0.1) return 'warning';
+    if (fundingShortfall <= totalPurchaseCost * 0.05) return 'warning'; // 5% threshold
     return 'error';
   };
 
@@ -107,13 +108,13 @@ export const FundingSummaryPanel = ({ propertyData }: FundingSummaryProps) => {
               </div>
             )}
             <div className="flex justify-between text-sm">
-              <span>Cash Required</span>
-              <span className="font-medium">${cashRequired.toLocaleString()}</span>
+              <span>Cash Deposit</span>
+              <span className="font-medium">${cashDeposit.toLocaleString()}</span>
             </div>
             <Separator className="my-2" />
             <div className="flex justify-between font-medium">
               <span>Total Funding</span>
-              <span className="text-primary">${(totalLoans + cashRequired).toLocaleString()}</span>
+              <span className="text-primary">${totalFunding.toLocaleString()}</span>
             </div>
           </div>
         </div>
@@ -170,7 +171,7 @@ export const FundingSummaryPanel = ({ propertyData }: FundingSummaryProps) => {
             <div>
               <span className="text-muted-foreground">Total LVR:</span>
               <div className="font-medium">
-                {totalPurchaseCost > 0 ? ((totalLoans / totalPurchaseCost) * 100).toFixed(1) : 0}%
+                {totalPurchaseCost > 0 ? (((mainLoanAmount + equityLoanAmount) / totalPurchaseCost) * 100).toFixed(1) : 0}%
               </div>
             </div>
           </div>
