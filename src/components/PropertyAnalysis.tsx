@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Calculator, DollarSign, TrendingUp, Home, Receipt, AlertCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calculator, DollarSign, TrendingUp, Home, Receipt, AlertCircle, Building2 } from "lucide-react";
 
 interface PropertyData {
   purchasePrice: number;
@@ -23,6 +24,12 @@ interface PropertyData {
   annualIncome: number;
   otherIncome: number;
   hasMedicareLevy: boolean;
+  // Depreciation fields
+  constructionYear: number;
+  buildingValue: number;
+  plantEquipmentValue: number;
+  depreciationMethod: 'prime-cost' | 'diminishing-value';
+  isNewProperty: boolean;
 }
 
 const PropertyAnalysis = () => {
@@ -44,9 +51,15 @@ const PropertyAnalysis = () => {
     annualIncome: 85000,
     otherIncome: 0,
     hasMedicareLevy: true,
+    // Depreciation defaults
+    constructionYear: 2020,
+    buildingValue: 600000,
+    plantEquipmentValue: 35000,
+    depreciationMethod: 'prime-cost',
+    isNewProperty: true,
   });
 
-  const updateField = (field: keyof PropertyData, value: number | boolean) => {
+  const updateField = (field: keyof PropertyData, value: number | boolean | string) => {
     setPropertyData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -91,15 +104,64 @@ const PropertyAnalysis = () => {
     return 0.45;
   };
 
+  // Depreciation calculations
+  const calculateDepreciation = () => {
+    const currentYear = new Date().getFullYear();
+    const propertyAge = currentYear - propertyData.constructionYear;
+    
+    // Division 43 - Capital Works Depreciation (2.5% per annum)
+    let capitalWorksDepreciation = 0;
+    if (propertyData.constructionYear >= 1987) { // Must be built after 15 Sep 1987
+      capitalWorksDepreciation = propertyData.buildingValue * 0.025;
+    }
+    
+    // Division 40 - Plant & Equipment Depreciation
+    const plantEquipmentItems = [
+      { name: 'Air Conditioning', value: propertyData.plantEquipmentValue * 0.25, effectiveLife: 15 },
+      { name: 'Kitchen Appliances', value: propertyData.plantEquipmentValue * 0.20, effectiveLife: 8 },
+      { name: 'Carpets & Flooring', value: propertyData.plantEquipmentValue * 0.15, effectiveLife: 10 },
+      { name: 'Hot Water System', value: propertyData.plantEquipmentValue * 0.15, effectiveLife: 12 },
+      { name: 'Window Furnishings', value: propertyData.plantEquipmentValue * 0.10, effectiveLife: 10 },
+      { name: 'Other Equipment', value: propertyData.plantEquipmentValue * 0.15, effectiveLife: 10 },
+    ];
+    
+    let totalPlantEquipmentDepreciation = 0;
+    
+    plantEquipmentItems.forEach(item => {
+      if (propertyData.depreciationMethod === 'prime-cost') {
+        // Prime Cost Method (Straight Line)
+        totalPlantEquipmentDepreciation += item.value / item.effectiveLife;
+      } else {
+        // Diminishing Value Method
+        const rate = (1 / item.effectiveLife) * 1.5; // 150% of prime cost rate
+        totalPlantEquipmentDepreciation += item.value * rate;
+      }
+    });
+    
+    // For established properties post-May 2017, only new plant & equipment can be claimed
+    if (!propertyData.isNewProperty && propertyAge > 0) {
+      totalPlantEquipmentDepreciation *= 0.3; // Reduce by 70% for established properties
+    }
+    
+    return {
+      capitalWorks: capitalWorksDepreciation,
+      plantEquipment: totalPlantEquipmentDepreciation,
+      total: capitalWorksDepreciation + totalPlantEquipmentDepreciation,
+      items: plantEquipmentItems
+    };
+  };
+
+  const depreciation = calculateDepreciation();
+
   // Property calculations
   const annualRent = propertyData.weeklyRent * 52;
   const weeklyMortgage = (propertyData.loanAmount * (propertyData.interestRate / 100 / 52) * Math.pow(1 + propertyData.interestRate / 100 / 52, propertyData.loanTerm * 52)) / (Math.pow(1 + propertyData.interestRate / 100 / 52, propertyData.loanTerm * 52) - 1);
   const annualMortgage = weeklyMortgage * 52;
   const annualPropertyManagement = annualRent * (propertyData.propertyManagement / 100);
   
-  // Tax-deductible expenses
+  // Tax-deductible expenses (including depreciation)
   const annualInterest = propertyData.loanAmount * (propertyData.interestRate / 100); // Simplified interest calculation
-  const totalDeductibleExpenses = annualInterest + annualPropertyManagement + propertyData.councilRates + propertyData.insurance + propertyData.repairs;
+  const totalDeductibleExpenses = annualInterest + annualPropertyManagement + propertyData.councilRates + propertyData.insurance + propertyData.repairs + depreciation.total;
   
   const totalAnnualCosts = annualMortgage + annualPropertyManagement + propertyData.councilRates + propertyData.insurance + propertyData.repairs;
   const annualCashFlow = annualRent - totalAnnualCosts;
@@ -132,7 +194,7 @@ const PropertyAnalysis = () => {
           <p className="text-muted-foreground text-lg">Comprehensive analysis tool for Australian residential property investments</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           {/* Property Details */}
           <Card className="lg:col-span-1 shadow-card">
             <CardHeader className="bg-gradient-to-r from-card to-accent border-b">
@@ -362,6 +424,113 @@ const PropertyAnalysis = () => {
             </CardContent>
           </Card>
 
+          {/* Depreciation Schedule */}
+          <Card className="lg:col-span-1 shadow-card">
+            <CardHeader className="bg-gradient-to-r from-card to-accent border-b">
+              <CardTitle className="flex items-center gap-2 text-card-foreground">
+                <Building2 className="h-5 w-5" />
+                Depreciation Schedule
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div>
+                <Label htmlFor="constructionYear">Construction Year</Label>
+                <Input
+                  id="constructionYear"
+                  type="number"
+                  value={propertyData.constructionYear}
+                  onChange={(e) => updateField('constructionYear', Number(e.target.value))}
+                  className="mt-1"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="buildingValue">Building Value ($)</Label>
+                <Input
+                  id="buildingValue"
+                  type="number"
+                  value={propertyData.buildingValue}
+                  onChange={(e) => updateField('buildingValue', Number(e.target.value))}
+                  className="mt-1"
+                  placeholder="Exclude land value"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="plantEquipmentValue">Plant & Equipment Value ($)</Label>
+                <Input
+                  id="plantEquipmentValue"
+                  type="number"
+                  value={propertyData.plantEquipmentValue}
+                  onChange={(e) => updateField('plantEquipmentValue', Number(e.target.value))}
+                  className="mt-1"
+                  placeholder="Fixtures, fittings, appliances"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="depreciationMethod">Depreciation Method</Label>
+                <Select 
+                  value={propertyData.depreciationMethod} 
+                  onValueChange={(value) => updateField('depreciationMethod', value)}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="prime-cost">Prime Cost (Straight Line)</SelectItem>
+                    <SelectItem value="diminishing-value">Diminishing Value</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="isNewProperty"
+                  checked={propertyData.isNewProperty}
+                  onChange={(e) => updateField('isNewProperty', e.target.checked)}
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="isNewProperty" className="text-sm">
+                  New Property (full depreciation available)
+                </Label>
+              </div>
+              
+              <div className="pt-4 border-t">
+                <h4 className="font-semibold mb-3">Annual Depreciation</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Capital Works (Div 43):</span>
+                    <span className="font-medium text-success">${depreciation.capitalWorks.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Plant & Equipment (Div 40):</span>
+                    <span className="font-medium text-success">${depreciation.plantEquipment.toLocaleString()}</span>
+                  </div>
+                  <div className="border-t pt-2">
+                    <div className="flex justify-between font-semibold">
+                      <span>Total Annual Depreciation:</span>
+                      <span className="text-primary">${depreciation.total.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {!propertyData.isNewProperty && (
+                <div className="p-3 bg-warning/10 rounded-lg border border-warning/20">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" />
+                    <div className="text-xs text-warning-foreground">
+                      <p className="font-medium mb-1">Established Property:</p>
+                      <p>Post-May 2017 rules limit plant & equipment depreciation for established properties. Consider a quantity surveyor report for accurate calculations.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Analysis Results */}
           <Card className="lg:col-span-1 shadow-card">
             <CardHeader className="bg-gradient-to-r from-card to-accent border-b">
@@ -420,7 +589,11 @@ const PropertyAnalysis = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Tax Deductible Expenses</span>
-                    <span className="font-medium text-destructive">-${totalDeductibleExpenses.toLocaleString()}</span>
+                    <span className="font-medium text-destructive">-${(totalDeductibleExpenses - depreciation.total).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Depreciation (non-cash)</span>
+                    <span className="font-medium text-primary">-${depreciation.total.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Principal Repayments</span>
@@ -472,6 +645,125 @@ const PropertyAnalysis = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Depreciation Detail & CGT Analysis */}
+        <Card className="mt-6 shadow-card">
+          <CardHeader className="bg-gradient-to-r from-card to-accent border-b">
+            <CardTitle className="flex items-center gap-2 text-card-foreground">
+              <Building2 className="h-5 w-5" />
+              Depreciation Analysis & CGT Impact
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Depreciation Breakdown */}
+              <div>
+                <h4 className="font-semibold text-foreground mb-4">Annual Depreciation Breakdown</h4>
+                <div className="space-y-3">
+                  {depreciation.items.map((item, index) => {
+                    const annualDepreciation = propertyData.depreciationMethod === 'prime-cost' 
+                      ? item.value / item.effectiveLife 
+                      : item.value * ((1 / item.effectiveLife) * 1.5);
+                    
+                    return (
+                      <div key={index} className="flex justify-between items-center p-3 bg-muted/30 rounded-lg">
+                        <div>
+                          <div className="font-medium text-sm">{item.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            ${item.value.toLocaleString()} over {item.effectiveLife} years
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-bold text-success">
+                            ${(propertyData.isNewProperty ? annualDepreciation : annualDepreciation * 0.3).toLocaleString()}
+                          </div>
+                          <div className="text-xs text-muted-foreground">per year</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  
+                  <div className="flex justify-between items-center p-3 bg-primary/10 rounded-lg border border-primary/20">
+                    <div>
+                      <div className="font-medium">Capital Works (Building)</div>
+                      <div className="text-xs text-muted-foreground">
+                        ${propertyData.buildingValue.toLocaleString()} @ 2.5% p.a.
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-bold text-primary">
+                        ${depreciation.capitalWorks.toLocaleString()}
+                      </div>
+                      <div className="text-xs text-muted-foreground">per year</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* CGT Impact Analysis */}
+              <div>
+                <h4 className="font-semibold text-foreground mb-4">Capital Gains Tax Impact</h4>
+                <div className="space-y-3">
+                  <div className="p-4 bg-warning/10 rounded-lg border border-warning/20">
+                    <div className="text-sm space-y-2">
+                      <div className="flex justify-between">
+                        <span>Original Cost Base:</span>
+                        <span className="font-medium">${propertyData.purchasePrice.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Annual Depreciation Claimed:</span>
+                        <span className="font-medium text-warning">-${depreciation.total.toLocaleString()}</span>
+                      </div>
+                      <div className="border-t pt-2">
+                        <div className="flex justify-between font-semibold">
+                          <span>Adjusted Cost Base (Year 1):</span>
+                          <span>${(propertyData.purchasePrice - depreciation.total).toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2 text-xs text-muted-foreground">
+                    <p><strong>Important CGT Considerations:</strong></p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Depreciation reduces your cost base for CGT purposes</li>
+                      <li>Building depreciation must be "clawed back" at sale</li>
+                      <li>Plant & equipment depreciation may trigger capital gains</li>
+                      <li>50% CGT discount available for assets held &gt;12 months</li>
+                    </ul>
+                  </div>
+                  
+                  <div className="p-3 bg-success/10 rounded-lg border border-success/20">
+                    <div className="text-sm">
+                      <div className="font-medium text-success mb-1">Tax Benefit Analysis</div>
+                      <div className="flex justify-between">
+                        <span>Annual Tax Savings:</span>
+                        <span className="font-bold text-success">
+                          ${(depreciation.total * getMarginalTaxRate(totalTaxableIncome)).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Based on {(getMarginalTaxRate(totalTaxableIncome) * 100).toFixed(0)}% marginal tax rate
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-6 p-4 bg-muted/30 rounded-lg border border-muted">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                <div className="text-xs text-muted-foreground">
+                  <p className="font-medium mb-1">Depreciation Disclaimer:</p>
+                  <p>These are estimated depreciation calculations. For investment properties, you should obtain a professional 
+                  quantity surveyor's depreciation schedule to ensure accuracy and ATO compliance. Actual depreciation may vary 
+                  based on property condition, age, and specific components. Consider the long-term CGT implications when claiming depreciation.</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Cash Flow Analysis */}
         <Card className="mt-6 shadow-card">
