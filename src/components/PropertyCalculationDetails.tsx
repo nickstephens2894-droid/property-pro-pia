@@ -10,6 +10,22 @@ interface DepreciationDetails {
   plantEquipmentRestricted: boolean;
 }
 
+interface ClientTaxResult {
+  client: {
+    id: string;
+    name: string;
+    annualIncome: number;
+    otherIncome: number;
+    hasMedicareLevy: boolean;
+  };
+  ownershipPercentage: number;
+  taxWithoutProperty: number;
+  taxWithProperty: number;
+  taxDifference: number;
+  marginalTaxRate: number;
+  propertyTaxableIncome: number;
+}
+
 interface PropertyCalculationDetailsProps {
   monthlyRepayment: number;
   annualRepayment: number;
@@ -20,9 +36,9 @@ interface PropertyCalculationDetailsProps {
   repairs: number;
   totalDeductibleExpenses: number;
   depreciation: DepreciationDetails;
-  propertyTaxableIncome: number;
-  taxWithProperty: number;
-  taxWithoutProperty: number;
+  clientTaxResults: ClientTaxResult[];
+  totalTaxWithProperty: number;
+  totalTaxWithoutProperty: number;
   marginalTaxRate: number;
   purchasePrice: number;
   constructionYear: number;
@@ -59,9 +75,9 @@ export const PropertyCalculationDetails = ({
   repairs,
   totalDeductibleExpenses,
   depreciation,
-  propertyTaxableIncome,
-  taxWithProperty,
-  taxWithoutProperty,
+  clientTaxResults,
+  totalTaxWithProperty,
+  totalTaxWithoutProperty,
   marginalTaxRate,
   purchasePrice,
   constructionYear,
@@ -348,29 +364,30 @@ export const PropertyCalculationDetails = ({
               <div className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="p-4 bg-muted/30 rounded-lg">
-                    <div className="text-sm text-muted-foreground">Tax Without Property</div>
-                    <div className="text-xl font-bold">${taxWithoutProperty.toLocaleString()}</div>
+                    <div className="text-sm text-muted-foreground">Total Tax Without Property</div>
+                    <div className="text-xl font-bold">${totalTaxWithoutProperty.toLocaleString()}</div>
                   </div>
                   <div className="p-4 bg-muted/30 rounded-lg">
-                    <div className="text-sm text-muted-foreground">Tax With Property</div>
-                    <div className="text-xl font-bold">${taxWithProperty.toLocaleString()}</div>
+                    <div className="text-sm text-muted-foreground">Total Tax With Property</div>
+                    <div className="text-xl font-bold">${totalTaxWithProperty.toLocaleString()}</div>
                   </div>
                 </div>
 
-                <div className={`p-4 rounded-lg border ${
-                  propertyTaxableIncome < 0 
-                    ? 'bg-success/5 border-success/20' 
-                    : 'bg-warning/5 border-warning/20'
-                }`}>
-                  <div className="text-sm text-muted-foreground">Property Taxable Income</div>
-                  <div className={`text-2xl font-bold ${
-                    propertyTaxableIncome < 0 ? 'text-success' : 'text-warning'
-                  }`}>
-                    ${propertyTaxableIncome.toLocaleString()}
-                  </div>
-                  <div className="text-xs mt-1">
-                    {propertyTaxableIncome < 0 ? 'Negative gearing benefit' : 'Positive taxable income'}
-                  </div>
+                <div className="space-y-3">
+                  <h4 className="font-medium text-sm">Multi-Client Tax Summary</h4>
+                  {clientTaxResults.map((result) => (
+                    <div key={result.client.id} className="bg-muted/20 rounded-lg p-3">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="font-medium text-sm">{result.client.name}</span>
+                        <span className="text-xs">{(result.ownershipPercentage * 100).toFixed(0)}% ownership</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div>Tax: ${result.taxDifference.toLocaleString()}</div>
+                        <div>Rate: {(result.marginalTaxRate * 100).toFixed(0)}%</div>
+                        <div>Income: ${result.propertyTaxableIncome.toLocaleString()}</div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
                 {/* CGT Impact */}

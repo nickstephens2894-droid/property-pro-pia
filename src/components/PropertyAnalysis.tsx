@@ -4,13 +4,35 @@ import { PropertySummaryDashboard } from "@/components/PropertySummaryDashboard"
 import { PropertyCalculationDetails } from "@/components/PropertyCalculationDetails";
 import { useIsMobile } from "@/hooks/use-mobile";
 
+interface Client {
+  id: string;
+  name: string;
+  annualIncome: number;
+  otherIncome: number;
+  hasMedicareLevy: boolean;
+}
+
+interface OwnershipAllocation {
+  clientId: string;
+  ownershipPercentage: number;
+}
+
 interface PropertyData {
+  // Multi-client structure
+  clients: Client[];
+  ownershipAllocations: OwnershipAllocation[];
+  
   // Project Type
   isConstructionProject: boolean;
   
-  // Basic Property Details
+  // Basic Property Details - Enhanced
   purchasePrice: number;
   weeklyRent: number;
+  rentalGrowthRate: number;
+  vacancyRate: number;
+  constructionYear: number;
+  buildingValue: number;
+  plantEquipmentValue: number;
   
   // Construction-specific
   landValue: number;
@@ -51,27 +73,46 @@ interface PropertyData {
   insurance: number;
   repairs: number;
   
-  // Tax-related fields
-  annualIncome: number;
-  otherIncome: number;
-  hasMedicareLevy: boolean;
-  
   // Depreciation fields
-  constructionYear: number;
-  buildingValue: number;
-  plantEquipmentValue: number;
   depreciationMethod: 'prime-cost' | 'diminishing-value';
   isNewProperty: boolean;
 }
 
 const PropertyAnalysis = () => {
   const [propertyData, setPropertyData] = useState<PropertyData>({
+    // Multi-client structure
+    clients: [
+      {
+        id: '1',
+        name: 'Husband',
+        annualIncome: 200000,
+        otherIncome: 0,
+        hasMedicareLevy: true,
+      },
+      {
+        id: '2',
+        name: 'Wife',
+        annualIncome: 20000,
+        otherIncome: 0,
+        hasMedicareLevy: false,
+      }
+    ],
+    ownershipAllocations: [
+      { clientId: '1', ownershipPercentage: 90 },
+      { clientId: '2', ownershipPercentage: 10 }
+    ],
+    
     // Project Type
     isConstructionProject: false,
     
-    // Basic Property Details
+    // Basic Property Details - Enhanced
     purchasePrice: 750000,
     weeklyRent: 650,
+    rentalGrowthRate: 3.0,
+    vacancyRate: 2.0,
+    constructionYear: 2020,
+    buildingValue: 600000,
+    plantEquipmentValue: 35000,
     
     // Construction-specific
     landValue: 200000,
@@ -112,15 +153,7 @@ const PropertyAnalysis = () => {
     insurance: 1200,
     repairs: 2000,
     
-    // Tax defaults
-    annualIncome: 85000,
-    otherIncome: 0,
-    hasMedicareLevy: true,
-    
     // Depreciation defaults
-    constructionYear: 2020,
-    buildingValue: 600000,
-    plantEquipmentValue: 35000,
     depreciationMethod: 'prime-cost',
     isNewProperty: true,
   });
@@ -154,10 +187,8 @@ const PropertyAnalysis = () => {
       }
     }
 
-    // Medicare levy (2% for income above $29,207)
-    if (propertyData.hasMedicareLevy && income > 29207) {
-      tax += income * 0.02;
-    }
+    // Medicare levy will be calculated per client
+    // Removed from general calculation
 
     return tax;
   };
@@ -309,20 +340,63 @@ const PropertyAnalysis = () => {
   const annualCashFlow = annualRent - totalAnnualCosts;
   const weeklyCashFlow = annualCashFlow / 52;
   
-  // Tax calculations
-  const totalTaxableIncome = propertyData.annualIncome + propertyData.otherIncome;
-  const propertyTaxableIncome = annualRent - totalDeductibleExpenses;
-  const totalIncomeWithProperty = totalTaxableIncome + propertyTaxableIncome;
+  // Multi-client tax calculations
+  const calculateClientTax = (client: Client, propertyIncome: number, propertyDeductions: number) => {
+    const totalIncome = client.annualIncome + client.otherIncome;
+    const propertyTaxableIncome = propertyIncome - propertyDeductions;
+    const totalIncomeWithProperty = totalIncome + propertyTaxableIncome;
+    
+    let taxWithoutProperty = calculateTax(totalIncome);
+    let taxWithProperty = calculateTax(totalIncomeWithProperty);
+    
+    // Add Medicare levy per client
+    if (client.hasMedicareLevy && totalIncome > 29207) {
+      taxWithoutProperty += totalIncome * 0.02;
+    }
+    if (client.hasMedicareLevy && totalIncomeWithProperty > 29207) {
+      taxWithProperty += totalIncomeWithProperty * 0.02;
+    }
+    
+    return {
+      taxWithoutProperty,
+      taxWithProperty,
+      taxDifference: taxWithProperty - taxWithoutProperty,
+      marginalTaxRate: getMarginalTaxRate(totalIncome),
+      propertyTaxableIncome
+    };
+  };
+
+  // Calculate for each client based on ownership allocation
+  const clientTaxResults = propertyData.clients.map(client => {
+    const ownership = propertyData.ownershipAllocations.find(o => o.clientId === client.id);
+    const ownershipPercentage = ownership ? ownership.ownershipPercentage / 100 : 0;
+    
+    const allocatedRent = annualRent * ownershipPercentage;
+    const allocatedDeductions = totalDeductibleExpenses * ownershipPercentage;
+    
+    return {
+      client,
+      ownershipPercentage,
+      ...calculateClientTax(client, allocatedRent, allocatedDeductions)
+    };
+  });
+
+  // Combined household totals
+  const totalTaxableIncome = propertyData.clients.reduce((sum, client) => 
+    sum + client.annualIncome + client.otherIncome, 0);
+  const totalTaxWithoutProperty = clientTaxResults.reduce((sum, result) => 
+    sum + result.taxWithoutProperty, 0);
+  const totalTaxWithProperty = clientTaxResults.reduce((sum, result) => 
+    sum + result.taxWithProperty, 0);
+  const totalTaxDifference = totalTaxWithProperty - totalTaxWithoutProperty;
   
-  const taxWithoutProperty = calculateTax(totalTaxableIncome);
-  const taxWithProperty = calculateTax(totalIncomeWithProperty);
-  const taxDifference = taxWithProperty - taxWithoutProperty;
-  const marginalTaxRate = getMarginalTaxRate(totalTaxableIncome);
+  // Use highest earner's marginal rate for overall decisions
+  const marginalTaxRate = Math.max(...clientTaxResults.map(r => r.marginalTaxRate));
   
   // After-tax calculations
-  const afterTaxCashFlow = annualCashFlow - taxDifference;
+  const afterTaxCashFlow = annualCashFlow - totalTaxDifference;
   const weeklyAfterTaxCashFlow = afterTaxCashFlow / 52;
-  const afterTaxYield = (afterTaxCashFlow / propertyData.purchasePrice) * 100;
+  const afterTaxYield = (afterTaxCashFlow / totalProjectCost) * 100;
   
   const grossYield = (annualRent / totalProjectCost) * 100;
   const netYield = (annualCashFlow / totalProjectCost) * 100;
@@ -353,9 +427,9 @@ const PropertyAnalysis = () => {
             <PropertyInputForm
               propertyData={propertyData}
               updateField={updateField}
+              clientTaxResults={clientTaxResults}
               totalTaxableIncome={totalTaxableIncome}
               marginalTaxRate={marginalTaxRate}
-              taxWithoutProperty={taxWithoutProperty}
             />
           </div>
 
@@ -368,7 +442,7 @@ const PropertyAnalysis = () => {
               grossYield={grossYield}
               afterTaxYield={afterTaxYield}
               cashOnCashReturn={cashOnCashReturn}
-              taxDifference={taxDifference}
+              taxDifference={totalTaxDifference}
               annualRent={annualRent}
               totalExpenses={totalDeductibleExpenses}
               marginalTaxRate={marginalTaxRate}
@@ -392,9 +466,9 @@ const PropertyAnalysis = () => {
                 capitalWorksAvailable: propertyData.constructionYear >= 1987,
                 plantEquipmentRestricted: !propertyData.isNewProperty
               }}
-              propertyTaxableIncome={propertyTaxableIncome}
-              taxWithProperty={taxWithProperty}
-              taxWithoutProperty={taxWithoutProperty}
+              clientTaxResults={clientTaxResults}
+              totalTaxWithProperty={totalTaxWithProperty}
+              totalTaxWithoutProperty={totalTaxWithoutProperty}
               marginalTaxRate={marginalTaxRate}
               purchasePrice={propertyData.purchasePrice}
               constructionYear={propertyData.constructionYear}
