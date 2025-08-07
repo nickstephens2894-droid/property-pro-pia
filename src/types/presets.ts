@@ -42,7 +42,7 @@ export const FUNDING_METHODS = {
 } as const;
 
 // Base property configurations
-const getPropertyMethodData = (method: PropertyMethod): Partial<PropertyData> => {
+export const getPropertyMethodData = (method: PropertyMethod): Partial<PropertyData> => {
   const baseClients = [
     {
       id: '1',
@@ -188,7 +188,7 @@ const getPropertyMethodData = (method: PropertyMethod): Partial<PropertyData> =>
 };
 
 // Funding configurations
-const getFundingMethodData = (method: FundingMethod, propertyValue: number = 750000): Partial<PropertyData> => {
+export const getFundingMethodData = (method: FundingMethod, propertyValue: number = 750000): Partial<PropertyData> => {
   const totalCosts = propertyValue * 1.06; // Approximate total costs with transaction fees
 
   switch (method) {

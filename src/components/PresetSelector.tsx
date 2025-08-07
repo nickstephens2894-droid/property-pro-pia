@@ -10,9 +10,11 @@ import {
   FundingMethod, 
   PROPERTY_METHODS, 
   FUNDING_METHODS, 
-  generatePreset 
+  generatePreset, 
+  getPropertyMethodData, 
+  getFundingMethodData 
 } from "@/types/presets";
-import { PropertyData } from "@/contexts/PropertyDataContext";
+import { usePropertyData } from "@/contexts/PropertyDataContext";
 import { Settings, Home, CreditCard, RotateCcw } from "lucide-react";
 
 interface PresetSelectorProps {
@@ -28,11 +30,32 @@ export const PresetSelector = ({
 }: PresetSelectorProps) => {
   const [selectedPropertyMethod, setSelectedPropertyMethod] = useState<PropertyMethod | undefined>(currentPropertyMethod);
   const [selectedFundingMethod, setSelectedFundingMethod] = useState<FundingMethod | undefined>(currentFundingMethod);
+  const { propertyData } = usePropertyData();
 
+  // Apply both methods together (existing behavior)
   const handleApplyPreset = () => {
     if (selectedPropertyMethod && selectedFundingMethod) {
       const presetData = generatePreset(selectedPropertyMethod, selectedFundingMethod);
       onApplyPreset(presetData);
+    }
+  };
+
+  // Apply only the property method
+  const handleApplyPropertyPreset = () => {
+    if (selectedPropertyMethod) {
+      const data = getPropertyMethodData(selectedPropertyMethod);
+      onApplyPreset({ ...data, propertyMethod: selectedPropertyMethod });
+    }
+  };
+
+  // Apply only the funding method
+  const handleApplyFundingPreset = () => {
+    if (selectedFundingMethod) {
+      const propertyValue = propertyData.isConstructionProject
+        ? (propertyData.landValue + propertyData.constructionValue)
+        : propertyData.purchasePrice;
+      const data = getFundingMethodData(selectedFundingMethod, propertyValue);
+      onApplyPreset({ ...data, fundingMethod: selectedFundingMethod });
     }
   };
 
@@ -130,11 +153,25 @@ export const PresetSelector = ({
         {/* Action Buttons */}
         <div className="flex gap-2">
           <Button 
+            onClick={handleApplyPropertyPreset}
+            disabled={!selectedPropertyMethod}
+            className="flex-1"
+          >
+            Apply Property
+          </Button>
+          <Button 
+            onClick={handleApplyFundingPreset}
+            disabled={!selectedFundingMethod}
+            className="flex-1"
+          >
+            Apply Funding
+          </Button>
+          <Button 
             onClick={handleApplyPreset} 
             disabled={!canApply}
             className="flex-1"
           >
-            Apply Preset
+            Apply Both
           </Button>
           <Button 
             variant="outline" 

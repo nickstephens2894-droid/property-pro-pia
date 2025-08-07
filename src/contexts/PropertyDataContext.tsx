@@ -299,8 +299,8 @@ export const PropertyDataProvider: React.FC<{ children: ReactNode }> = ({ childr
     setPropertyData(prev => ({
       ...prev,
       ...presetData,
-      currentPropertyMethod: propertyMethod,
-      currentFundingMethod: fundingMethod
+      currentPropertyMethod: propertyMethod ?? prev.currentPropertyMethod,
+      currentFundingMethod: fundingMethod ?? prev.currentFundingMethod
     }));
   };
 
