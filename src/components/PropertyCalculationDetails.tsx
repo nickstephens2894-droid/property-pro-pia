@@ -26,6 +26,16 @@ interface ClientTaxResult {
   propertyTaxableIncome: number;
 }
 
+interface LoanPaymentDetails {
+  ioPayment: number;
+  piPayment: number;
+  ioTermYears: number;
+  remainingTerm: number;
+  totalInterest: number;
+  currentPayment: number;
+  futurePayment: number;
+}
+
 interface PropertyCalculationDetailsProps {
   monthlyRepayment: number;
   annualRepayment: number;
@@ -63,6 +73,10 @@ interface PropertyCalculationDetailsProps {
   actualCashInvested: number;
   constructionPeriod: number;
   holdingCostFunding: 'cash' | 'debt' | 'hybrid';
+  // Enhanced loan payment details
+  mainLoanPayments: LoanPaymentDetails;
+  equityLoanPayments: LoanPaymentDetails | null;
+  totalAnnualInterest: number;
 }
 
 export const PropertyCalculationDetails = ({
@@ -90,7 +104,10 @@ export const PropertyCalculationDetails = ({
   capitalizedHoldingCosts,
   actualCashInvested,
   constructionPeriod,
-  holdingCostFunding
+  holdingCostFunding,
+  mainLoanPayments,
+  equityLoanPayments,
+  totalAnnualInterest
 }: PropertyCalculationDetailsProps) => {
 
   const currentYear = new Date().getFullYear();
@@ -194,7 +211,7 @@ export const PropertyCalculationDetails = ({
             </AccordionItem>
           )}
 
-          {/* Loan Calculations */}
+          {/* Enhanced Loan Calculations */}
           <AccordionItem value="loan-calculations" className="border-b">
             <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
               <div className="flex items-center gap-2">
@@ -203,22 +220,96 @@ export const PropertyCalculationDetails = ({
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-6 pb-6">
-              <div className="space-y-4">
+              <div className="space-y-6">
+                {/* Overall Payment Summary */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="p-4 bg-muted/30 rounded-lg">
-                    <div className="text-sm text-muted-foreground">Monthly Repayment</div>
+                    <div className="text-sm text-muted-foreground">Monthly Repayment (Total)</div>
                     <div className="text-2xl font-bold text-destructive">${monthlyRepayment.toFixed(2)}</div>
-                    <div className="text-xs text-muted-foreground mt-1">Principal + Interest</div>
+                    <div className="text-xs text-muted-foreground mt-1">All loan payments combined</div>
                   </div>
                   <div className="p-4 bg-muted/30 rounded-lg">
-                    <div className="text-sm text-muted-foreground">Annual Repayment</div>
-                    <div className="text-2xl font-bold text-destructive">${annualRepayment.toLocaleString()}</div>
-                    <div className="text-xs text-muted-foreground mt-1">Total loan servicing cost</div>
+                    <div className="text-sm text-muted-foreground">Annual Interest (Deductible)</div>
+                    <div className="text-2xl font-bold text-success">${totalAnnualInterest.toLocaleString()}</div>
+                    <div className="text-xs text-muted-foreground mt-1">Tax-deductible portion</div>
                   </div>
                 </div>
+
+                {/* Main Loan Details */}
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm">Main Loan Payment Breakdown</h4>
+                  <div className="bg-muted/20 rounded-lg p-4 space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Loan Amount:</span>
+                      <span className="font-medium">${funding.loanAmount.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Current Payment Type:</span>
+                      <span className="font-medium capitalize">
+                        {mainLoanPayments.ioTermYears > 0 ? 'Interest Only' : 'Principal & Interest'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Current Weekly Payment:</span>
+                      <span className="font-bold text-destructive">${mainLoanPayments.currentPayment.toFixed(2)}</span>
+                    </div>
+                    
+                    {mainLoanPayments.ioTermYears > 0 && (
+                      <div className="border-t pt-3 space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm">IO Period Remaining:</span>
+                          <span className="font-medium">{mainLoanPayments.ioTermYears} years</span>
+                        </div>
+                        {mainLoanPayments.futurePayment > 0 && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm">Future P&I Payment:</span>
+                            <span className="font-bold text-warning">${mainLoanPayments.futurePayment.toFixed(2)}/week</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Equity Loan Details */}
+                {equityLoanPayments && (
+                  <div className="space-y-4">
+                    <h4 className="font-medium text-sm">Equity Loan Payment Breakdown</h4>
+                    <div className="bg-muted/20 rounded-lg p-4 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Equity Loan Amount:</span>
+                        <span className="font-medium">${funding.equityUsed.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Current Payment Type:</span>
+                        <span className="font-medium capitalize">
+                          {equityLoanPayments.ioTermYears > 0 ? 'Interest Only' : 'Principal & Interest'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Current Weekly Payment:</span>
+                        <span className="font-bold text-destructive">${equityLoanPayments.currentPayment.toFixed(2)}</span>
+                      </div>
+                      
+                      {equityLoanPayments.ioTermYears > 0 && equityLoanPayments.futurePayment > 0 && (
+                        <div className="border-t pt-3 space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm">IO Period Remaining:</span>
+                            <span className="font-medium">{equityLoanPayments.ioTermYears} years</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm">Future P&I Payment:</span>
+                            <span className="font-bold text-warning">${equityLoanPayments.futurePayment.toFixed(2)}/week</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
                 
-                <div className="text-xs text-muted-foreground">
-                  <p><strong>Note:</strong> Only the interest portion of loan repayments is tax-deductible for investment properties.</p>
+                <div className="text-xs text-muted-foreground bg-primary/5 p-3 rounded-lg">
+                  <p><strong>Important:</strong> Only the interest portion of loan repayments is tax-deductible for investment properties. 
+                  Interest-only payments provide maximum immediate tax benefits but result in higher total interest costs over the loan life.</p>
                 </div>
               </div>
             </AccordionContent>
@@ -249,6 +340,10 @@ export const PropertyCalculationDetails = ({
                 <div>
                   <h4 className="font-medium text-sm mb-3 text-destructive">Tax-Deductible Expenses</h4>
                   <div className="space-y-2">
+                    <div className="flex justify-between items-center py-2 border-b border-border/30">
+                      <span className="text-sm">Loan Interest (Total)</span>
+                      <span className="text-destructive">${totalAnnualInterest.toLocaleString()}</span>
+                    </div>
                     <div className="flex justify-between items-center py-2 border-b border-border/30">
                       <span className="text-sm">Property Management</span>
                       <span className="text-destructive">${propertyManagementCost.toLocaleString()}</span>

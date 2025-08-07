@@ -47,11 +47,23 @@ interface PropertyData {
   loanTerm: number;
   lvr: number; // Loan to Value Ratio
   
-  // Equity Funding
+  // Enhanced Loan Options
+  mainLoanType: 'io' | 'pi';
+  ioTermYears: number;
+  
+  // Equity Funding Enhanced
   useEquityFunding: boolean;
   primaryPropertyValue: number;
   existingDebt: number;
   maxLVR: number;
+  equityLoanType: 'io' | 'pi';
+  equityLoanIoTermYears: number;
+  equityLoanInterestRate: number;
+  equityLoanTerm: number;
+  
+  // Deposit Management
+  depositAmount: number;
+  minimumDepositRequired: number;
   
   // Holding Costs During Construction
   holdingCostFunding: 'cash' | 'debt' | 'hybrid';
@@ -127,11 +139,23 @@ const PropertyAnalysis = () => {
     loanTerm: 30,
     lvr: 80,
     
-    // Equity Funding
+    // Enhanced Loan Options
+    mainLoanType: 'pi',
+    ioTermYears: 5,
+    
+    // Equity Funding Enhanced
     useEquityFunding: false,
     primaryPropertyValue: 1000000,
     existingDebt: 400000,
     maxLVR: 80,
+    equityLoanType: 'pi',
+    equityLoanIoTermYears: 3,
+    equityLoanInterestRate: 7.0,
+    equityLoanTerm: 25,
+    
+    // Deposit Management
+    depositAmount: 150000,
+    minimumDepositRequired: 150000,
     
     // Holding Costs During Construction
     holdingCostFunding: 'cash',
@@ -313,6 +337,85 @@ const PropertyAnalysis = () => {
 
   const funding = calculateFundingRequirements();
 
+  // Enhanced loan payment calculations
+  const calculateLoanPayments = (loanAmount: number, interestRate: number, totalTerm: number, loanType: 'io' | 'pi', ioTermYears: number = 0) => {
+    if (loanType === 'io' && ioTermYears > 0) {
+      // Interest-only payment (weekly)
+      const ioPayment = loanAmount * (interestRate / 100 / 52);
+      
+      // Principal & Interest payment after IO period
+      const remainingTerm = totalTerm - ioTermYears;
+      let piPayment = 0;
+      
+      if (remainingTerm > 0) {
+        const weeklyRate = interestRate / 100 / 52;
+        const totalPayments = remainingTerm * 52;
+        piPayment = (loanAmount * weeklyRate * Math.pow(1 + weeklyRate, totalPayments)) / (Math.pow(1 + weeklyRate, totalPayments) - 1);
+      }
+      
+      // Total interest over loan life
+      const ioInterest = loanAmount * (interestRate / 100) * ioTermYears;
+      const piInterest = remainingTerm > 0 ? (piPayment * remainingTerm * 52) - loanAmount : 0;
+      const totalInterest = ioInterest + piInterest;
+      
+      return {
+        ioPayment,
+        piPayment,
+        ioTermYears,
+        remainingTerm,
+        totalInterest,
+        currentPayment: ioPayment,
+        futurePayment: piPayment
+      };
+    } else {
+      // Standard Principal & Interest
+      const weeklyRate = interestRate / 100 / 52;
+      const totalPayments = totalTerm * 52;
+      const piPayment = (loanAmount * weeklyRate * Math.pow(1 + weeklyRate, totalPayments)) / (Math.pow(1 + weeklyRate, totalPayments) - 1);
+      const totalInterest = (piPayment * totalPayments) - loanAmount;
+      
+      return {
+        ioPayment: 0,
+        piPayment,
+        ioTermYears: 0,
+        remainingTerm: totalTerm,
+        totalInterest,
+        currentPayment: piPayment,
+        futurePayment: 0
+      };
+    }
+  };
+
+  // Calculate main loan payments
+  const mainLoanPayments = calculateLoanPayments(
+    funding.loanAmount,
+    propertyData.interestRate,
+    propertyData.loanTerm,
+    propertyData.mainLoanType,
+    propertyData.ioTermYears
+  );
+
+  // Calculate equity loan payments (if applicable)
+  const equityLoanPayments = propertyData.useEquityFunding ? calculateLoanPayments(
+    funding.equityUsed,
+    propertyData.equityLoanInterestRate,
+    propertyData.equityLoanTerm,
+    propertyData.equityLoanType,
+    propertyData.equityLoanIoTermYears
+  ) : null;
+
+  // Calculate minimum deposit and update it in the state if needed
+  const totalProjectCostForDeposit = totalProjectCost;
+  const minimumDepositRequired = propertyData.useEquityFunding 
+    ? 0 // When using equity, no cash deposit required
+    : totalProjectCostForDeposit * (100 - propertyData.lvr) / 100;
+
+  // Update minimum deposit if it's different
+  if (propertyData.minimumDepositRequired !== minimumDepositRequired) {
+    // This would need to be handled in the parent component
+    // For now, we'll use the calculated value
+  }
+
   // Calculate out-of-pocket vs capitalized holding costs
   const outOfPocketHoldingCosts = propertyData.holdingCostFunding === 'cash' 
     ? holdingCosts.total 
@@ -325,18 +428,25 @@ const PropertyAnalysis = () => {
   // Actual cash invested (for true ROI calculations)
   const actualCashInvested = funding.cashRequired + outOfPocketHoldingCosts;
 
-  // Property calculations
+  // Enhanced property calculations with IO/P&I support
   const annualRent = propertyData.weeklyRent * 52;
   const finalLoanAmount = funding.loanAmount + capitalizedHoldingCosts;
-  const weeklyMortgage = (finalLoanAmount * (propertyData.interestRate / 100 / 52) * Math.pow(1 + propertyData.interestRate / 100 / 52, propertyData.loanTerm * 52)) / (Math.pow(1 + propertyData.interestRate / 100 / 52, propertyData.loanTerm * 52) - 1);
-  const annualMortgage = weeklyMortgage * 52;
+  
+  // Use enhanced loan payment calculations
+  const totalWeeklyLoanPayments = mainLoanPayments.currentPayment + (equityLoanPayments?.currentPayment || 0);
+  const totalAnnualLoanPayments = totalWeeklyLoanPayments * 52;
   const annualPropertyManagement = annualRent * (propertyData.propertyManagement / 100);
   
-  // Tax-deductible expenses (including depreciation)
-  const annualInterest = finalLoanAmount * (propertyData.interestRate / 100);
-  const totalDeductibleExpenses = annualInterest + annualPropertyManagement + propertyData.councilRates + propertyData.insurance + propertyData.repairs + depreciation.total;
+  // Enhanced tax-deductible expenses calculation (only interest is deductible, not principal)
+  const mainLoanInterest = funding.loanAmount * (propertyData.interestRate / 100);
+  const equityLoanInterest = equityLoanPayments 
+    ? funding.equityUsed * (propertyData.equityLoanInterestRate / 100)
+    : 0;
   
-  const totalAnnualCosts = annualMortgage + annualPropertyManagement + propertyData.councilRates + propertyData.insurance + propertyData.repairs;
+  const totalAnnualInterest = mainLoanInterest + equityLoanInterest;
+  const totalDeductibleExpenses = totalAnnualInterest + annualPropertyManagement + propertyData.councilRates + propertyData.insurance + propertyData.repairs + depreciation.total;
+  
+  const totalAnnualCosts = totalAnnualLoanPayments + annualPropertyManagement + propertyData.councilRates + propertyData.insurance + propertyData.repairs;
   const annualCashFlow = annualRent - totalAnnualCosts;
   const weeklyCashFlow = annualCashFlow / 52;
   
@@ -453,8 +563,8 @@ const PropertyAnalysis = () => {
 
             {/* Calculation Details */}
             <PropertyCalculationDetails
-              monthlyRepayment={weeklyMortgage * 52 / 12}
-              annualRepayment={weeklyMortgage * 52}
+              monthlyRepayment={totalWeeklyLoanPayments * 52 / 12}
+              annualRepayment={totalAnnualLoanPayments}
               annualRent={annualRent}
               propertyManagementCost={annualPropertyManagement}
               councilRates={propertyData.councilRates}
@@ -483,6 +593,10 @@ const PropertyAnalysis = () => {
               actualCashInvested={actualCashInvested}
               constructionPeriod={propertyData.constructionPeriod}
               holdingCostFunding={propertyData.holdingCostFunding}
+              // Enhanced loan payment details
+              mainLoanPayments={mainLoanPayments}
+              equityLoanPayments={equityLoanPayments}
+              totalAnnualInterest={totalAnnualInterest}
             />
           </div>
         </div>
