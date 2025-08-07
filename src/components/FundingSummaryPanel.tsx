@@ -168,12 +168,12 @@ export const FundingSummaryPanel = () => {
             )}
 
             {/* Construction Holding Interest (Construction only) */}
-            {propertyData.isConstructionProject && calculateHoldingCosts().total > 0 && (
+            {propertyData.isConstructionProject && (propertyData.constructionPeriod > 0 && propertyData.constructionInterestRate > 0) && (
               <Collapsible open={expandedSections.includes('holding-interest')} onOpenChange={() => toggleSection('holding-interest')}>
                 <CollapsibleTrigger className="flex items-center justify-between w-full text-sm hover:bg-muted/50 p-2 rounded">
                   <span>Construction Holding Interest</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-medium">${calculateHoldingCosts().total.toLocaleString()}</span>
+                    <span className="font-medium">${calculateHoldingCosts().total > 0 ? calculateHoldingCosts().total.toLocaleString() : '0'}</span>
                     {expandedSections.includes('holding-interest') ? 
                       <ChevronDown className="h-4 w-4" /> : 
                       <ChevronRight className="h-4 w-4" />
@@ -410,7 +410,7 @@ export const FundingSummaryPanel = () => {
                 </div>
                 <div className="flex justify-between">
                   <span>Property Value:</span>
-                  <span>${purchaseCosts.toLocaleString()}</span>
+                  <span>${(propertyData.isConstructionProject ? propertyData.landValue + propertyData.constructionValue : propertyData.purchasePrice).toLocaleString()}</span>
                 </div>
               </div>
             </CollapsibleContent>
