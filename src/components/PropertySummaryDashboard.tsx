@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, DollarSign, Percent, Calculator, AlertCircle } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Percent, Calculator, AlertCircle, PiggyBank } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface SummaryMetric {
@@ -14,20 +14,28 @@ interface PropertySummaryDashboardProps {
   weeklyAfterTaxCashFlow: number;
   grossYield: number;
   afterTaxYield: number;
+  cashOnCashReturn: number;
   taxDifference: number;
   annualRent: number;
   totalExpenses: number;
   marginalTaxRate: number;
+  totalProjectCost: number;
+  actualCashInvested: number;
+  isConstructionProject: boolean;
 }
 
 export const PropertySummaryDashboard = ({
   weeklyAfterTaxCashFlow,
   grossYield,
   afterTaxYield,
+  cashOnCashReturn,
   taxDifference,
   annualRent,
   totalExpenses,
-  marginalTaxRate
+  marginalTaxRate,
+  totalProjectCost,
+  actualCashInvested,
+  isConstructionProject
 }: PropertySummaryDashboardProps) => {
   const isMobile = useIsMobile();
 

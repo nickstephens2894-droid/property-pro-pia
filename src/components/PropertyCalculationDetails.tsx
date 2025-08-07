@@ -11,33 +11,42 @@ interface DepreciationDetails {
 }
 
 interface PropertyCalculationDetailsProps {
-  // Loan calculations
   monthlyRepayment: number;
   annualRepayment: number;
-  
-  // Income calculations
   annualRent: number;
   propertyManagementCost: number;
-  
-  // Expense breakdown
   councilRates: number;
   insurance: number;
   repairs: number;
   totalDeductibleExpenses: number;
-  
-  // Depreciation
   depreciation: DepreciationDetails;
-  
-  // Tax calculations
   propertyTaxableIncome: number;
   taxWithProperty: number;
   taxWithoutProperty: number;
   marginalTaxRate: number;
-  
-  // Property data for CGT
   purchasePrice: number;
   constructionYear: number;
-  depreciationMethod: string;
+  depreciationMethod: 'prime-cost' | 'diminishing-value';
+  // Enhanced construction details
+  isConstructionProject: boolean;
+  totalProjectCost: number;
+  holdingCosts: {
+    landInterest: number;
+    constructionInterest: number;
+    total: number;
+  };
+  funding: {
+    totalRequired: number;
+    equityUsed: number;
+    cashRequired: number;
+    availableEquity: number;
+    loanAmount: number;
+  };
+  outOfPocketHoldingCosts: number;
+  capitalizedHoldingCosts: number;
+  actualCashInvested: number;
+  constructionPeriod: number;
+  holdingCostFunding: 'cash' | 'debt' | 'hybrid';
 }
 
 export const PropertyCalculationDetails = ({
@@ -56,7 +65,16 @@ export const PropertyCalculationDetails = ({
   marginalTaxRate,
   purchasePrice,
   constructionYear,
-  depreciationMethod
+  depreciationMethod,
+  isConstructionProject,
+  totalProjectCost,
+  holdingCosts,
+  funding,
+  outOfPocketHoldingCosts,
+  capitalizedHoldingCosts,
+  actualCashInvested,
+  constructionPeriod,
+  holdingCostFunding
 }: PropertyCalculationDetailsProps) => {
 
   const currentYear = new Date().getFullYear();
@@ -73,6 +91,93 @@ export const PropertyCalculationDetails = ({
       <CardContent className="p-0">
         <Accordion type="multiple" className="w-full">
           
+          {/* Project Costs & Funding (for construction projects) */}
+          {isConstructionProject && (
+            <AccordionItem value="project-costs" className="border-b">
+              <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-primary" />
+                  <span className="font-medium">Project Costs & Funding Analysis</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pb-6">
+                <div className="space-y-6">
+                  <div>
+                    <h4 className="font-medium text-sm mb-3">Total Project Cost Breakdown</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between py-1">
+                        <span>Total Project Cost:</span>
+                        <span className="font-medium">${totalProjectCost.toLocaleString()}</span>
+                      </div>
+                      <div className="ml-4 space-y-1 text-muted-foreground">
+                        <div className="flex justify-between py-1">
+                          <span>• Land & Construction Interest:</span>
+                          <span>${holdingCosts.total.toLocaleString()}</span>
+                        </div>
+                        <div className="ml-4 space-y-1">
+                          <div className="flex justify-between">
+                            <span>- Land Interest ({constructionPeriod} months):</span>
+                            <span>${holdingCosts.landInterest.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>- Construction Interest:</span>
+                            <span>${holdingCosts.constructionInterest.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-medium text-sm mb-3">Funding Structure</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between py-1">
+                        <span>Total Funding Required:</span>
+                        <span className="font-medium">${funding.totalRequired.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between py-1">
+                        <span>Loan Amount:</span>
+                        <span className="font-medium">${funding.loanAmount.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between py-1">
+                        <span>Cash Required:</span>
+                        <span className="font-medium">${funding.cashRequired.toLocaleString()}</span>
+                      </div>
+                      {funding.equityUsed > 0 && (
+                        <div className="flex justify-between py-1">
+                          <span>Equity Used:</span>
+                          <span className="font-medium">${funding.equityUsed.toLocaleString()}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-medium text-sm mb-3">Holding Costs During Construction</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between py-1">
+                        <span>Funding Method:</span>
+                        <span className="font-medium capitalize">{holdingCostFunding}</span>
+                      </div>
+                      <div className="flex justify-between py-1">
+                        <span>Out-of-Pocket Holding Costs:</span>
+                        <span className="font-medium">${outOfPocketHoldingCosts.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between py-1">
+                        <span>Capitalized Holding Costs:</span>
+                        <span className="font-medium">${capitalizedHoldingCosts.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between py-1 border-t pt-2 mt-3">
+                        <span className="font-medium">Actual Cash Invested:</span>
+                        <span className="font-bold">${actualCashInvested.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          )}
+
           {/* Loan Calculations */}
           <AccordionItem value="loan-calculations" className="border-b">
             <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">

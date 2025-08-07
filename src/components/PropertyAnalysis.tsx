@@ -5,23 +5,57 @@ import { PropertyCalculationDetails } from "@/components/PropertyCalculationDeta
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface PropertyData {
+  // Project Type
+  isConstructionProject: boolean;
+  
+  // Basic Property Details
   purchasePrice: number;
   weeklyRent: number;
+  
+  // Construction-specific
+  landValue: number;
+  constructionValue: number;
+  constructionPeriod: number; // months
+  constructionInterestRate: number;
+  
+  // Traditional Financing
   deposit: number;
   loanAmount: number;
   interestRate: number;
   loanTerm: number;
+  lvr: number; // Loan to Value Ratio
+  
+  // Equity Funding
+  useEquityFunding: boolean;
+  primaryPropertyValue: number;
+  existingDebt: number;
+  maxLVR: number;
+  
+  // Holding Costs During Construction
+  holdingCostFunding: 'cash' | 'debt' | 'hybrid';
+  holdingCostCashPercentage: number; // For hybrid funding
+  
+  // Purchase Costs
   stampDuty: number;
   legalFees: number;
   inspectionFees: number;
+  
+  // Construction Costs
+  councilFees: number;
+  architectFees: number;
+  siteCosts: number;
+  
+  // Annual Expenses
   propertyManagement: number;
   councilRates: number;
   insurance: number;
   repairs: number;
+  
   // Tax-related fields
   annualIncome: number;
   otherIncome: number;
   hasMedicareLevy: boolean;
+  
   // Depreciation fields
   constructionYear: number;
   buildingValue: number;
@@ -32,23 +66,57 @@ interface PropertyData {
 
 const PropertyAnalysis = () => {
   const [propertyData, setPropertyData] = useState<PropertyData>({
+    // Project Type
+    isConstructionProject: false,
+    
+    // Basic Property Details
     purchasePrice: 750000,
     weeklyRent: 650,
+    
+    // Construction-specific
+    landValue: 200000,
+    constructionValue: 550000,
+    constructionPeriod: 8, // months
+    constructionInterestRate: 7.0, // typically higher than standard rate
+    
+    // Traditional Financing
     deposit: 150000,
     loanAmount: 600000,
     interestRate: 6.5,
     loanTerm: 30,
+    lvr: 80,
+    
+    // Equity Funding
+    useEquityFunding: false,
+    primaryPropertyValue: 1000000,
+    existingDebt: 400000,
+    maxLVR: 80,
+    
+    // Holding Costs During Construction
+    holdingCostFunding: 'cash',
+    holdingCostCashPercentage: 100,
+    
+    // Purchase Costs
     stampDuty: 35000,
     legalFees: 2500,
     inspectionFees: 800,
+    
+    // Construction Costs
+    councilFees: 5000,
+    architectFees: 15000,
+    siteCosts: 8000,
+    
+    // Annual Expenses
     propertyManagement: 8,
     councilRates: 2500,
     insurance: 1200,
     repairs: 2000,
+    
     // Tax defaults
     annualIncome: 85000,
     otherIncome: 0,
     hasMedicareLevy: true,
+    
     // Depreciation defaults
     constructionYear: 2020,
     buildingValue: 600000,
@@ -151,14 +219,90 @@ const PropertyAnalysis = () => {
 
   const depreciation = calculateDepreciation();
 
+  // Calculate construction holding costs
+  const calculateHoldingCosts = () => {
+    if (!propertyData.isConstructionProject) return { landInterest: 0, constructionInterest: 0, total: 0 };
+    
+    // Land interest during construction period
+    const landInterest = propertyData.landValue * (propertyData.constructionInterestRate / 100) * (propertyData.constructionPeriod / 12);
+    
+    // Progressive construction interest (simplified - assumes 50% average drawdown)
+    const averageConstructionDrawdown = propertyData.constructionValue * 0.5;
+    const constructionInterest = averageConstructionDrawdown * (propertyData.constructionInterestRate / 100) * (propertyData.constructionPeriod / 12);
+    
+    return {
+      landInterest,
+      constructionInterest,
+      total: landInterest + constructionInterest
+    };
+  };
+
+  const holdingCosts = calculateHoldingCosts();
+
+  // Calculate total project costs
+  const baseCosts = propertyData.isConstructionProject 
+    ? propertyData.landValue + propertyData.constructionValue 
+    : propertyData.purchasePrice;
+  
+  const developmentCosts = propertyData.isConstructionProject 
+    ? propertyData.councilFees + propertyData.architectFees + propertyData.siteCosts 
+    : 0;
+  
+  const totalProjectCost = baseCosts + propertyData.stampDuty + propertyData.legalFees + 
+                          propertyData.inspectionFees + developmentCosts + holdingCosts.total;
+
+  // Calculate funding requirements
+  const calculateFundingRequirements = () => {
+    if (propertyData.useEquityFunding) {
+      const availableEquity = Math.max(0, (propertyData.primaryPropertyValue * propertyData.maxLVR / 100) - propertyData.existingDebt);
+      const equityUsed = Math.min(availableEquity, totalProjectCost);
+      const additionalCashRequired = Math.max(0, totalProjectCost - equityUsed);
+      
+      return {
+        totalRequired: totalProjectCost,
+        equityUsed,
+        cashRequired: additionalCashRequired,
+        availableEquity,
+        loanAmount: equityUsed
+      };
+    } else {
+      // Traditional LVR financing
+      const loanAmount = totalProjectCost * (propertyData.lvr / 100);
+      const cashRequired = totalProjectCost - loanAmount;
+      
+      return {
+        totalRequired: totalProjectCost,
+        equityUsed: 0,
+        cashRequired,
+        availableEquity: 0,
+        loanAmount
+      };
+    }
+  };
+
+  const funding = calculateFundingRequirements();
+
+  // Calculate out-of-pocket vs capitalized holding costs
+  const outOfPocketHoldingCosts = propertyData.holdingCostFunding === 'cash' 
+    ? holdingCosts.total 
+    : propertyData.holdingCostFunding === 'debt' 
+      ? 0 
+      : holdingCosts.total * (propertyData.holdingCostCashPercentage / 100);
+
+  const capitalizedHoldingCosts = holdingCosts.total - outOfPocketHoldingCosts;
+
+  // Actual cash invested (for true ROI calculations)
+  const actualCashInvested = funding.cashRequired + outOfPocketHoldingCosts;
+
   // Property calculations
   const annualRent = propertyData.weeklyRent * 52;
-  const weeklyMortgage = (propertyData.loanAmount * (propertyData.interestRate / 100 / 52) * Math.pow(1 + propertyData.interestRate / 100 / 52, propertyData.loanTerm * 52)) / (Math.pow(1 + propertyData.interestRate / 100 / 52, propertyData.loanTerm * 52) - 1);
+  const finalLoanAmount = funding.loanAmount + capitalizedHoldingCosts;
+  const weeklyMortgage = (finalLoanAmount * (propertyData.interestRate / 100 / 52) * Math.pow(1 + propertyData.interestRate / 100 / 52, propertyData.loanTerm * 52)) / (Math.pow(1 + propertyData.interestRate / 100 / 52, propertyData.loanTerm * 52) - 1);
   const annualMortgage = weeklyMortgage * 52;
   const annualPropertyManagement = annualRent * (propertyData.propertyManagement / 100);
   
   // Tax-deductible expenses (including depreciation)
-  const annualInterest = propertyData.loanAmount * (propertyData.interestRate / 100); // Simplified interest calculation
+  const annualInterest = finalLoanAmount * (propertyData.interestRate / 100);
   const totalDeductibleExpenses = annualInterest + annualPropertyManagement + propertyData.councilRates + propertyData.insurance + propertyData.repairs + depreciation.total;
   
   const totalAnnualCosts = annualMortgage + annualPropertyManagement + propertyData.councilRates + propertyData.insurance + propertyData.repairs;
@@ -180,9 +324,10 @@ const PropertyAnalysis = () => {
   const weeklyAfterTaxCashFlow = afterTaxCashFlow / 52;
   const afterTaxYield = (afterTaxCashFlow / propertyData.purchasePrice) * 100;
   
-  const grossYield = (annualRent / propertyData.purchasePrice) * 100;
-  const netYield = (annualCashFlow / propertyData.purchasePrice) * 100;
-  const totalUpfrontCosts = propertyData.deposit + propertyData.stampDuty + propertyData.legalFees + propertyData.inspectionFees;
+  const grossYield = (annualRent / totalProjectCost) * 100;
+  const netYield = (annualCashFlow / totalProjectCost) * 100;
+  const cashOnCashReturn = actualCashInvested > 0 ? (annualCashFlow / actualCashInvested) * 100 : 0;
+  const totalUpfrontCosts = funding.cashRequired + outOfPocketHoldingCosts;
 
   const isMobile = useIsMobile();
 
@@ -222,10 +367,14 @@ const PropertyAnalysis = () => {
               weeklyAfterTaxCashFlow={weeklyAfterTaxCashFlow}
               grossYield={grossYield}
               afterTaxYield={afterTaxYield}
+              cashOnCashReturn={cashOnCashReturn}
               taxDifference={taxDifference}
               annualRent={annualRent}
               totalExpenses={totalDeductibleExpenses}
               marginalTaxRate={marginalTaxRate}
+              totalProjectCost={totalProjectCost}
+              actualCashInvested={actualCashInvested}
+              isConstructionProject={propertyData.isConstructionProject}
             />
 
             {/* Calculation Details */}
@@ -250,6 +399,16 @@ const PropertyAnalysis = () => {
               purchasePrice={propertyData.purchasePrice}
               constructionYear={propertyData.constructionYear}
               depreciationMethod={propertyData.depreciationMethod}
+              // Enhanced construction details
+              isConstructionProject={propertyData.isConstructionProject}
+              totalProjectCost={totalProjectCost}
+              holdingCosts={holdingCosts}
+              funding={funding}
+              outOfPocketHoldingCosts={outOfPocketHoldingCosts}
+              capitalizedHoldingCosts={capitalizedHoldingCosts}
+              actualCashInvested={actualCashInvested}
+              constructionPeriod={propertyData.constructionPeriod}
+              holdingCostFunding={propertyData.holdingCostFunding}
             />
           </div>
         </div>
