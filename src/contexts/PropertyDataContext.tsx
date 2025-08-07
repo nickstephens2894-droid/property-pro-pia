@@ -65,6 +65,11 @@ export interface PropertyData {
   holdingCostFunding: 'cash' | 'debt' | 'hybrid';
   holdingCostCashPercentage: number; // For hybrid funding
   
+  // Separate interest calculations for tax purposes
+  landHoldingInterest: number; // Land-related interest (non-deductible)
+  constructionHoldingInterest: number; // Construction-related interest (deductible)
+  totalHoldingCosts: number; // Total holding costs during construction
+  
   // Purchase Costs
   stampDuty: number;
   legalFees: number;
@@ -168,6 +173,11 @@ const defaultPropertyData: PropertyData = {
   // Holding Costs During Construction
   holdingCostFunding: 'cash',
   holdingCostCashPercentage: 100,
+  
+  // Separate interest calculations for tax purposes
+  landHoldingInterest: 0,
+  constructionHoldingInterest: 0,
+  totalHoldingCosts: 0,
   
   // Purchase Costs
   stampDuty: 35000,
