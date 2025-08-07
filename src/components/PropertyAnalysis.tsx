@@ -3,6 +3,9 @@ import { PropertyInputForm } from "@/components/PropertyInputForm";
 import { PropertySummaryDashboard } from "@/components/PropertySummaryDashboard";
 import { PropertyCalculationDetails } from "@/components/PropertyCalculationDetails";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Button } from "@/components/ui/button";
+import { TrendingUp } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface Client {
   id: string;
@@ -91,6 +94,7 @@ interface PropertyData {
 }
 
 const PropertyAnalysis = () => {
+  const navigate = useNavigate();
   const [propertyData, setPropertyData] = useState<PropertyData>({
     // Multi-client structure
     clients: [
@@ -520,12 +524,23 @@ const PropertyAnalysis = () => {
       {/* Header */}
       <div className="bg-gradient-to-r from-primary/5 to-accent/5 border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-2">
-            Property Investment Analysis
-          </h1>
-          <p className="text-muted-foreground text-base sm:text-lg">
-            Comprehensive analysis tool for Australian residential property investments
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-2">
+                Property Investment Analysis
+              </h1>
+              <p className="text-muted-foreground text-base sm:text-lg">
+                Comprehensive analysis tool for Australian residential property investments
+              </p>
+            </div>
+            <Button 
+              onClick={() => navigate('/projections')}
+              className="flex items-center gap-2 self-start sm:self-auto"
+            >
+              <TrendingUp className="h-4 w-4" />
+              40-Year Projections
+            </Button>
+          </div>
         </div>
       </div>
 
