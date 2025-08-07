@@ -40,6 +40,8 @@ export const FundingSummaryPanel = () => {
   const mainLoanAmount = propertyData.loanAmount;
   const equityLoanAmount = calculateEquityLoanAmount();
   const availableEquity = calculateAvailableEquity();
+  // Pre-calculate commonly used values
+  const holdingCosts = calculateHoldingCosts();
   
   // Use the actual deposit amount entered by the user
   const cashDeposit = propertyData.depositAmount;
@@ -173,7 +175,7 @@ export const FundingSummaryPanel = () => {
                 <CollapsibleTrigger className="flex items-center justify-between w-full text-sm hover:bg-muted/50 p-2 rounded">
                   <span>Construction Holding Interest</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-medium">${calculateHoldingCosts().total > 0 ? calculateHoldingCosts().total.toLocaleString() : '0'}</span>
+                    <span className="font-medium">${holdingCosts.total > 0 ? holdingCosts.total.toLocaleString() : '0'}</span>
                     {expandedSections.includes('holding-interest') ? 
                       <ChevronDown className="h-4 w-4" /> : 
                       <ChevronRight className="h-4 w-4" />
@@ -199,6 +201,14 @@ export const FundingSummaryPanel = () => {
                       <span>{propertyData.holdingCostCashPercentage}%</span>
                     </div>
                   )}
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Land & stamp duty holding interest</span>
+                    <span>${holdingCosts.landInterest.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Construction holding interest</span>
+                    <span>${holdingCosts.constructionInterest.toLocaleString()}</span>
+                  </div>
                   <div className="text-xs text-muted-foreground/80 mt-1 italic">
                     Tax-deductible construction interest
                   </div>
