@@ -107,27 +107,11 @@ const PropertyAnalysis = () => {
 
   const depreciation = calculateDepreciation();
 
-  // Calculate construction holding costs
-  const calculateHoldingCosts = () => {
-    if (!propertyData.isConstructionProject) return { landInterest: 0, constructionInterest: 0, total: 0 };
-    
-    // Land interest during construction period
-    const landInterest = propertyData.landValue * (propertyData.constructionInterestRate / 100) * (propertyData.constructionPeriod / 12);
-    
-    // Progressive construction interest (simplified - assumes 50% average drawdown)
-    const averageConstructionDrawdown = propertyData.constructionValue * 0.5;
-    const constructionInterest = averageConstructionDrawdown * (propertyData.constructionInterestRate / 100) * (propertyData.constructionPeriod / 12);
-    
-    return {
-      landInterest,
-      constructionInterest,
-      total: landInterest + constructionInterest
-    };
-  };
-
-  const holdingCosts = calculateHoldingCosts();
-
   // Use centralized calculations from context
+  const { calculateHoldingCosts, calculateMinimumDeposit, calculateAvailableEquity } = usePropertyData();
+  
+  // Use centralized holding costs calculation
+  const holdingCosts = calculateHoldingCosts();
   const totalProjectCost = calculateTotalProjectCost();
   const equityLoanAmount = calculateEquityLoanAmount();
 
@@ -136,9 +120,7 @@ const PropertyAnalysis = () => {
     totalRequired: totalProjectCost,
     equityUsed: equityLoanAmount,
     cashRequired: propertyData.depositAmount,
-    availableEquity: propertyData.useEquityFunding 
-      ? Math.max(0, (propertyData.primaryPropertyValue * propertyData.maxLVR / 100) - propertyData.existingDebt)
-      : 0,
+    availableEquity: calculateAvailableEquity(),
     loanAmount: propertyData.loanAmount
   };
 
@@ -209,17 +191,8 @@ const PropertyAnalysis = () => {
     propertyData.equityLoanIoTermYears
   ) : null;
 
-  // Calculate minimum deposit and update it in the state if needed
-  const totalProjectCostForDeposit = totalProjectCost;
-  const minimumDepositRequired = propertyData.useEquityFunding 
-    ? 0 // When using equity, no cash deposit required
-    : totalProjectCostForDeposit * (100 - propertyData.lvr) / 100;
-
-  // Update minimum deposit if it's different
-  if (propertyData.minimumDepositRequired !== minimumDepositRequired) {
-    // This would need to be handled in the parent component
-    // For now, we'll use the calculated value
-  }
+  // Calculate minimum deposit using centralized function
+  const minimumDepositRequired = calculateMinimumDeposit();
 
   // Calculate out-of-pocket vs capitalized holding costs
   const outOfPocketHoldingCosts = propertyData.holdingCostFunding === 'cash' 
@@ -264,11 +237,11 @@ const PropertyAnalysis = () => {
     let taxWithoutProperty = calculateTax(totalIncome);
     let taxWithProperty = calculateTax(totalIncomeWithProperty);
     
-    // Add Medicare levy per client
-    if (client.hasMedicareLevy && totalIncome > 29207) {
+    // Add Medicare levy per client (2024-25 threshold)
+    if (client.hasMedicareLevy && totalIncome > 26000) {
       taxWithoutProperty += totalIncome * 0.02;
     }
-    if (client.hasMedicareLevy && totalIncomeWithProperty > 29207) {
+    if (client.hasMedicareLevy && totalIncomeWithProperty > 26000) {
       taxWithProperty += totalIncomeWithProperty * 0.02;
     }
     

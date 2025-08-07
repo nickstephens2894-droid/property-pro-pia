@@ -12,6 +12,7 @@ import { FieldUpdateConfirmDialog } from "@/components/FieldUpdateConfirmDialog"
 import { AccordionCompletionIndicator } from "@/components/AccordionCompletionIndicator";
 import { FundingSummaryPanel } from "@/components/FundingSummaryPanel";
 import { PresetSelector } from "@/components/PresetSelector";
+import { ValidationWarnings } from "@/components/ValidationWarnings";
 import { useFieldConfirmations } from "@/hooks/useFieldConfirmations";
 import { usePropertyData, PropertyData } from "@/contexts/PropertyDataContext";
 import { 
@@ -259,6 +260,9 @@ export const PropertyInputForm = ({
         currentPropertyMethod={propertyData.currentPropertyMethod}
         currentFundingMethod={propertyData.currentFundingMethod}
       />
+      
+      {/* Validation Warnings */}
+      <ValidationWarnings />
       
       {/* Funding Summary Panel */}
       <FundingSummaryPanel />

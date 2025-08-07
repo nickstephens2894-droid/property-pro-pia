@@ -53,7 +53,7 @@ const Projections = () => {
     initialMainLoanBalance: funding.mainLoanAmount,
     initialEquityLoanBalance: funding.equityLoanAmount,
     mainInterestRate: propertyData.interestRate,
-    equityInterestRate: propertyData.equityLoanInterestRate,
+    equityInterestRate: propertyData.equityLoanInterestRate || 7.2, // Default if not set
     mainLoanTerm: propertyData.loanTerm,
     equityLoanTerm: propertyData.equityLoanTerm,
     mainLoanType: propertyData.mainLoanType,

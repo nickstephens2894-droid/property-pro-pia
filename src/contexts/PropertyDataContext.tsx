@@ -109,6 +109,8 @@ interface PropertyDataContextType {
   calculateEquityLoanAmount: () => number;
   calculateTotalProjectCost: () => number;
   calculateAvailableEquity: () => number;
+  calculateHoldingCosts: () => { landInterest: number; constructionInterest: number; total: number };
+  calculateMinimumDeposit: () => number;
 }
 
 const PropertyDataContext = createContext<PropertyDataContextType | undefined>(undefined);
@@ -144,20 +146,20 @@ const defaultPropertyData: PropertyData = {
   weeklyRent: 680, // ~4.7% gross yield
   rentalGrowthRate: 3.0,
   vacancyRate: 2.0,
-  constructionYear: 2020,
+  constructionYear: 2024,
   buildingValue: 600000,
-  plantEquipmentValue: 35000,
+  plantEquipmentValue: 40000, // Ensures building + plant = total if needed
   
-  // Construction-specific
+  // Construction-specific (for construction projects)
   landValue: 200000,
-  constructionValue: 550000,
+  constructionValue: 550000, // Ensures land + construction = purchase price
   constructionPeriod: 8, // months
   constructionInterestRate: 7.0, // typically higher than standard rate
   
   // Traditional Financing
   deposit: 150000,
-  loanAmount: 600000,
-  interestRate: 6.5,
+  loanAmount: 600000, // 80% of purchase price
+  interestRate: 6.8, // Current market rates
   loanTerm: 30,
   lvr: 80,
   
@@ -172,36 +174,36 @@ const defaultPropertyData: PropertyData = {
   maxLVR: 80,
   equityLoanType: 'pi',
   equityLoanIoTermYears: 3,
-  equityLoanInterestRate: 7.0,
+  equityLoanInterestRate: 7.2, // Higher rate for equity loans
   equityLoanTerm: 25,
   
-  // Deposit Management
-  depositAmount: 195300, // 20% + transaction costs
-  minimumDepositRequired: 195300,
+  // Deposit Management - Auto-calculated
+  depositAmount: 194600, // Actual amount needed for 20% + costs
+  minimumDepositRequired: 194600,
   
   // Holding Costs During Construction
   holdingCostFunding: 'cash',
   holdingCostCashPercentage: 100,
   
-  // Separate interest calculations for tax purposes
+  // Separate interest calculations for tax purposes - Auto-calculated
   landHoldingInterest: 0,
   constructionHoldingInterest: 0,
   totalHoldingCosts: 0,
   
-  // Purchase Costs
-  stampDuty: 35000,
-  legalFees: 2500,
-  inspectionFees: 800,
+  // Purchase Costs - Current market rates
+  stampDuty: 42000, // Realistic VIC stamp duty for $750k
+  legalFees: 2000,
+  inspectionFees: 600,
   
-  // Construction Costs
-  councilFees: 5000,
-  architectFees: 15000,
-  siteCosts: 8000,
+  // Construction Costs (zero for built properties)
+  councilFees: 0,
+  architectFees: 0,
+  siteCosts: 0,
   
   // Annual Expenses
   propertyManagement: 8,
-  councilRates: 2500,
-  insurance: 1200,
+  councilRates: 2800, // More realistic council rates
+  insurance: 1800, // Higher insurance costs
   repairs: 2000,
   
   // Depreciation defaults
@@ -216,6 +218,27 @@ const defaultPropertyData: PropertyData = {
 export const PropertyDataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [propertyData, setPropertyData] = useState<PropertyData>(defaultPropertyData);
 
+  // Centralized holding costs calculation
+  const calculateHoldingCosts = () => {
+    if (!propertyData.isConstructionProject) return { landInterest: 0, constructionInterest: 0, total: 0 };
+    
+    const periodYears = propertyData.constructionPeriod / 12;
+    const interestRate = propertyData.constructionInterestRate / 100;
+    
+    // Land interest during construction period (compound interest)
+    const landInterest = propertyData.landValue * ((Math.pow(1 + interestRate, periodYears) - 1));
+    
+    // Progressive construction interest (assumes average 50% drawdown over period)
+    const averageConstructionDrawdown = propertyData.constructionValue * 0.5;
+    const constructionInterest = averageConstructionDrawdown * ((Math.pow(1 + interestRate, periodYears) - 1));
+    
+    return {
+      landInterest: Math.round(landInterest),
+      constructionInterest: Math.round(constructionInterest),
+      total: Math.round(landInterest + constructionInterest)
+    };
+  };
+
   const calculateTotalProjectCost = () => {
     const baseCosts = propertyData.isConstructionProject 
       ? propertyData.landValue + propertyData.constructionValue 
@@ -225,13 +248,28 @@ export const PropertyDataProvider: React.FC<{ children: ReactNode }> = ({ childr
     const developmentCosts = propertyData.isConstructionProject 
       ? propertyData.councilFees + propertyData.architectFees + propertyData.siteCosts 
       : 0;
-    const holdingCosts = propertyData.isConstructionProject ? propertyData.totalHoldingCosts : 0;
+    
+    // Include capitalized holding costs for construction projects
+    const holdingCosts = propertyData.isConstructionProject ? calculateHoldingCosts().total : 0;
     
     return baseCosts + transactionCosts + developmentCosts + holdingCosts;
   };
 
   const calculateAvailableEquity = () => {
     return Math.max(0, (propertyData.primaryPropertyValue * propertyData.maxLVR / 100) - propertyData.existingDebt);
+  };
+
+  const calculateMinimumDeposit = () => {
+    const totalProjectCost = calculateTotalProjectCost();
+    if (propertyData.useEquityFunding) {
+      // With equity funding, deposit is only what equity can't cover
+      const availableEquity = calculateAvailableEquity();
+      const fundingGap = totalProjectCost - propertyData.loanAmount;
+      return Math.max(0, fundingGap - availableEquity);
+    } else {
+      // Traditional funding: total cost minus loan amount
+      return Math.max(0, totalProjectCost - propertyData.loanAmount);
+    }
   };
 
   const calculateEquityLoanAmount = () => {
@@ -275,7 +313,9 @@ export const PropertyDataProvider: React.FC<{ children: ReactNode }> = ({ childr
       applyPreset,
       calculateEquityLoanAmount,
       calculateTotalProjectCost,
-      calculateAvailableEquity
+      calculateAvailableEquity,
+      calculateHoldingCosts,
+      calculateMinimumDeposit
     }}>
       {children}
     </PropertyDataContext.Provider>

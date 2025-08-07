@@ -77,8 +77,8 @@ const getPropertyMethodData = (method: PropertyMethod): Partial<PropertyData> =>
         constructionYear: 2024,
         constructionPeriod: 8,
         constructionInterestRate: 7.0,
-        buildingValue: 495000, // 90% of construction value
-        plantEquipmentValue: 55000, // 10% of construction value
+        buildingValue: 495000, // 90% of construction value - fixed relationship
+        plantEquipmentValue: 55000, // 10% of construction value - ensures total = 550000
         weeklyRent: 680,
         rentalGrowthRate: 3.0,
         vacancyRate: 2.0,
@@ -98,10 +98,10 @@ const getPropertyMethodData = (method: PropertyMethod): Partial<PropertyData> =>
         // Depreciation
         depreciationMethod: 'prime-cost' as const,
         isNewProperty: true,
-        // Calculated holding costs (will be updated by calculation)
-        landHoldingInterest: 7467,
-        constructionHoldingInterest: 12833,
-        totalHoldingCosts: 20300
+        // Holding costs will be auto-calculated
+        landHoldingInterest: 0,
+        constructionHoldingInterest: 0,
+        totalHoldingCosts: 0
       };
 
     case 'built-first-owner':
@@ -199,7 +199,7 @@ const getFundingMethodData = (method: FundingMethod, propertyValue: number = 750
         lvr: 80,
         depositAmount: totalCosts - (propertyValue * 0.8),
         minimumDepositRequired: totalCosts - (propertyValue * 0.8),
-        interestRate: 6.8,
+        interestRate: 6.8, // Consistent with other presets
         loanTerm: 30,
         mainLoanType: 'io' as const,
         ioTermYears: 5,
@@ -222,7 +222,7 @@ const getFundingMethodData = (method: FundingMethod, propertyValue: number = 750
         lvr: 80,
         depositAmount: 0, // Covered by equity
         minimumDepositRequired: totalCosts - (propertyValue * 0.8),
-        interestRate: 6.8,
+        interestRate: 6.8, // Consistent with other presets
         loanTerm: 30,
         mainLoanType: 'io' as const,
         ioTermYears: 5,
@@ -245,7 +245,7 @@ const getFundingMethodData = (method: FundingMethod, propertyValue: number = 750
         lvr: 0,
         depositAmount: 0, // All covered by equity
         minimumDepositRequired: totalCosts,
-        interestRate: 6.8,
+        interestRate: 6.8, // Consistent with other presets
         loanTerm: 30,
         mainLoanType: 'io' as const,
         ioTermYears: 5,
