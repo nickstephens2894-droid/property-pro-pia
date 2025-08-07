@@ -1,13 +1,11 @@
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Slider } from "@/components/ui/slider";
-import { Badge } from "@/components/ui/badge";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ArrowLeft, Download, TrendingUp, TrendingDown, ChevronDown, ChevronRight } from "lucide-react";
+import { ArrowLeft, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { usePropertyData } from "@/contexts/PropertyDataContext";
+import ProjectionsTable from "@/components/ProjectionsTable";
 
 interface YearProjection {
   year: number;
@@ -96,11 +94,10 @@ const Projections = () => {
     depreciationYear1: 15000
   });
 
-  const [yearRange, setYearRange] = useState([1, 8]);
-  const [showLoanDetails, setShowLoanDetails] = useState(false);
+  const [yearRange, setYearRange] = useState<[number, number]>([1, 8]);
 
   // Validate year range (max 25 year span)
-  const validatedYearRange = useMemo(() => {
+  const validatedYearRange = useMemo((): [number, number] => {
     const [start, end] = yearRange;
     const span = end - start + 1;
     if (span > 25) {
@@ -348,7 +345,7 @@ const Projections = () => {
                 <div className="px-3">
                   <Slider
                     value={yearRange}
-                    onValueChange={setYearRange}
+                    onValueChange={(value) => setYearRange([value[0], value[1]])}
                     max={40}
                     min={1}
                     step={1}
@@ -430,236 +427,13 @@ const Projections = () => {
             <CardDescription>Financial breakdown with metrics in rows and years in columns</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="overflow-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="sticky left-0 bg-background z-10 min-w-[180px]">End of year</TableHead>
-                    <TableHead className="text-center bg-muted/30 font-medium">Input</TableHead>
-                    {filteredProjections.map((projection) => (
-                      <TableHead key={projection.year} className="text-center min-w-[100px] font-medium">
-                        {projection.year}yr
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {/* Property Value */}
-                  <TableRow>
-                    <TableCell className="sticky left-0 bg-background z-10 font-medium">Property value</TableCell>
-                    <TableCell className="text-center bg-muted/30 font-mono text-sm">{formatCurrency(assumptions.initialPropertyValue)}</TableCell>
-                    {filteredProjections.map((projection) => (
-                      <TableCell key={projection.year} className="text-center font-mono text-sm">{formatCurrency(projection.propertyValue)}</TableCell>
-                    ))}
-                  </TableRow>
-                  
-                  {/* Main Loan Balance */}
-                  <TableRow>
-                    <TableCell className="sticky left-0 bg-background z-10 font-medium">Main loan balance</TableCell>
-                    <TableCell className="text-center bg-muted/30 font-mono text-sm">{formatCurrency(assumptions.initialMainLoanBalance)}</TableCell>
-                    {filteredProjections.map((projection) => (
-                      <TableCell key={projection.year} className="text-center font-mono text-sm">{formatCurrency(projection.mainLoanBalance)}</TableCell>
-                    ))}
-                  </TableRow>
-
-                  {/* Annual Mortgage Repayments - Expandable */}
-                  <Collapsible open={showLoanDetails} onOpenChange={setShowLoanDetails}>
-                    <CollapsibleTrigger asChild>
-                      <TableRow className="hover:bg-muted/50 cursor-pointer">
-                        <TableCell className="sticky left-0 bg-background z-10 font-medium flex items-center gap-2">
-                          {showLoanDetails ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                          Annual mortgage repayments
-                        </TableCell>
-                        <TableCell className="text-center bg-muted/30 font-mono text-sm">
-                          {formatCurrency((assumptions.initialMainLoanBalance * (assumptions.mainInterestRate / 100)) + 
-                                         (assumptions.initialEquityLoanBalance * (assumptions.equityInterestRate / 100)))}
-                        </TableCell>
-                        {filteredProjections.map((projection) => (
-                          <TableCell key={projection.year} className="text-center font-mono text-sm">
-                            {formatCurrency(projection.mainLoanPayment + projection.equityLoanPayment)}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      {/* Main Loan Details */}
-                      <TableRow className="bg-blue-50 dark:bg-blue-950/20">
-                        <TableCell className="sticky left-0 bg-blue-50 dark:bg-blue-950/20 z-10 pl-8 text-sm">
-                          Main Loan ({assumptions.mainLoanType.toUpperCase()})
-                        </TableCell>
-                        <TableCell className="text-center bg-blue-100 dark:bg-blue-900/30 font-mono text-xs">
-                          {formatCurrency(assumptions.initialMainLoanBalance)} @ {formatPercentage(assumptions.mainInterestRate)}
-                        </TableCell>
-                        {filteredProjections.map((projection) => (
-                          <TableCell key={projection.year} className="text-center font-mono text-xs">
-                            <div>{formatCurrency(projection.mainLoanPayment)}</div>
-                            <Badge variant={projection.mainLoanIOStatus === 'IO' ? 'secondary' : 'default'} className="text-xs">
-                              {projection.mainLoanIOStatus}
-                            </Badge>
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                      
-                      {/* Equity Loan Details (if applicable) */}
-                      {assumptions.initialEquityLoanBalance > 0 && (
-                        <TableRow className="bg-green-50 dark:bg-green-950/20">
-                          <TableCell className="sticky left-0 bg-green-50 dark:bg-green-950/20 z-10 pl-8 text-sm">
-                            Equity Loan ({assumptions.equityLoanType.toUpperCase()})
-                          </TableCell>
-                          <TableCell className="text-center bg-green-100 dark:bg-green-900/30 font-mono text-xs">
-                            {formatCurrency(assumptions.initialEquityLoanBalance)} @ {formatPercentage(assumptions.equityInterestRate)}
-                          </TableCell>
-                          {filteredProjections.map((projection) => (
-                            <TableCell key={projection.year} className="text-center font-mono text-xs">
-                              <div>{formatCurrency(projection.equityLoanPayment)}</div>
-                              <Badge variant={projection.equityLoanIOStatus === 'IO' ? 'secondary' : 'default'} className="text-xs">
-                                {projection.equityLoanIOStatus}
-                              </Badge>
-                            </TableCell>
-                          ))}
-                        </TableRow>
-                      )}
-                    </CollapsibleContent>
-                  </Collapsible>
-                  
-                  {/* Equity */}
-                  <TableRow>
-                    <TableCell className="sticky left-0 bg-background z-10 font-medium">Equity</TableCell>
-                    <TableCell className="text-center bg-muted/30 font-mono text-sm text-destructive">{formatCurrency(assumptions.initialPropertyValue - assumptions.initialMainLoanBalance - assumptions.initialEquityLoanBalance)}</TableCell>
-                    {filteredProjections.map((projection) => (
-                      <TableCell key={projection.year} className={`text-center font-mono text-sm ${projection.propertyEquity < 0 ? 'text-destructive' : 'text-foreground'}`}>
-                        {formatCurrency(projection.propertyEquity)}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                  
-                  {/* Capital Growth Rate */}
-                  <TableRow>
-                    <TableCell className="sticky left-0 bg-background z-10 font-medium">Capital growth rate</TableCell>
-                    <TableCell className="text-center bg-muted/30 font-mono text-sm">{formatPercentage(assumptions.capitalGrowthRate)}</TableCell>
-                    {filteredProjections.map((projection) => (
-                      <TableCell key={projection.year} className="text-center font-mono text-sm">{formatPercentage(assumptions.capitalGrowthRate)}</TableCell>
-                    ))}
-                  </TableRow>
-                  
-                  {/* Inflation Rate */}
-                  <TableRow>
-                    <TableCell className="sticky left-0 bg-background z-10 font-medium">Inflation rate (CPI)</TableCell>
-                    <TableCell className="text-center bg-muted/30 font-mono text-sm">{formatPercentage(assumptions.expenseInflationRate)}</TableCell>
-                    {filteredProjections.map((projection) => (
-                      <TableCell key={projection.year} className="text-center font-mono text-sm">{formatPercentage(assumptions.expenseInflationRate)}</TableCell>
-                    ))}
-                  </TableRow>
-                  
-                  {/* Section Header - Gross rent/week */}
-                  <TableRow className="bg-muted/50">
-                    <TableCell className="sticky left-0 bg-muted/50 z-10 font-bold">Gross rent /week</TableCell>
-                    <TableCell className="text-center bg-muted font-mono text-sm">${assumptions.initialWeeklyRent}</TableCell>
-                    {filteredProjections.map((projection) => (
-                      <TableCell key={projection.year} className="text-center bg-muted/50 font-mono text-sm">
-                        {Math.round(projection.rentalIncome / 52)}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                  
-                  {/* Section Header - Cash deductions */}
-                  <TableRow className="bg-muted/30">
-                    <TableCell className="sticky left-0 bg-muted/30 z-10 font-bold">Cash deductions</TableCell>
-                    <TableCell className="text-center bg-muted/60"></TableCell>
-                    {filteredProjections.map((projection) => (
-                      <TableCell key={projection.year} className="text-center bg-muted/30"></TableCell>
-                    ))}
-                  </TableRow>
-                  
-                  {/* Interest */}
-                  <TableRow>
-                    <TableCell className="sticky left-0 bg-background z-10 font-medium">Interest (I/O)</TableCell>
-                    <TableCell className="text-center bg-muted/30 font-mono text-sm">{formatPercentage(assumptions.mainInterestRate)}</TableCell>
-                    {filteredProjections.map((projection) => (
-                      <TableCell key={projection.year} className="text-center font-mono text-sm">{formatCurrency(projection.totalInterest)}</TableCell>
-                    ))}
-                  </TableRow>
-                  
-                  {/* Rental Expenses */}
-                  <TableRow>
-                    <TableCell className="sticky left-0 bg-background z-10 font-medium">Rental expenses</TableCell>
-                    <TableCell className="text-center bg-muted/30 font-mono text-sm">{formatPercentage(assumptions.propertyManagementRate)}</TableCell>
-                    {filteredProjections.map((projection) => (
-                      <TableCell key={projection.year} className="text-center font-mono text-sm">{formatCurrency(projection.otherExpenses)}</TableCell>
-                    ))}
-                  </TableRow>
-                  
-                  {/* Pre-tax Cash Flow */}
-                  <TableRow className="bg-muted/50">
-                    <TableCell className="sticky left-0 bg-muted/50 z-10 font-bold">Pre-tax cash flow</TableCell>
-                    <TableCell className="text-center bg-muted font-mono text-sm">$0</TableCell>
-                    {filteredProjections.map((projection) => (
-                      <TableCell key={projection.year} className={`text-center bg-muted/50 font-mono text-sm ${(projection.rentalIncome - projection.totalInterest - projection.otherExpenses) < 0 ? 'text-destructive' : 'text-foreground'}`}>
-                        {formatCurrency(projection.rentalIncome - projection.totalInterest - projection.otherExpenses)}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                  
-                  {/* Section Header - Non-cash deductions */}
-                  <TableRow className="bg-muted/30">
-                    <TableCell className="sticky left-0 bg-muted/30 z-10 font-bold">Non-cash deductions</TableCell>
-                    <TableCell className="text-center bg-muted/60"></TableCell>
-                    {filteredProjections.map((projection) => (
-                      <TableCell key={projection.year} className="text-center bg-muted/30"></TableCell>
-                    ))}
-                  </TableRow>
-                  
-                  {/* Depreciation of building */}
-                  <TableRow>
-                    <TableCell className="sticky left-0 bg-background z-10 font-medium">Deprec.of building</TableCell>
-                    <TableCell className="text-center bg-muted/30 font-mono text-sm">2.50%</TableCell>
-                    {filteredProjections.map((projection) => (
-                      <TableCell key={projection.year} className="text-center font-mono text-sm">{formatCurrency(projection.depreciation * 0.6)}</TableCell>
-                    ))}
-                  </TableRow>
-                  
-                  {/* Depreciation of fittings */}
-                  <TableRow>
-                    <TableCell className="sticky left-0 bg-background z-10 font-medium">Deprec.of fittings</TableCell>
-                    <TableCell className="text-center bg-muted/30 font-mono text-sm">$39,000</TableCell>
-                    {filteredProjections.map((projection) => (
-                      <TableCell key={projection.year} className="text-center font-mono text-sm">{formatCurrency(projection.depreciation * 0.4)}</TableCell>
-                    ))}
-                  </TableRow>
-                  
-                  {/* Total deductions */}
-                  <TableRow>
-                    <TableCell className="sticky left-0 bg-background z-10 font-medium">Total deductions</TableCell>
-                    <TableCell className="text-center bg-muted/30"></TableCell>
-                    {filteredProjections.map((projection) => (
-                      <TableCell key={projection.year} className="text-center font-mono text-sm">{formatCurrency(projection.totalInterest + projection.otherExpenses + projection.depreciation)}</TableCell>
-                    ))}
-                  </TableRow>
-                  
-                  {/* Tax credit */}
-                  <TableRow>
-                    <TableCell className="sticky left-0 bg-background z-10 font-medium">Tax credit (joint)</TableCell>
-                    <TableCell className="text-center bg-muted/30 font-mono text-sm">${assumptions.marginalTaxRate}%</TableCell>
-                    {filteredProjections.map((projection) => (
-                      <TableCell key={projection.year} className={`text-center font-mono text-sm ${projection.taxBenefit > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {formatCurrency(Math.max(0, projection.taxBenefit))}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                  
-                  {/* After-tax Cash Flow */}
-                  <TableRow className="bg-muted/50 border-t-2">
-                    <TableCell className="sticky left-0 bg-muted/50 z-10 font-bold">After-tax cash flow</TableCell>
-                    <TableCell className="text-center bg-muted font-mono text-sm">$0</TableCell>
-                    {filteredProjections.map((projection) => (
-                      <TableCell key={projection.year} className={`text-center bg-muted/50 font-mono text-sm font-bold ${projection.afterTaxCashFlow >= 0 ? 'text-green-600' : 'text-destructive'}`}>
-                        {formatCurrency(projection.afterTaxCashFlow)}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
+            <ProjectionsTable
+              projections={projections}
+              assumptions={assumptions}
+              validatedYearRange={validatedYearRange}
+              formatCurrency={formatCurrency}
+              formatPercentage={formatPercentage}
+            />
           </CardContent>
         </Card>
       </div>
