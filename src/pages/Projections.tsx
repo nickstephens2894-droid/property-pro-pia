@@ -47,6 +47,18 @@ const Projections = () => {
     depreciationYear1: 15000
   });
 
+  const [yearRange, setYearRange] = useState([1, 8]);
+
+  // Validate year range (max 25 year span)
+  const validatedYearRange = useMemo(() => {
+    const [start, end] = yearRange;
+    const span = end - start + 1;
+    if (span > 25) {
+      return [start, start + 24];
+    }
+    return [start, end];
+  }, [yearRange]);
+
   const projections = useMemo(() => {
     const years: YearProjection[] = [];
     const annualRent = assumptions.initialWeeklyRent * 52;
@@ -133,6 +145,11 @@ const Projections = () => {
     
     return years;
   }, [assumptions]);
+
+  // Filter projections based on selected year range
+  const filteredProjections = projections.filter(p => 
+    p.year >= validatedYearRange[0] && p.year <= validatedYearRange[1]
+  );
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-AU', {
@@ -226,68 +243,86 @@ const Projections = () => {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Scenario Controls</CardTitle>
-            <CardDescription>Adjust key assumptions to see different projections</CardDescription>
+            <CardDescription>Adjust key assumptions and projection range</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Capital Growth Rate</label>
+            <div className="space-y-6">
+              {/* Year Range Selector */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium">Projection Range (Years {yearRange[0]} - {yearRange[1]})</label>
                 <div className="px-3">
                   <Slider
-                    value={[assumptions.capitalGrowthRate]}
-                    onValueChange={(value) => setAssumptions(prev => ({ ...prev, capitalGrowthRate: value[0] }))}
-                    max={15}
-                    min={0}
-                    step={0.5}
-                    className="w-full"
-                  />
-                </div>
-                <div className="text-center text-sm text-muted-foreground">{formatPercentage(assumptions.capitalGrowthRate)}</div>
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Rental Growth Rate</label>
-                <div className="px-3">
-                  <Slider
-                    value={[assumptions.rentalGrowthRate]}
-                    onValueChange={(value) => setAssumptions(prev => ({ ...prev, rentalGrowthRate: value[0] }))}
-                    max={10}
-                    min={0}
-                    step={0.5}
-                    className="w-full"
-                  />
-                </div>
-                <div className="text-center text-sm text-muted-foreground">{formatPercentage(assumptions.rentalGrowthRate)}</div>
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Interest Rate</label>
-                <div className="px-3">
-                  <Slider
-                    value={[assumptions.interestRate]}
-                    onValueChange={(value) => setAssumptions(prev => ({ ...prev, interestRate: value[0] }))}
-                    max={12}
-                    min={3}
-                    step={0.25}
-                    className="w-full"
-                  />
-                </div>
-                <div className="text-center text-sm text-muted-foreground">{formatPercentage(assumptions.interestRate)}</div>
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Marginal Tax Rate</label>
-                <div className="px-3">
-                  <Slider
-                    value={[assumptions.marginalTaxRate]}
-                    onValueChange={(value) => setAssumptions(prev => ({ ...prev, marginalTaxRate: value[0] }))}
-                    max={47}
-                    min={0}
+                    value={yearRange}
+                    onValueChange={setYearRange}
+                    max={40}
+                    min={1}
                     step={1}
                     className="w-full"
                   />
                 </div>
-                <div className="text-center text-sm text-muted-foreground">{formatPercentage(assumptions.marginalTaxRate)}</div>
+                <div className="text-center text-sm text-muted-foreground">Maximum 25 year range</div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Capital Growth Rate</label>
+                  <div className="px-3">
+                    <Slider
+                      value={[assumptions.capitalGrowthRate]}
+                      onValueChange={(value) => setAssumptions(prev => ({ ...prev, capitalGrowthRate: value[0] }))}
+                      max={15}
+                      min={0}
+                      step={0.5}
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="text-center text-sm text-muted-foreground">{formatPercentage(assumptions.capitalGrowthRate)}</div>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Rental Growth Rate</label>
+                  <div className="px-3">
+                    <Slider
+                      value={[assumptions.rentalGrowthRate]}
+                      onValueChange={(value) => setAssumptions(prev => ({ ...prev, rentalGrowthRate: value[0] }))}
+                      max={10}
+                      min={0}
+                      step={0.5}
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="text-center text-sm text-muted-foreground">{formatPercentage(assumptions.rentalGrowthRate)}</div>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Interest Rate</label>
+                  <div className="px-3">
+                    <Slider
+                      value={[assumptions.interestRate]}
+                      onValueChange={(value) => setAssumptions(prev => ({ ...prev, interestRate: value[0] }))}
+                      max={12}
+                      min={3}
+                      step={0.25}
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="text-center text-sm text-muted-foreground">{formatPercentage(assumptions.interestRate)}</div>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Marginal Tax Rate</label>
+                  <div className="px-3">
+                    <Slider
+                      value={[assumptions.marginalTaxRate]}
+                      onValueChange={(value) => setAssumptions(prev => ({ ...prev, marginalTaxRate: value[0] }))}
+                      max={47}
+                      min={0}
+                      step={1}
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="text-center text-sm text-muted-foreground">{formatPercentage(assumptions.marginalTaxRate)}</div>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -296,62 +331,177 @@ const Projections = () => {
         {/* Projections Table */}
         <Card>
           <CardHeader>
-            <CardTitle>40-Year Financial Projections</CardTitle>
-            <CardDescription>Detailed year-by-year breakdown of investment performance</CardDescription>
+            <CardTitle>Investment Analysis - Projections over {validatedYearRange[1] - validatedYearRange[0] + 1} years</CardTitle>
+            <CardDescription>Financial breakdown with metrics in rows and years in columns</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="overflow-auto max-h-[600px]">
+            <div className="overflow-auto">
               <Table>
-                <TableHeader className="sticky top-0 bg-background z-10">
+                <TableHeader>
                   <TableRow>
-                    <TableHead className="sticky left-0 bg-background z-20 min-w-[60px]">Year</TableHead>
-                    <TableHead className="text-right min-w-[120px]">Rental Income</TableHead>
-                    <TableHead className="text-right min-w-[120px]">Property Value</TableHead>
-                    <TableHead className="text-right min-w-[120px]">Loan Balance</TableHead>
-                    <TableHead className="text-right min-w-[110px]">Interest</TableHead>
-                    <TableHead className="text-right min-w-[120px]">Other Expenses</TableHead>
-                    <TableHead className="text-right min-w-[110px]">Depreciation</TableHead>
-                    <TableHead className="text-right min-w-[120px]">Taxable Income</TableHead>
-                    <TableHead className="text-right min-w-[110px]">Tax Benefit</TableHead>
-                    <TableHead className="text-right min-w-[120px]">Cash Flow</TableHead>
-                    <TableHead className="text-right min-w-[130px]">Cumulative CF</TableHead>
-                    <TableHead className="text-right min-w-[120px]">Property Equity</TableHead>
+                    <TableHead className="sticky left-0 bg-background z-10 min-w-[180px]">End of year</TableHead>
+                    <TableHead className="text-center bg-muted/30 font-medium">Input</TableHead>
+                    {filteredProjections.map((projection) => (
+                      <TableHead key={projection.year} className="text-center min-w-[100px] font-medium">
+                        {projection.year}yr
+                      </TableHead>
+                    ))}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {projections.map((projection) => (
-                    <TableRow key={projection.year} className={projection.year <= 10 ? "bg-muted/20" : ""}>
-                      <TableCell className="sticky left-0 bg-background z-10 font-medium">
-                        <Badge variant={projection.year <= 10 ? "default" : "secondary"}>
-                          {projection.year}
-                        </Badge>
+                  {/* Property Value */}
+                  <TableRow>
+                    <TableCell className="sticky left-0 bg-background z-10 font-medium">Property value</TableCell>
+                    <TableCell className="text-center bg-muted/30 font-mono text-sm">{formatCurrency(assumptions.initialPropertyValue)}</TableCell>
+                    {filteredProjections.map((projection) => (
+                      <TableCell key={projection.year} className="text-center font-mono text-sm">{formatCurrency(projection.propertyValue)}</TableCell>
+                    ))}
+                  </TableRow>
+                  
+                  {/* Loan Amount */}
+                  <TableRow>
+                    <TableCell className="sticky left-0 bg-background z-10 font-medium">Loan amount</TableCell>
+                    <TableCell className="text-center bg-muted/30 font-mono text-sm">{formatCurrency(assumptions.initialLoanBalance)}</TableCell>
+                    {filteredProjections.map((projection) => (
+                      <TableCell key={projection.year} className="text-center font-mono text-sm">{formatCurrency(projection.mainLoanBalance)}</TableCell>
+                    ))}
+                  </TableRow>
+                  
+                  {/* Equity */}
+                  <TableRow>
+                    <TableCell className="sticky left-0 bg-background z-10 font-medium">Equity</TableCell>
+                    <TableCell className="text-center bg-muted/30 font-mono text-sm text-destructive">{formatCurrency(assumptions.initialPropertyValue - assumptions.initialLoanBalance)}</TableCell>
+                    {filteredProjections.map((projection) => (
+                      <TableCell key={projection.year} className={`text-center font-mono text-sm ${projection.propertyEquity < 0 ? 'text-destructive' : 'text-foreground'}`}>
+                        {formatCurrency(projection.propertyEquity)}
                       </TableCell>
-                      <TableCell className="text-right font-mono text-sm">{formatCurrency(projection.rentalIncome)}</TableCell>
-                      <TableCell className="text-right font-mono text-sm">{formatCurrency(projection.propertyValue)}</TableCell>
-                      <TableCell className="text-right font-mono text-sm">{formatCurrency(projection.mainLoanBalance)}</TableCell>
-                      <TableCell className="text-right font-mono text-sm">{formatCurrency(projection.totalInterest)}</TableCell>
-                      <TableCell className="text-right font-mono text-sm">{formatCurrency(projection.otherExpenses)}</TableCell>
-                      <TableCell className="text-right font-mono text-sm">{formatCurrency(projection.depreciation)}</TableCell>
-                      <TableCell className={`text-right font-mono text-sm ${projection.taxableIncome < 0 ? 'text-destructive' : 'text-foreground'}`}>
-                        {formatCurrency(projection.taxableIncome)}
+                    ))}
+                  </TableRow>
+                  
+                  {/* Capital Growth Rate */}
+                  <TableRow>
+                    <TableCell className="sticky left-0 bg-background z-10 font-medium">Capital growth rate</TableCell>
+                    <TableCell className="text-center bg-muted/30 font-mono text-sm">{formatPercentage(assumptions.capitalGrowthRate)}</TableCell>
+                    {filteredProjections.map((projection) => (
+                      <TableCell key={projection.year} className="text-center font-mono text-sm">{formatPercentage(assumptions.capitalGrowthRate)}</TableCell>
+                    ))}
+                  </TableRow>
+                  
+                  {/* Inflation Rate */}
+                  <TableRow>
+                    <TableCell className="sticky left-0 bg-background z-10 font-medium">Inflation rate (CPI)</TableCell>
+                    <TableCell className="text-center bg-muted/30 font-mono text-sm">{formatPercentage(assumptions.expenseInflationRate)}</TableCell>
+                    {filteredProjections.map((projection) => (
+                      <TableCell key={projection.year} className="text-center font-mono text-sm">{formatPercentage(assumptions.expenseInflationRate)}</TableCell>
+                    ))}
+                  </TableRow>
+                  
+                  {/* Section Header - Gross rent/week */}
+                  <TableRow className="bg-muted/50">
+                    <TableCell className="sticky left-0 bg-muted/50 z-10 font-bold">Gross rent /week</TableCell>
+                    <TableCell className="text-center bg-muted font-mono text-sm">${assumptions.initialWeeklyRent}</TableCell>
+                    {filteredProjections.map((projection) => (
+                      <TableCell key={projection.year} className="text-center bg-muted/50 font-mono text-sm">
+                        {Math.round(projection.rentalIncome / 52)}
                       </TableCell>
-                      <TableCell className={`text-right font-mono text-sm ${projection.taxBenefit > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {formatCurrency(projection.taxBenefit)}
+                    ))}
+                  </TableRow>
+                  
+                  {/* Section Header - Cash deductions */}
+                  <TableRow className="bg-muted/30">
+                    <TableCell className="sticky left-0 bg-muted/30 z-10 font-bold">Cash deductions</TableCell>
+                    <TableCell className="text-center bg-muted/60"></TableCell>
+                    {filteredProjections.map((projection) => (
+                      <TableCell key={projection.year} className="text-center bg-muted/30"></TableCell>
+                    ))}
+                  </TableRow>
+                  
+                  {/* Interest */}
+                  <TableRow>
+                    <TableCell className="sticky left-0 bg-background z-10 font-medium">Interest (I/O)</TableCell>
+                    <TableCell className="text-center bg-muted/30 font-mono text-sm">{formatPercentage(assumptions.interestRate)}</TableCell>
+                    {filteredProjections.map((projection) => (
+                      <TableCell key={projection.year} className="text-center font-mono text-sm">{formatCurrency(projection.totalInterest)}</TableCell>
+                    ))}
+                  </TableRow>
+                  
+                  {/* Rental Expenses */}
+                  <TableRow>
+                    <TableCell className="sticky left-0 bg-background z-10 font-medium">Rental expenses</TableCell>
+                    <TableCell className="text-center bg-muted/30 font-mono text-sm">{formatPercentage(assumptions.propertyManagementRate)}</TableCell>
+                    {filteredProjections.map((projection) => (
+                      <TableCell key={projection.year} className="text-center font-mono text-sm">{formatCurrency(projection.otherExpenses)}</TableCell>
+                    ))}
+                  </TableRow>
+                  
+                  {/* Pre-tax Cash Flow */}
+                  <TableRow className="bg-muted/50">
+                    <TableCell className="sticky left-0 bg-muted/50 z-10 font-bold">Pre-tax cash flow</TableCell>
+                    <TableCell className="text-center bg-muted font-mono text-sm">$0</TableCell>
+                    {filteredProjections.map((projection) => (
+                      <TableCell key={projection.year} className={`text-center bg-muted/50 font-mono text-sm ${(projection.rentalIncome - projection.totalInterest - projection.otherExpenses) < 0 ? 'text-destructive' : 'text-foreground'}`}>
+                        {formatCurrency(projection.rentalIncome - projection.totalInterest - projection.otherExpenses)}
                       </TableCell>
-                      <TableCell className={`text-right font-mono text-sm flex items-center gap-1 ${projection.afterTaxCashFlow >= 0 ? 'text-green-600' : 'text-destructive'}`}>
-                        {projection.afterTaxCashFlow >= 0 ? (
-                          <TrendingUp className="h-3 w-3" />
-                        ) : (
-                          <TrendingDown className="h-3 w-3" />
-                        )}
+                    ))}
+                  </TableRow>
+                  
+                  {/* Section Header - Non-cash deductions */}
+                  <TableRow className="bg-muted/30">
+                    <TableCell className="sticky left-0 bg-muted/30 z-10 font-bold">Non-cash deductions</TableCell>
+                    <TableCell className="text-center bg-muted/60"></TableCell>
+                    {filteredProjections.map((projection) => (
+                      <TableCell key={projection.year} className="text-center bg-muted/30"></TableCell>
+                    ))}
+                  </TableRow>
+                  
+                  {/* Depreciation of building */}
+                  <TableRow>
+                    <TableCell className="sticky left-0 bg-background z-10 font-medium">Deprec.of building</TableCell>
+                    <TableCell className="text-center bg-muted/30 font-mono text-sm">2.50%</TableCell>
+                    {filteredProjections.map((projection) => (
+                      <TableCell key={projection.year} className="text-center font-mono text-sm">{formatCurrency(projection.depreciation * 0.6)}</TableCell>
+                    ))}
+                  </TableRow>
+                  
+                  {/* Depreciation of fittings */}
+                  <TableRow>
+                    <TableCell className="sticky left-0 bg-background z-10 font-medium">Deprec.of fittings</TableCell>
+                    <TableCell className="text-center bg-muted/30 font-mono text-sm">$39,000</TableCell>
+                    {filteredProjections.map((projection) => (
+                      <TableCell key={projection.year} className="text-center font-mono text-sm">{formatCurrency(projection.depreciation * 0.4)}</TableCell>
+                    ))}
+                  </TableRow>
+                  
+                  {/* Total deductions */}
+                  <TableRow>
+                    <TableCell className="sticky left-0 bg-background z-10 font-medium">Total deductions</TableCell>
+                    <TableCell className="text-center bg-muted/30"></TableCell>
+                    {filteredProjections.map((projection) => (
+                      <TableCell key={projection.year} className="text-center font-mono text-sm">{formatCurrency(projection.totalInterest + projection.otherExpenses + projection.depreciation)}</TableCell>
+                    ))}
+                  </TableRow>
+                  
+                  {/* Tax credit */}
+                  <TableRow>
+                    <TableCell className="sticky left-0 bg-background z-10 font-medium">Tax credit (joint)</TableCell>
+                    <TableCell className="text-center bg-muted/30 font-mono text-sm">${assumptions.marginalTaxRate}%</TableCell>
+                    {filteredProjections.map((projection) => (
+                      <TableCell key={projection.year} className={`text-center font-mono text-sm ${projection.taxBenefit > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {formatCurrency(Math.max(0, projection.taxBenefit))}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                  
+                  {/* After-tax Cash Flow */}
+                  <TableRow className="bg-muted/50 border-t-2">
+                    <TableCell className="sticky left-0 bg-muted/50 z-10 font-bold">After-tax cash flow</TableCell>
+                    <TableCell className="text-center bg-muted font-mono text-sm">$0</TableCell>
+                    {filteredProjections.map((projection) => (
+                      <TableCell key={projection.year} className={`text-center bg-muted/50 font-mono text-sm font-bold ${projection.afterTaxCashFlow >= 0 ? 'text-green-600' : 'text-destructive'}`}>
                         {formatCurrency(projection.afterTaxCashFlow)}
                       </TableCell>
-                      <TableCell className={`text-right font-mono text-sm ${projection.cumulativeCashFlow >= 0 ? 'text-green-600' : 'text-destructive'}`}>
-                        {formatCurrency(projection.cumulativeCashFlow)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono text-sm">{formatCurrency(projection.propertyEquity)}</TableCell>
-                    </TableRow>
-                  ))}
+                    ))}
+                  </TableRow>
                 </TableBody>
               </Table>
             </div>
