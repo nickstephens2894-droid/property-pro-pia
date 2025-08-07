@@ -32,41 +32,16 @@ const Projections = () => {
   const navigate = useNavigate();
   const { propertyData } = usePropertyData();
   
-  // Calculate funding requirements from property data
-  const calculateFundingFromPropertyData = () => {
-    const baseCosts = propertyData.isConstructionProject 
-      ? propertyData.landValue + propertyData.constructionValue 
-      : propertyData.purchasePrice;
-    
-    const developmentCosts = propertyData.isConstructionProject 
-      ? propertyData.councilFees + propertyData.architectFees + propertyData.siteCosts 
-      : 0;
-    
-    const holdingCosts = propertyData.isConstructionProject 
-      ? propertyData.landValue * (propertyData.constructionInterestRate / 100) * (propertyData.constructionPeriod / 12)
-      : 0;
-    
-    const totalProjectCost = baseCosts + propertyData.stampDuty + propertyData.legalFees + 
-                            propertyData.inspectionFees + developmentCosts + holdingCosts;
-
-    if (propertyData.useEquityFunding) {
-      const availableEquity = Math.max(0, (propertyData.primaryPropertyValue * propertyData.maxLVR / 100) - propertyData.existingDebt);
-      const equityUsed = Math.min(availableEquity, totalProjectCost);
-      return {
-        mainLoanAmount: totalProjectCost * (propertyData.lvr / 100),
-        equityLoanAmount: equityUsed,
-        totalProjectCost
-      };
-    } else {
-      return {
-        mainLoanAmount: totalProjectCost * (propertyData.lvr / 100),
-        equityLoanAmount: 0,
-        totalProjectCost
-      };
-    }
+  // Use centralized calculations from context
+  const { calculateTotalProjectCost, calculateEquityLoanAmount } = usePropertyData();
+  
+  const funding = {
+    mainLoanAmount: propertyData.loanAmount,
+    equityLoanAmount: calculateEquityLoanAmount(),
+    totalProjectCost: calculateTotalProjectCost()
   };
 
-  const funding = calculateFundingFromPropertyData();
+  
   
   // Property assumptions derived from property data but adjustable
   const [assumptions, setAssumptions] = useState({

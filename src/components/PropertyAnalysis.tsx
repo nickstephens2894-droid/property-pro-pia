@@ -17,7 +17,7 @@ interface Client {
 
 const PropertyAnalysis = () => {
   const navigate = useNavigate();
-  const { propertyData, updateField } = usePropertyData();
+  const { propertyData, updateField, calculateTotalProjectCost, calculateEquityLoanAmount } = usePropertyData();
 
   // Tax calculations
   const calculateTax = (income: number) => {
@@ -127,48 +127,20 @@ const PropertyAnalysis = () => {
 
   const holdingCosts = calculateHoldingCosts();
 
-  // Calculate total project costs
-  const baseCosts = propertyData.isConstructionProject 
-    ? propertyData.landValue + propertyData.constructionValue 
-    : propertyData.purchasePrice;
-  
-  const developmentCosts = propertyData.isConstructionProject 
-    ? propertyData.councilFees + propertyData.architectFees + propertyData.siteCosts 
-    : 0;
-  
-  const totalProjectCost = baseCosts + propertyData.stampDuty + propertyData.legalFees + 
-                          propertyData.inspectionFees + developmentCosts + holdingCosts.total;
+  // Use centralized calculations from context
+  const totalProjectCost = calculateTotalProjectCost();
+  const equityLoanAmount = calculateEquityLoanAmount();
 
-  // Calculate funding requirements
-  const calculateFundingRequirements = () => {
-    if (propertyData.useEquityFunding) {
-      const availableEquity = Math.max(0, (propertyData.primaryPropertyValue * propertyData.maxLVR / 100) - propertyData.existingDebt);
-      const equityUsed = Math.min(availableEquity, totalProjectCost);
-      const additionalCashRequired = Math.max(0, totalProjectCost - equityUsed);
-      
-      return {
-        totalRequired: totalProjectCost,
-        equityUsed,
-        cashRequired: additionalCashRequired,
-        availableEquity,
-        loanAmount: equityUsed
-      };
-    } else {
-      // Traditional LVR financing
-      const loanAmount = totalProjectCost * (propertyData.lvr / 100);
-      const cashRequired = totalProjectCost - loanAmount;
-      
-      return {
-        totalRequired: totalProjectCost,
-        equityUsed: 0,
-        cashRequired,
-        availableEquity: 0,
-        loanAmount
-      };
-    }
+  // Calculate funding requirements using centralized calculations
+  const funding = {
+    totalRequired: totalProjectCost,
+    equityUsed: equityLoanAmount,
+    cashRequired: propertyData.depositAmount,
+    availableEquity: propertyData.useEquityFunding 
+      ? Math.max(0, (propertyData.primaryPropertyValue * propertyData.maxLVR / 100) - propertyData.existingDebt)
+      : 0,
+    loanAmount: propertyData.loanAmount
   };
-
-  const funding = calculateFundingRequirements();
 
   // Enhanced loan payment calculations
   const calculateLoanPayments = (loanAmount: number, interestRate: number, totalTerm: number, loanType: 'io' | 'pi', ioTermYears: number = 0) => {

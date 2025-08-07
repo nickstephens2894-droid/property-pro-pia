@@ -3,14 +3,12 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { DollarSign, AlertTriangle, CheckCircle, TrendingUp } from "lucide-react";
-import { PropertyData } from "@/contexts/PropertyDataContext";
+import { usePropertyData } from "@/contexts/PropertyDataContext";
 
-interface FundingSummaryProps {
-  propertyData: PropertyData;
-}
+export const FundingSummaryPanel = () => {
+  const { propertyData, calculateTotalProjectCost, calculateEquityLoanAmount } = usePropertyData();
 
-export const FundingSummaryPanel = ({ propertyData }: FundingSummaryProps) => {
-  // Calculate total purchase costs
+  // Calculate breakdown for display
   const purchaseCosts = propertyData.isConstructionProject
     ? propertyData.landValue + propertyData.constructionValue
     : propertyData.purchasePrice;
@@ -23,17 +21,13 @@ export const FundingSummaryPanel = ({ propertyData }: FundingSummaryProps) => {
   const totalConstructionCosts = propertyData.isConstructionProject
     ? propertyData.councilFees + propertyData.architectFees + propertyData.siteCosts
     : 0;
-  
-  const totalPurchaseCost = purchaseCosts + totalTransactionCosts + totalConstructionCosts;
 
-  // Calculate funding sources
+  // Calculate total purchase costs using centralized function
+  const totalPurchaseCost = calculateTotalProjectCost();
+  
+  // Calculate funding sources using centralized function
   const mainLoanAmount = propertyData.loanAmount;
-  const equityLoanAmount = propertyData.useEquityFunding 
-    ? Math.min(
-        propertyData.primaryPropertyValue * (propertyData.maxLVR / 100) - propertyData.existingDebt,
-        totalPurchaseCost - mainLoanAmount
-      )
-    : 0;
+  const equityLoanAmount = calculateEquityLoanAmount();
   
   // Use the actual deposit amount entered by the user
   const cashDeposit = propertyData.depositAmount;

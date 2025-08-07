@@ -106,6 +106,9 @@ interface PropertyDataContextType {
     onConfirm?: () => void
   ) => void;
   applyPreset: (presetData: Partial<PropertyData>, propertyMethod?: PropertyMethod, fundingMethod?: FundingMethod) => void;
+  calculateEquityLoanAmount: () => number;
+  calculateTotalProjectCost: () => number;
+  calculateAvailableEquity: () => number;
 }
 
 const PropertyDataContext = createContext<PropertyDataContextType | undefined>(undefined);
@@ -213,6 +216,34 @@ const defaultPropertyData: PropertyData = {
 export const PropertyDataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [propertyData, setPropertyData] = useState<PropertyData>(defaultPropertyData);
 
+  const calculateTotalProjectCost = () => {
+    const baseCosts = propertyData.isConstructionProject 
+      ? propertyData.landValue + propertyData.constructionValue 
+      : propertyData.purchasePrice;
+    
+    const transactionCosts = propertyData.stampDuty + propertyData.legalFees + propertyData.inspectionFees;
+    const developmentCosts = propertyData.isConstructionProject 
+      ? propertyData.councilFees + propertyData.architectFees + propertyData.siteCosts 
+      : 0;
+    const holdingCosts = propertyData.isConstructionProject ? propertyData.totalHoldingCosts : 0;
+    
+    return baseCosts + transactionCosts + developmentCosts + holdingCosts;
+  };
+
+  const calculateAvailableEquity = () => {
+    return Math.max(0, (propertyData.primaryPropertyValue * propertyData.maxLVR / 100) - propertyData.existingDebt);
+  };
+
+  const calculateEquityLoanAmount = () => {
+    if (!propertyData.useEquityFunding) return 0;
+    
+    const totalProjectCost = calculateTotalProjectCost();
+    const availableEquity = calculateAvailableEquity();
+    const fundingGap = totalProjectCost - propertyData.loanAmount - propertyData.depositAmount;
+    
+    return Math.min(availableEquity, Math.max(0, fundingGap));
+  };
+
   const updateField = (field: keyof PropertyData, value: number | boolean | string) => {
     setPropertyData(prev => ({ ...prev, [field]: value }));
   };
@@ -241,7 +272,10 @@ export const PropertyDataProvider: React.FC<{ children: ReactNode }> = ({ childr
       setPropertyData, 
       updateField, 
       updateFieldWithConfirmation,
-      applyPreset
+      applyPreset,
+      calculateEquityLoanAmount,
+      calculateTotalProjectCost,
+      calculateAvailableEquity
     }}>
       {children}
     </PropertyDataContext.Provider>

@@ -95,7 +95,7 @@ export const PropertyInputForm = ({
 }: PropertyInputFormProps) => {
   const [openSections, setOpenSections] = useState<string[]>(["personal-profile"]);
   const { confirmations, updateConfirmation } = useFieldConfirmations();
-  const { applyPreset } = usePropertyData();
+  const { applyPreset, calculateEquityLoanAmount, calculateAvailableEquity } = usePropertyData();
   const [pendingUpdate, setPendingUpdate] = useState<{
     field: keyof PropertyData;
     value: any;
@@ -261,7 +261,7 @@ export const PropertyInputForm = ({
       />
       
       {/* Funding Summary Panel */}
-      <FundingSummaryPanel propertyData={propertyData} />
+      <FundingSummaryPanel />
       
       <Card className="w-full">
         <CardHeader className="bg-gradient-to-r from-card to-accent border-b">
@@ -836,7 +836,7 @@ export const PropertyInputForm = ({
                   </div>
                 </div>
 
-                {/* Equity Funding Details */}
+                    {/* Equity Funding Details */}
                 {propertyData.useEquityFunding ? (
                   <div className="space-y-4">
                     <h4 className="font-medium text-sm">Equity Property Details</h4>
@@ -870,6 +870,40 @@ export const PropertyInputForm = ({
                           className="mt-1"
                         />
                       </div>
+                    </div>
+
+                    {/* Equity Loan Calculation Display */}
+                    <div className="bg-muted/30 rounded-lg p-4 space-y-3">
+                      <h5 className="font-medium text-sm flex items-center gap-2">
+                        <Calculator className="h-4 w-4" />
+                        Equity Calculation Summary
+                      </h5>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Available Equity:</span>
+                          <div className="font-medium text-primary">
+                            ${calculateAvailableEquity().toLocaleString()}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Required Equity Loan:</span>
+                          <div className={`font-medium ${calculateEquityLoanAmount() > calculateAvailableEquity() ? 'text-destructive' : 'text-success'}`}>
+                            ${calculateEquityLoanAmount().toLocaleString()}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Remaining Equity:</span>
+                          <div className="font-medium">
+                            ${Math.max(0, calculateAvailableEquity() - calculateEquityLoanAmount()).toLocaleString()}
+                          </div>
+                        </div>
+                      </div>
+                      {calculateEquityLoanAmount() > calculateAvailableEquity() && (
+                        <div className="flex items-center gap-2 text-destructive text-sm">
+                          <AlertTriangle className="h-4 w-4" />
+                          Insufficient equity available. Consider increasing property value or reducing loan amount.
+                        </div>
+                      )}
                     </div>
 
                     {/* Equity Loan Options */}
