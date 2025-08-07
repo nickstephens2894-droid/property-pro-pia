@@ -166,6 +166,45 @@ export const FundingSummaryPanel = () => {
                 </CollapsibleContent>
               </Collapsible>
             )}
+
+            {/* Construction Holding Interest (Construction only) */}
+            {propertyData.isConstructionProject && propertyData.constructionHoldingInterest > 0 && (
+              <Collapsible open={expandedSections.includes('holding-interest')} onOpenChange={() => toggleSection('holding-interest')}>
+                <CollapsibleTrigger className="flex items-center justify-between w-full text-sm hover:bg-muted/50 p-2 rounded">
+                  <span>Construction Holding Interest</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">${propertyData.constructionHoldingInterest.toLocaleString()}</span>
+                    {expandedSections.includes('holding-interest') ? 
+                      <ChevronDown className="h-4 w-4" /> : 
+                      <ChevronRight className="h-4 w-4" />
+                    }
+                  </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pl-4 space-y-1">
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Construction Period</span>
+                    <span>{propertyData.constructionPeriod} months</span>
+                  </div>
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Interest Rate</span>
+                    <span>{propertyData.constructionInterestRate}%</span>
+                  </div>
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Funding Method</span>
+                    <span className="capitalize">{propertyData.holdingCostFunding}</span>
+                  </div>
+                  {propertyData.holdingCostFunding === 'hybrid' && (
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Cash Percentage</span>
+                      <span>{propertyData.holdingCostCashPercentage}%</span>
+                    </div>
+                  )}
+                  <div className="text-xs text-muted-foreground/80 mt-1 italic">
+                    Tax-deductible construction interest
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
             
             <Separator className="my-2" />
             <div className="flex justify-between font-medium">
