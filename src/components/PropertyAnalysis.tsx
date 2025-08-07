@@ -96,14 +96,14 @@ const PropertyAnalysis = () => {
     clients: [
       {
         id: '1',
-        name: 'Husband',
+        name: 'Investor 1',
         annualIncome: 200000,
         otherIncome: 0,
         hasMedicareLevy: true,
       },
       {
         id: '2',
-        name: 'Wife',
+        name: 'Investor 2',
         annualIncome: 20000,
         otherIncome: 0,
         hasMedicareLevy: false,
