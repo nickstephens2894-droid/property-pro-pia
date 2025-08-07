@@ -437,6 +437,20 @@ export const PropertyInputForm = ({
 
                 {propertyData.isConstructionProject ? (
                   <div className="space-y-4">
+                    {/* Total Property Value */}
+                    <div className="bg-primary/10 rounded-lg p-4 border-l-4 border-primary">
+                      <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+                        <Home className="h-4 w-4" />
+                        Total Property Value
+                      </h4>
+                      <div className="text-2xl font-bold text-primary">
+                        ${(propertyData.landValue + propertyData.constructionValue).toLocaleString()}
+                      </div>
+                      <div className="text-sm text-muted-foreground mt-1">
+                        Land: ${propertyData.landValue.toLocaleString()} + Construction: ${propertyData.constructionValue.toLocaleString()}
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="landValue" className="text-sm font-medium">Land Value</Label>
@@ -450,7 +464,7 @@ export const PropertyInputForm = ({
                       </div>
                       <div>
                         <Label htmlFor="constructionValue" className="text-sm font-medium">
-                          Construction Contract Value
+                          Total Construction Value
                           {totalConstructionValue !== propertyData.constructionValue && (
                             <span className="text-muted-foreground text-xs ml-2">
                               (Calculated: ${totalConstructionValue.toLocaleString()})
@@ -463,25 +477,6 @@ export const PropertyInputForm = ({
                           onChange={(value) => updateFieldWithCascade('constructionValue', value)}
                           className="mt-1"
                           placeholder="Auto-calculated from building + equipment"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="constructionPeriod" className="text-sm font-medium">Construction Period (months)</Label>
-                        <Input
-                          id="constructionPeriod"
-                          type="number"
-                          value={propertyData.constructionPeriod}
-                          onChange={(e) => updateField('constructionPeriod', Number(e.target.value))}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="constructionInterestRate" className="text-sm font-medium">Construction Interest Rate</Label>
-                        <PercentageInput
-                          id="constructionInterestRate"
-                          value={propertyData.constructionInterestRate}
-                          onChange={(value) => updateField('constructionInterestRate', value)}
-                          className="mt-1"
                         />
                       </div>
                     </div>
@@ -500,9 +495,12 @@ export const PropertyInputForm = ({
                 )}
 
                 {/* Building Values */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-sm">Property Valuation Breakdown</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-muted/20 rounded-lg p-4">
+                  <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                    <Receipt className="h-4 w-4" />
+                    Construction Value Breakdown
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                       <Label htmlFor="buildingValue" className="text-sm font-medium">Building Value (excl. land)</Label>
                       <CurrencyInput
@@ -523,18 +521,6 @@ export const PropertyInputForm = ({
                         placeholder="Enter equipment value"
                       />
                     </div>
-                    {propertyData.isConstructionProject && (
-                      <div className="col-span-full">
-                        <div className="bg-muted/30 rounded-lg p-3">
-                          <div className="text-sm font-medium text-muted-foreground">
-                            Total Construction Value: ${totalConstructionValue.toLocaleString()}
-                          </div>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            Building Value + Plant & Equipment Value
-                          </div>
-                        </div>
-                      </div>
-                    )}
                     <div>
                       <Label htmlFor="constructionYear" className="text-sm font-medium">Construction Year</Label>
                       <Input
@@ -547,7 +533,52 @@ export const PropertyInputForm = ({
                       />
                     </div>
                   </div>
+                  {propertyData.isConstructionProject && (
+                    <div className="mt-3">
+                      <div className="bg-accent/30 rounded-lg p-3">
+                        <div className="text-sm font-medium text-accent-foreground">
+                          Total Construction Value: ${totalConstructionValue.toLocaleString()}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Building Value + Plant & Equipment Value
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
+
+                {/* Construction Timeline - moved below breakdown */}
+                {propertyData.isConstructionProject && (
+                  <div className="bg-accent/20 rounded-lg p-4">
+                    <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Construction Timeline & Financing
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="constructionPeriod" className="text-sm font-medium">Construction Period (months)</Label>
+                        <Input
+                          id="constructionPeriod"
+                          type="number"
+                          value={propertyData.constructionPeriod || ''}
+                          onChange={(e) => updateField('constructionPeriod', Number(e.target.value))}
+                          className="mt-1"
+                          placeholder="e.g., 12"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="constructionInterestRate" className="text-sm font-medium">Construction Interest Rate</Label>
+                        <PercentageInput
+                          id="constructionInterestRate"
+                          value={propertyData.constructionInterestRate}
+                          onChange={(value) => updateField('constructionInterestRate', value)}
+                          className="mt-1"
+                          placeholder="Enter rate"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </AccordionContent>
           </AccordionItem>
