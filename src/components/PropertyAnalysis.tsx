@@ -532,8 +532,8 @@ const PropertyAnalysis = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'lg:grid-cols-3'}`}>
           
-          {/* Input Form - Takes 1 column on desktop */}
-          <div className={isMobile ? 'order-2' : 'lg:col-span-1'}>
+          {/* Input Form - Takes 1 column on desktop, appears first */}
+          <div className={isMobile ? 'order-1' : 'lg:col-span-1'}>
             <PropertyInputForm
               propertyData={propertyData}
               updateField={updateField}
@@ -543,8 +543,8 @@ const PropertyAnalysis = () => {
             />
           </div>
 
-          {/* Summary & Details - Takes 2 columns on desktop */}
-          <div className={`space-y-6 ${isMobile ? 'order-1' : 'lg:col-span-2'}`}>
+          {/* Summary & Details - Takes 2 columns on desktop, appears second */}
+          <div className={`space-y-6 ${isMobile ? 'order-2' : 'lg:col-span-2'}`}>
             
             {/* Summary Dashboard */}
             <PropertySummaryDashboard
