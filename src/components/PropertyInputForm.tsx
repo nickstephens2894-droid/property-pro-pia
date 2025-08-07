@@ -17,7 +17,8 @@ import {
   validatePropertyBasics, 
   validateFinancing, 
   validatePurchaseCosts, 
-  validateAnnualExpenses 
+  validateAnnualExpenses,
+  validateTaxOptimization
 } from "@/utils/validationUtils";
 import { Users, Home, Receipt, Calculator, Building2, Hammer, CreditCard, Clock, DollarSign, TrendingUp, Percent, X, Plus, AlertTriangle } from "lucide-react";
 
@@ -229,6 +230,7 @@ export const PropertyInputForm = ({
   const financingStatus = validateFinancing(propertyData);
   const purchaseCostsStatus = validatePurchaseCosts(propertyData);
   const annualExpensesStatus = validateAnnualExpenses(propertyData);
+  const taxOptimizationStatus = validateTaxOptimization(propertyData);
 
   const addClient = () => {
     const newClient: Client = {
@@ -403,30 +405,6 @@ export const PropertyInputForm = ({
                   </div>
                 ))}
 
-                {/* Ownership Allocation */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-sm">Property Ownership Allocation</h4>
-                  {propertyData.clients.map((client) => {
-                    const allocation = propertyData.ownershipAllocations.find(a => a.clientId === client.id);
-                    return (
-                      <div key={client.id} className="grid grid-cols-2 gap-4 items-center">
-                        <Label className="text-sm">{client.name}</Label>
-                        <PercentageInput
-                          id={`ownership-${client.id}`}
-                          value={allocation?.ownershipPercentage || 0}
-                          onChange={(value) => updateOwnershipAllocation(client.id, value)}
-                          step="1"
-                        />
-                      </div>
-                    );
-                  })}
-                  <div className="text-sm text-muted-foreground">
-                    Total: {totalOwnership}% 
-                    {totalOwnership !== 100 && (
-                      <span className="text-warning ml-2">⚠️ Should total 100%</span>
-                    )}
-                  </div>
-                </div>
               </div>
             </AccordionContent>
           </AccordionItem>
@@ -1054,12 +1032,40 @@ export const PropertyInputForm = ({
                 <Calculator className="h-4 w-4 text-primary" />
                 <span className="font-medium">Tax Optimization & Depreciation</span>
                 <div className="ml-auto">
-                  <AccordionCompletionIndicator status="complete" />
+                  <AccordionCompletionIndicator status={taxOptimizationStatus} />
                 </div>
               </div>
             </AccordionTrigger>
-            <AccordionContent className="px-6 pb-6">
+           <AccordionContent className="px-6 pb-6">
               <div className="space-y-6">
+                {/* Property Ownership Allocation - Moved from Personal Profile */}
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm">Property Ownership Allocation</h4>
+                  <div className="text-xs text-muted-foreground mb-3">
+                    Configure ownership percentages to optimize tax outcomes across multiple investors.
+                  </div>
+                  {propertyData.clients.map((client) => {
+                    const allocation = propertyData.ownershipAllocations.find(a => a.clientId === client.id);
+                    return (
+                      <div key={client.id} className="grid grid-cols-2 gap-4 items-center">
+                        <Label className="text-sm">{client.name}</Label>
+                        <PercentageInput
+                          id={`ownership-${client.id}`}
+                          value={allocation?.ownershipPercentage || 0}
+                          onChange={(value) => updateOwnershipAllocation(client.id, value)}
+                          step="1"
+                        />
+                      </div>
+                    );
+                  })}
+                  <div className="text-sm text-muted-foreground">
+                    Total: {totalOwnership}% 
+                    {totalOwnership !== 100 && (
+                      <span className="text-warning ml-2">⚠️ Should total 100%</span>
+                    )}
+                  </div>
+                </div>
+
                 {/* Depreciation Settings */}
                 <div className="space-y-4">
                   <h4 className="font-medium text-sm">Depreciation Strategy</h4>

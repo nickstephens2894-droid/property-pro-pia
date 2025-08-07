@@ -8,13 +8,7 @@ export const validatePersonalProfile = (propertyData: PropertyData): CompletionS
     client.annualIncome > 0 && client.name.trim() !== ''
   );
   
-  // Check if ownership totals 100%
-  const totalOwnership = propertyData.ownershipAllocations.reduce(
-    (sum, allocation) => sum + allocation.ownershipPercentage, 0
-  );
-  
   if (!hasIncomeData) return 'error';
-  if (Math.abs(totalOwnership - 100) > 0.1) return 'warning';
   return 'complete';
 };
 
@@ -92,5 +86,15 @@ export const validateAnnualExpenses = (propertyData: PropertyData): CompletionSt
   const hasInsurance = propertyData.insurance > 0;
   
   if (!hasPropertyManagement || !hasCouncilRates || !hasInsurance) return 'warning';
+  return 'complete';
+};
+
+export const validateTaxOptimization = (propertyData: PropertyData): CompletionStatus => {
+  // Check if ownership totals 100%
+  const totalOwnership = propertyData.ownershipAllocations.reduce(
+    (sum, allocation) => sum + allocation.ownershipPercentage, 0
+  );
+  
+  if (Math.abs(totalOwnership - 100) > 0.1) return 'warning';
   return 'complete';
 };
