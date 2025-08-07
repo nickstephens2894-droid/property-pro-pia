@@ -4,15 +4,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Download, TrendingUp, TrendingDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ArrowLeft, Download, TrendingUp, TrendingDown, ChevronDown, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { usePropertyData } from "@/contexts/PropertyDataContext";
 
 interface YearProjection {
   year: number;
   rentalIncome: number;
   propertyValue: number;
   mainLoanBalance: number;
+  equityLoanBalance: number;
   totalInterest: number;
+  mainLoanPayment: number;
+  equityLoanPayment: number;
+  mainLoanIOStatus: 'IO' | 'P&I';
+  equityLoanIOStatus: 'IO' | 'P&I';
   otherExpenses: number;
   depreciation: number;
   taxableIncome: number;
@@ -25,29 +32,72 @@ interface YearProjection {
 
 const Projections = () => {
   const navigate = useNavigate();
+  const { propertyData } = usePropertyData();
   
-  // Default property assumptions (would normally come from PropertyAnalysis state)
+  // Calculate funding requirements from property data
+  const calculateFundingFromPropertyData = () => {
+    const baseCosts = propertyData.isConstructionProject 
+      ? propertyData.landValue + propertyData.constructionValue 
+      : propertyData.purchasePrice;
+    
+    const developmentCosts = propertyData.isConstructionProject 
+      ? propertyData.councilFees + propertyData.architectFees + propertyData.siteCosts 
+      : 0;
+    
+    const holdingCosts = propertyData.isConstructionProject 
+      ? propertyData.landValue * (propertyData.constructionInterestRate / 100) * (propertyData.constructionPeriod / 12)
+      : 0;
+    
+    const totalProjectCost = baseCosts + propertyData.stampDuty + propertyData.legalFees + 
+                            propertyData.inspectionFees + developmentCosts + holdingCosts;
+
+    if (propertyData.useEquityFunding) {
+      const availableEquity = Math.max(0, (propertyData.primaryPropertyValue * propertyData.maxLVR / 100) - propertyData.existingDebt);
+      const equityUsed = Math.min(availableEquity, totalProjectCost);
+      return {
+        mainLoanAmount: totalProjectCost * (propertyData.lvr / 100),
+        equityLoanAmount: equityUsed,
+        totalProjectCost
+      };
+    } else {
+      return {
+        mainLoanAmount: totalProjectCost * (propertyData.lvr / 100),
+        equityLoanAmount: 0,
+        totalProjectCost
+      };
+    }
+  };
+
+  const funding = calculateFundingFromPropertyData();
+  
+  // Property assumptions derived from property data but adjustable
   const [assumptions, setAssumptions] = useState({
-    initialPropertyValue: 750000,
-    initialWeeklyRent: 650,
+    initialPropertyValue: propertyData.purchasePrice || funding.totalProjectCost,
+    initialWeeklyRent: propertyData.weeklyRent,
     capitalGrowthRate: 4.0,
-    rentalGrowthRate: 3.0,
-    vacancyRate: 2.0,
-    initialLoanBalance: 600000,
-    interestRate: 6.5,
-    loanTerm: 30,
-    isIOLoan: true,
-    ioTermYears: 5,
-    propertyManagementRate: 8.0,
-    councilRates: 2500,
-    insurance: 1200,
-    repairs: 2000,
+    rentalGrowthRate: propertyData.rentalGrowthRate,
+    vacancyRate: propertyData.vacancyRate,
+    initialMainLoanBalance: funding.mainLoanAmount,
+    initialEquityLoanBalance: funding.equityLoanAmount,
+    mainInterestRate: propertyData.interestRate,
+    equityInterestRate: propertyData.equityLoanInterestRate,
+    mainLoanTerm: propertyData.loanTerm,
+    equityLoanTerm: propertyData.equityLoanTerm,
+    mainLoanType: propertyData.mainLoanType,
+    equityLoanType: propertyData.equityLoanType,
+    mainIOTermYears: propertyData.ioTermYears,
+    equityIOTermYears: propertyData.equityLoanIoTermYears,
+    propertyManagementRate: propertyData.propertyManagement,
+    councilRates: propertyData.councilRates,
+    insurance: propertyData.insurance,
+    repairs: propertyData.repairs,
     expenseInflationRate: 2.5,
     marginalTaxRate: 37.0,
     depreciationYear1: 15000
   });
 
   const [yearRange, setYearRange] = useState([1, 8]);
+  const [showLoanDetails, setShowLoanDetails] = useState(false);
 
   // Validate year range (max 25 year span)
   const validatedYearRange = useMemo(() => {
@@ -62,13 +112,23 @@ const Projections = () => {
   const projections = useMemo(() => {
     const years: YearProjection[] = [];
     const annualRent = assumptions.initialWeeklyRent * 52;
-    let loanBalance = assumptions.initialLoanBalance;
+    let mainLoanBalance = assumptions.initialMainLoanBalance;
+    let equityLoanBalance = assumptions.initialEquityLoanBalance;
     
-    // Calculate loan payment
-    const monthlyRate = assumptions.interestRate / 100 / 12;
-    const totalMonths = assumptions.loanTerm * 12;
-    const piMonthlyPayment = loanBalance * (monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) / (Math.pow(1 + monthlyRate, totalMonths) - 1);
-    const ioMonthlyPayment = loanBalance * monthlyRate;
+    // Calculate loan payments for both loans
+    const calculateLoanPayment = (balance: number, rate: number, term: number) => {
+      const monthlyRate = rate / 100 / 12;
+      const totalMonths = term * 12;
+      return balance * (monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) / (Math.pow(1 + monthlyRate, totalMonths) - 1);
+    };
+
+    const mainPIMonthlyPayment = calculateLoanPayment(assumptions.initialMainLoanBalance, assumptions.mainInterestRate, assumptions.mainLoanTerm);
+    const mainIOMonthlyPayment = assumptions.initialMainLoanBalance * (assumptions.mainInterestRate / 100 / 12);
+    
+    const equityPIMonthlyPayment = assumptions.initialEquityLoanBalance > 0 
+      ? calculateLoanPayment(assumptions.initialEquityLoanBalance, assumptions.equityInterestRate, assumptions.equityLoanTerm)
+      : 0;
+    const equityIOMonthlyPayment = assumptions.initialEquityLoanBalance * (assumptions.equityInterestRate / 100 / 12);
     
     let cumulativeCashFlow = 0;
     
@@ -80,25 +140,55 @@ const Projections = () => {
       // Property value with capital growth
       const propertyValue = assumptions.initialPropertyValue * Math.pow(1 + assumptions.capitalGrowthRate / 100, year - 1);
       
-      // Loan balance calculation
-      const isIOPeriod = assumptions.isIOLoan && year <= assumptions.ioTermYears;
+      // Main loan calculations
+      const mainIsIOPeriod = assumptions.mainLoanType === 'io' && year <= assumptions.mainIOTermYears;
+      const mainLoanIOStatus: 'IO' | 'P&I' = mainIsIOPeriod ? 'IO' : 'P&I';
+      const mainLoanPayment = mainIsIOPeriod ? mainIOMonthlyPayment * 12 : mainPIMonthlyPayment * 12;
       
+      // Equity loan calculations
+      const equityIsIOPeriod = assumptions.equityLoanType === 'io' && year <= assumptions.equityIOTermYears && assumptions.initialEquityLoanBalance > 0;
+      const equityLoanIOStatus: 'IO' | 'P&I' = equityIsIOPeriod ? 'IO' : 'P&I';
+      const equityLoanPayment = assumptions.initialEquityLoanBalance > 0 
+        ? (equityIsIOPeriod ? equityIOMonthlyPayment * 12 : equityPIMonthlyPayment * 12)
+        : 0;
+      
+      // Update loan balances for next year
       if (year > 1) {
-        if (isIOPeriod) {
-          // Interest only - balance doesn't change
-          loanBalance = assumptions.initialLoanBalance;
+        // Main loan balance calculation
+        if (mainIsIOPeriod) {
+          mainLoanBalance = assumptions.initialMainLoanBalance;
         } else {
-          // Principal and interest - calculate reducing balance
-          const monthsFromPIStart = (year - (assumptions.ioTermYears + 1)) * 12;
-          const remainingMonths = totalMonths - (assumptions.ioTermYears * 12);
+          const monthsFromPIStart = Math.max(0, (year - (assumptions.mainIOTermYears + 1)) * 12);
+          const remainingMonths = assumptions.mainLoanTerm * 12 - (assumptions.mainIOTermYears * 12);
           if (remainingMonths > 0 && monthsFromPIStart >= 0) {
-            loanBalance = assumptions.initialLoanBalance * (Math.pow(1 + monthlyRate, remainingMonths) - Math.pow(1 + monthlyRate, monthsFromPIStart)) / (Math.pow(1 + monthlyRate, remainingMonths) - 1);
+            const monthlyRate = assumptions.mainInterestRate / 100 / 12;
+            mainLoanBalance = assumptions.initialMainLoanBalance * 
+              (Math.pow(1 + monthlyRate, remainingMonths) - Math.pow(1 + monthlyRate, monthsFromPIStart)) / 
+              (Math.pow(1 + monthlyRate, remainingMonths) - 1);
+          }
+        }
+        
+        // Equity loan balance calculation
+        if (assumptions.initialEquityLoanBalance > 0) {
+          if (equityIsIOPeriod) {
+            equityLoanBalance = assumptions.initialEquityLoanBalance;
+          } else {
+            const monthsFromPIStart = Math.max(0, (year - (assumptions.equityIOTermYears + 1)) * 12);
+            const remainingMonths = assumptions.equityLoanTerm * 12 - (assumptions.equityIOTermYears * 12);
+            if (remainingMonths > 0 && monthsFromPIStart >= 0) {
+              const monthlyRate = assumptions.equityInterestRate / 100 / 12;
+              equityLoanBalance = assumptions.initialEquityLoanBalance * 
+                (Math.pow(1 + monthlyRate, remainingMonths) - Math.pow(1 + monthlyRate, monthsFromPIStart)) / 
+                (Math.pow(1 + monthlyRate, remainingMonths) - 1);
+            }
           }
         }
       }
       
       // Interest expense (tax deductible)
-      const totalInterest = loanBalance * (assumptions.interestRate / 100);
+      const mainInterest = mainLoanBalance * (assumptions.mainInterestRate / 100);
+      const equityInterest = equityLoanBalance * (assumptions.equityInterestRate / 100);
+      const totalInterest = mainInterest + equityInterest;
       
       // Operating expenses with inflation
       const inflationMultiplier = Math.pow(1 + assumptions.expenseInflationRate / 100, year - 1);
@@ -116,12 +206,12 @@ const Projections = () => {
       const taxBenefit = taxableIncome < 0 ? Math.abs(taxableIncome) * (assumptions.marginalTaxRate / 100) : -taxableIncome * (assumptions.marginalTaxRate / 100);
       
       // Cash flow calculations
-      const loanPayments = isIOPeriod ? ioMonthlyPayment * 12 : piMonthlyPayment * 12;
-      const afterTaxCashFlow = rentalIncome - otherExpenses - loanPayments + taxBenefit;
+      const totalLoanPayments = mainLoanPayment + equityLoanPayment;
+      const afterTaxCashFlow = rentalIncome - otherExpenses - totalLoanPayments + taxBenefit;
       cumulativeCashFlow += afterTaxCashFlow;
       
       // Property equity
-      const propertyEquity = propertyValue - loanBalance;
+      const propertyEquity = propertyValue - mainLoanBalance - equityLoanBalance;
       
       // Total return (cash flow + equity growth)
       const totalReturn = afterTaxCashFlow + (year > 1 ? propertyValue - assumptions.initialPropertyValue * Math.pow(1 + assumptions.capitalGrowthRate / 100, year - 2) : 0);
@@ -130,8 +220,13 @@ const Projections = () => {
         year,
         rentalIncome,
         propertyValue,
-        mainLoanBalance: loanBalance,
+        mainLoanBalance,
+        equityLoanBalance,
         totalInterest,
+        mainLoanPayment,
+        equityLoanPayment,
+        mainLoanIOStatus,
+        equityLoanIOStatus,
         otherExpenses,
         depreciation,
         taxableIncome,
@@ -295,18 +390,18 @@ const Projections = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Interest Rate</label>
+                  <label className="text-sm font-medium">Main Interest Rate</label>
                   <div className="px-3">
                     <Slider
-                      value={[assumptions.interestRate]}
-                      onValueChange={(value) => setAssumptions(prev => ({ ...prev, interestRate: value[0] }))}
+                      value={[assumptions.mainInterestRate]}
+                      onValueChange={(value) => setAssumptions(prev => ({ ...prev, mainInterestRate: value[0] }))}
                       max={12}
                       min={3}
                       step={0.25}
                       className="w-full"
                     />
                   </div>
-                  <div className="text-center text-sm text-muted-foreground">{formatPercentage(assumptions.interestRate)}</div>
+                  <div className="text-center text-sm text-muted-foreground">{formatPercentage(assumptions.mainInterestRate)}</div>
                 </div>
                 
                 <div className="space-y-2">
@@ -358,19 +453,79 @@ const Projections = () => {
                     ))}
                   </TableRow>
                   
-                  {/* Loan Amount */}
+                  {/* Main Loan Balance */}
                   <TableRow>
-                    <TableCell className="sticky left-0 bg-background z-10 font-medium">Loan amount</TableCell>
-                    <TableCell className="text-center bg-muted/30 font-mono text-sm">{formatCurrency(assumptions.initialLoanBalance)}</TableCell>
+                    <TableCell className="sticky left-0 bg-background z-10 font-medium">Main loan balance</TableCell>
+                    <TableCell className="text-center bg-muted/30 font-mono text-sm">{formatCurrency(assumptions.initialMainLoanBalance)}</TableCell>
                     {filteredProjections.map((projection) => (
                       <TableCell key={projection.year} className="text-center font-mono text-sm">{formatCurrency(projection.mainLoanBalance)}</TableCell>
                     ))}
                   </TableRow>
+
+                  {/* Annual Mortgage Repayments - Expandable */}
+                  <Collapsible open={showLoanDetails} onOpenChange={setShowLoanDetails}>
+                    <CollapsibleTrigger asChild>
+                      <TableRow className="hover:bg-muted/50 cursor-pointer">
+                        <TableCell className="sticky left-0 bg-background z-10 font-medium flex items-center gap-2">
+                          {showLoanDetails ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                          Annual mortgage repayments
+                        </TableCell>
+                        <TableCell className="text-center bg-muted/30 font-mono text-sm">
+                          {formatCurrency((assumptions.initialMainLoanBalance * (assumptions.mainInterestRate / 100)) + 
+                                         (assumptions.initialEquityLoanBalance * (assumptions.equityInterestRate / 100)))}
+                        </TableCell>
+                        {filteredProjections.map((projection) => (
+                          <TableCell key={projection.year} className="text-center font-mono text-sm">
+                            {formatCurrency(projection.mainLoanPayment + projection.equityLoanPayment)}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      {/* Main Loan Details */}
+                      <TableRow className="bg-blue-50 dark:bg-blue-950/20">
+                        <TableCell className="sticky left-0 bg-blue-50 dark:bg-blue-950/20 z-10 pl-8 text-sm">
+                          Main Loan ({assumptions.mainLoanType.toUpperCase()})
+                        </TableCell>
+                        <TableCell className="text-center bg-blue-100 dark:bg-blue-900/30 font-mono text-xs">
+                          {formatCurrency(assumptions.initialMainLoanBalance)} @ {formatPercentage(assumptions.mainInterestRate)}
+                        </TableCell>
+                        {filteredProjections.map((projection) => (
+                          <TableCell key={projection.year} className="text-center font-mono text-xs">
+                            <div>{formatCurrency(projection.mainLoanPayment)}</div>
+                            <Badge variant={projection.mainLoanIOStatus === 'IO' ? 'secondary' : 'default'} className="text-xs">
+                              {projection.mainLoanIOStatus}
+                            </Badge>
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                      
+                      {/* Equity Loan Details (if applicable) */}
+                      {assumptions.initialEquityLoanBalance > 0 && (
+                        <TableRow className="bg-green-50 dark:bg-green-950/20">
+                          <TableCell className="sticky left-0 bg-green-50 dark:bg-green-950/20 z-10 pl-8 text-sm">
+                            Equity Loan ({assumptions.equityLoanType.toUpperCase()})
+                          </TableCell>
+                          <TableCell className="text-center bg-green-100 dark:bg-green-900/30 font-mono text-xs">
+                            {formatCurrency(assumptions.initialEquityLoanBalance)} @ {formatPercentage(assumptions.equityInterestRate)}
+                          </TableCell>
+                          {filteredProjections.map((projection) => (
+                            <TableCell key={projection.year} className="text-center font-mono text-xs">
+                              <div>{formatCurrency(projection.equityLoanPayment)}</div>
+                              <Badge variant={projection.equityLoanIOStatus === 'IO' ? 'secondary' : 'default'} className="text-xs">
+                                {projection.equityLoanIOStatus}
+                              </Badge>
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      )}
+                    </CollapsibleContent>
+                  </Collapsible>
                   
                   {/* Equity */}
                   <TableRow>
                     <TableCell className="sticky left-0 bg-background z-10 font-medium">Equity</TableCell>
-                    <TableCell className="text-center bg-muted/30 font-mono text-sm text-destructive">{formatCurrency(assumptions.initialPropertyValue - assumptions.initialLoanBalance)}</TableCell>
+                    <TableCell className="text-center bg-muted/30 font-mono text-sm text-destructive">{formatCurrency(assumptions.initialPropertyValue - assumptions.initialMainLoanBalance - assumptions.initialEquityLoanBalance)}</TableCell>
                     {filteredProjections.map((projection) => (
                       <TableCell key={projection.year} className={`text-center font-mono text-sm ${projection.propertyEquity < 0 ? 'text-destructive' : 'text-foreground'}`}>
                         {formatCurrency(projection.propertyEquity)}
@@ -419,7 +574,7 @@ const Projections = () => {
                   {/* Interest */}
                   <TableRow>
                     <TableCell className="sticky left-0 bg-background z-10 font-medium">Interest (I/O)</TableCell>
-                    <TableCell className="text-center bg-muted/30 font-mono text-sm">{formatPercentage(assumptions.interestRate)}</TableCell>
+                    <TableCell className="text-center bg-muted/30 font-mono text-sm">{formatPercentage(assumptions.mainInterestRate)}</TableCell>
                     {filteredProjections.map((projection) => (
                       <TableCell key={projection.year} className="text-center font-mono text-sm">{formatCurrency(projection.totalInterest)}</TableCell>
                     ))}
