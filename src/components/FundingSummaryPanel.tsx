@@ -8,7 +8,7 @@ import { usePropertyData } from "@/contexts/PropertyDataContext";
 import { useState } from "react";
 
 export const FundingSummaryPanel = () => {
-  const { propertyData, calculateTotalProjectCost, calculateEquityLoanAmount, calculateAvailableEquity } = usePropertyData();
+  const { propertyData, calculateTotalProjectCost, calculateEquityLoanAmount, calculateAvailableEquity, calculateHoldingCosts } = usePropertyData();
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
 
   const toggleSection = (section: string) => {
@@ -168,12 +168,12 @@ export const FundingSummaryPanel = () => {
             )}
 
             {/* Construction Holding Interest (Construction only) */}
-            {propertyData.isConstructionProject && propertyData.constructionHoldingInterest > 0 && (
+            {propertyData.isConstructionProject && calculateHoldingCosts().total > 0 && (
               <Collapsible open={expandedSections.includes('holding-interest')} onOpenChange={() => toggleSection('holding-interest')}>
                 <CollapsibleTrigger className="flex items-center justify-between w-full text-sm hover:bg-muted/50 p-2 rounded">
                   <span>Construction Holding Interest</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-medium">${propertyData.constructionHoldingInterest.toLocaleString()}</span>
+                    <span className="font-medium">${calculateHoldingCosts().total.toLocaleString()}</span>
                     {expandedSections.includes('holding-interest') ? 
                       <ChevronDown className="h-4 w-4" /> : 
                       <ChevronRight className="h-4 w-4" />
@@ -410,7 +410,7 @@ export const FundingSummaryPanel = () => {
                 </div>
                 <div className="flex justify-between">
                   <span>Property Value:</span>
-                  <span>${totalPurchaseCost.toLocaleString()}</span>
+                  <span>${purchaseCosts.toLocaleString()}</span>
                 </div>
               </div>
             </CollapsibleContent>
