@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Calculator, DollarSign, TrendingUp, Home } from "lucide-react";
+import { Calculator, DollarSign, TrendingUp, Home, Receipt, AlertCircle } from "lucide-react";
 
 interface PropertyData {
   purchasePrice: number;
@@ -19,6 +19,10 @@ interface PropertyData {
   councilRates: number;
   insurance: number;
   repairs: number;
+  // Tax-related fields
+  annualIncome: number;
+  otherIncome: number;
+  hasMedicareLevy: boolean;
 }
 
 const PropertyAnalysis = () => {
@@ -36,20 +40,86 @@ const PropertyAnalysis = () => {
     councilRates: 2500,
     insurance: 1200,
     repairs: 2000,
+    // Tax defaults
+    annualIncome: 85000,
+    otherIncome: 0,
+    hasMedicareLevy: true,
   });
 
-  const updateField = (field: keyof PropertyData, value: number) => {
+  const updateField = (field: keyof PropertyData, value: number | boolean) => {
     setPropertyData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Calculations
+  // Tax calculations
+  const calculateTax = (income: number) => {
+    let tax = 0;
+    let remainingIncome = income;
+    
+    // 2024-25 Australian tax brackets
+    const brackets = [
+      { min: 0, max: 18200, rate: 0 },
+      { min: 18201, max: 45000, rate: 0.16 },
+      { min: 45001, max: 135000, rate: 0.30 },
+      { min: 135001, max: 190000, rate: 0.37 },
+      { min: 190001, max: Infinity, rate: 0.45 }
+    ];
+
+    for (const bracket of brackets) {
+      if (remainingIncome <= 0) break;
+      
+      const taxableInThisBracket = Math.min(remainingIncome, bracket.max - bracket.min + 1);
+      if (income > bracket.min) {
+        const actualTaxable = Math.min(taxableInThisBracket, Math.max(0, income - bracket.min));
+        tax += actualTaxable * bracket.rate;
+        remainingIncome -= actualTaxable;
+      }
+    }
+
+    // Medicare levy (2% for income above $29,207)
+    if (propertyData.hasMedicareLevy && income > 29207) {
+      tax += income * 0.02;
+    }
+
+    return tax;
+  };
+
+  const getMarginalTaxRate = (income: number) => {
+    if (income <= 18200) return 0;
+    if (income <= 45000) return 0.16;
+    if (income <= 135000) return 0.30;
+    if (income <= 190000) return 0.37;
+    return 0.45;
+  };
+
+  // Property calculations
   const annualRent = propertyData.weeklyRent * 52;
   const weeklyMortgage = (propertyData.loanAmount * (propertyData.interestRate / 100 / 52) * Math.pow(1 + propertyData.interestRate / 100 / 52, propertyData.loanTerm * 52)) / (Math.pow(1 + propertyData.interestRate / 100 / 52, propertyData.loanTerm * 52) - 1);
   const annualMortgage = weeklyMortgage * 52;
   const annualPropertyManagement = annualRent * (propertyData.propertyManagement / 100);
+  
+  // Tax-deductible expenses
+  const annualInterest = propertyData.loanAmount * (propertyData.interestRate / 100); // Simplified interest calculation
+  const totalDeductibleExpenses = annualInterest + annualPropertyManagement + propertyData.councilRates + propertyData.insurance + propertyData.repairs;
+  
   const totalAnnualCosts = annualMortgage + annualPropertyManagement + propertyData.councilRates + propertyData.insurance + propertyData.repairs;
   const annualCashFlow = annualRent - totalAnnualCosts;
   const weeklyCashFlow = annualCashFlow / 52;
+  
+  // Tax calculations
+  const totalTaxableIncome = propertyData.annualIncome + propertyData.otherIncome;
+  const propertyTaxableIncome = annualRent - totalDeductibleExpenses;
+  const totalIncomeWithProperty = totalTaxableIncome + propertyTaxableIncome;
+  
+  const taxWithoutProperty = calculateTax(totalTaxableIncome);
+  const taxWithProperty = calculateTax(totalIncomeWithProperty);
+  const taxDifference = taxWithProperty - taxWithoutProperty;
+  const marginalTaxRate = getMarginalTaxRate(totalTaxableIncome);
+  
+  // After-tax calculations
+  const afterTaxCashFlow = annualCashFlow - taxDifference;
+  const weeklyAfterTaxCashFlow = afterTaxCashFlow / 52;
+  const afterTaxYield = (afterTaxCashFlow / propertyData.purchasePrice) * 100;
+  
   const grossYield = (annualRent / propertyData.purchasePrice) * 100;
   const netYield = (annualCashFlow / propertyData.purchasePrice) * 100;
   const totalUpfrontCosts = propertyData.deposit + propertyData.stampDuty + propertyData.legalFees + propertyData.inspectionFees;
@@ -62,7 +132,7 @@ const PropertyAnalysis = () => {
           <p className="text-muted-foreground text-lg">Comprehensive analysis tool for Australian residential property investments</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Property Details */}
           <Card className="lg:col-span-1 shadow-card">
             <CardHeader className="bg-gradient-to-r from-card to-accent border-b">
@@ -132,6 +202,73 @@ const PropertyAnalysis = () => {
                   onChange={(e) => updateField('loanTerm', Number(e.target.value))}
                   className="mt-1"
                 />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Income & Tax Details */}
+          <Card className="lg:col-span-1 shadow-card">
+            <CardHeader className="bg-gradient-to-r from-card to-accent border-b">
+              <CardTitle className="flex items-center gap-2 text-card-foreground">
+                <Receipt className="h-5 w-5" />
+                Income & Tax Details
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div>
+                <Label htmlFor="annualIncome">Annual Salary/Wage ($)</Label>
+                <Input
+                  id="annualIncome"
+                  type="number"
+                  value={propertyData.annualIncome}
+                  onChange={(e) => updateField('annualIncome', Number(e.target.value))}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="otherIncome">Other Investment Income ($)</Label>
+                <Input
+                  id="otherIncome"
+                  type="number"
+                  value={propertyData.otherIncome}
+                  onChange={(e) => updateField('otherIncome', Number(e.target.value))}
+                  className="mt-1"
+                />
+              </div>
+              
+              <div className="pt-4 border-t">
+                <h4 className="font-semibold mb-3">Tax Information</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="medicareLevy"
+                      checked={propertyData.hasMedicareLevy}
+                      onChange={(e) => updateField('hasMedicareLevy', e.target.checked)}
+                      className="rounded border-gray-300"
+                    />
+                    <Label htmlFor="medicareLevy" className="text-sm">
+                      Subject to Medicare Levy (2%)
+                    </Label>
+                  </div>
+                  
+                  <div className="p-3 bg-muted/50 rounded-lg">
+                    <div className="text-sm space-y-1">
+                      <div className="flex justify-between">
+                        <span>Total Taxable Income:</span>
+                        <span className="font-medium">${totalTaxableIncome.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Marginal Tax Rate:</span>
+                        <span className="font-medium">{(marginalTaxRate * 100).toFixed(0)}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Annual Tax (without property):</span>
+                        <span className="font-medium">${taxWithoutProperty.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -238,9 +375,18 @@ const PropertyAnalysis = () => {
               <div className="space-y-4">
                 <div className="p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg border border-primary/20">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-muted-foreground">Weekly Cash Flow</span>
+                    <span className="text-sm font-medium text-muted-foreground">Weekly Cash Flow (Before Tax)</span>
                     <span className={`text-xl font-bold ${weeklyCashFlow >= 0 ? 'text-success' : 'text-destructive'}`}>
                       ${weeklyCashFlow.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-gradient-to-r from-accent/10 to-accent/5 rounded-lg border border-accent/20">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-muted-foreground">Weekly Cash Flow (After Tax)</span>
+                    <span className={`text-xl font-bold ${weeklyAfterTaxCashFlow >= 0 ? 'text-success' : 'text-destructive'}`}>
+                      ${weeklyAfterTaxCashFlow.toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -256,9 +402,9 @@ const PropertyAnalysis = () => {
 
                 <div className="p-4 bg-gradient-to-r from-warning/10 to-warning/5 rounded-lg border border-warning/20">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-muted-foreground">Net Yield</span>
-                    <span className={`text-xl font-bold ${netYield >= 0 ? 'text-success' : 'text-destructive'}`}>
-                      {netYield.toFixed(2)}%
+                    <span className="text-sm font-medium text-muted-foreground">After-Tax Yield</span>
+                    <span className={`text-xl font-bold ${afterTaxYield >= 0 ? 'text-success' : 'text-destructive'}`}>
+                      {afterTaxYield.toFixed(2)}%
                     </span>
                   </div>
                 </div>
@@ -273,22 +419,30 @@ const PropertyAnalysis = () => {
                     <span className="font-medium text-success">${annualRent.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Annual Mortgage</span>
-                    <span className="font-medium text-destructive">-${annualMortgage.toLocaleString()}</span>
+                    <span className="text-muted-foreground">Tax Deductible Expenses</span>
+                    <span className="font-medium text-destructive">-${totalDeductibleExpenses.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Property Management</span>
-                    <span className="font-medium text-destructive">-${annualPropertyManagement.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Other Expenses</span>
-                    <span className="font-medium text-destructive">-${(propertyData.councilRates + propertyData.insurance + propertyData.repairs).toLocaleString()}</span>
+                    <span className="text-muted-foreground">Principal Repayments</span>
+                    <span className="font-medium text-destructive">-${(annualMortgage - annualInterest).toLocaleString()}</span>
                   </div>
                   <div className="border-t pt-2">
                     <div className="flex justify-between font-semibold">
-                      <span>Annual Cash Flow</span>
+                      <span>Pre-Tax Cash Flow</span>
                       <span className={annualCashFlow >= 0 ? 'text-success' : 'text-destructive'}>
                         ${annualCashFlow.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between font-semibold">
+                      <span>Tax Impact</span>
+                      <span className={taxDifference <= 0 ? 'text-success' : 'text-destructive'}>
+                        {taxDifference <= 0 ? '+' : '-'}${Math.abs(taxDifference).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between font-semibold text-primary">
+                      <span>After-Tax Cash Flow</span>
+                      <span className={afterTaxCashFlow >= 0 ? 'text-success' : 'text-destructive'}>
+                        ${afterTaxCashFlow.toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -328,12 +482,12 @@ const PropertyAnalysis = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="text-center p-6 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border border-primary/20">
-                <div className="text-3xl font-bold text-primary mb-2">${weeklyCashFlow.toFixed(2)}</div>
-                <div className="text-sm text-muted-foreground">Weekly Cash Flow</div>
+                <div className="text-3xl font-bold text-primary mb-2">${weeklyAfterTaxCashFlow.toFixed(2)}</div>
+                <div className="text-sm text-muted-foreground">Weekly After-Tax Cash Flow</div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  {weeklyCashFlow >= 0 ? 'Positive' : 'Negative'} cash flow property
+                  Including tax benefits
                 </div>
               </div>
               <div className="text-center p-6 bg-gradient-to-br from-success/10 to-success/5 rounded-lg border border-success/20">
@@ -344,12 +498,35 @@ const PropertyAnalysis = () => {
                 </div>
               </div>
               <div className="text-center p-6 bg-gradient-to-br from-warning/10 to-warning/5 rounded-lg border border-warning/20">
-                <div className={`text-3xl font-bold mb-2 ${netYield >= 0 ? 'text-success' : 'text-destructive'}`}>
-                  {netYield.toFixed(2)}%
+                <div className={`text-3xl font-bold mb-2 ${afterTaxYield >= 0 ? 'text-success' : 'text-destructive'}`}>
+                  {afterTaxYield.toFixed(2)}%
                 </div>
-                <div className="text-sm text-muted-foreground">Net Rental Yield</div>
+                <div className="text-sm text-muted-foreground">After-Tax Yield</div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  After all expenses
+                  Real return on investment
+                </div>
+              </div>
+              <div className="text-center p-6 bg-gradient-to-br from-accent/10 to-accent/5 rounded-lg border border-accent/20">
+                <div className={`text-3xl font-bold mb-2 ${taxDifference <= 0 ? 'text-success' : 'text-destructive'}`}>
+                  ${Math.abs(taxDifference).toLocaleString()}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {taxDifference <= 0 ? 'Annual Tax Savings' : 'Additional Tax'}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {taxDifference <= 0 ? 'From negative gearing' : 'From positive income'}
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-6 p-4 bg-muted/30 rounded-lg border border-muted">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                <div className="text-xs text-muted-foreground">
+                  <p className="font-medium mb-1">Tax Disclaimer:</p>
+                  <p>These calculations are estimates based on current Australian tax rates (2024-25) and simplified assumptions. 
+                  Actual tax outcomes may vary based on individual circumstances, depreciation schedules, capital gains implications, 
+                  and other factors. Please consult a qualified tax advisor or accountant for personalized advice.</p>
                 </div>
               </div>
             </div>
