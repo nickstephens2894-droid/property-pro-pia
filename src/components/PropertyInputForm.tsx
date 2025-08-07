@@ -6,7 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Checkbox } from "@/components/ui/checkbox";
 import { CurrencyInput } from "@/components/ui/currency-input";
+import { FieldUpdateConfirmDialog } from "@/components/FieldUpdateConfirmDialog";
+import { AccordionCompletionIndicator } from "@/components/AccordionCompletionIndicator";
+import { FundingSummaryPanel } from "@/components/FundingSummaryPanel";
+import { useFieldConfirmations } from "@/hooks/useFieldConfirmations";
+import { 
+  validatePersonalProfile, 
+  validatePropertyBasics, 
+  validateFinancing, 
+  validatePurchaseCosts, 
+  validateAnnualExpenses 
+} from "@/utils/validationUtils";
 import { Users, Home, Receipt, Calculator, Building2, Hammer, CreditCard, Clock, DollarSign, TrendingUp, Percent, X, Plus, AlertTriangle } from "lucide-react";
 
 interface Client {
@@ -151,36 +163,72 @@ export const PropertyInputForm = ({
   marginalTaxRate 
 }: PropertyInputFormProps) => {
   const [openSections, setOpenSections] = useState<string[]>(["personal-profile"]);
+  const { confirmations, updateConfirmation } = useFieldConfirmations();
+  const [pendingUpdate, setPendingUpdate] = useState<{
+    field: keyof PropertyData;
+    value: any;
+    confirmationType: 'construction' | 'building';
+  } | null>(null);
 
   // Calculate total construction value
   const totalConstructionValue = propertyData.buildingValue + propertyData.plantEquipmentValue;
 
-  // Enhanced updateField with cascading updates
+  // Enhanced updateField with cascading updates and confirmations
   const updateFieldWithCascade = useCallback((field: keyof PropertyData, value: any) => {
+    // Handle construction contract value with confirmation
+    if (field === 'constructionValue' && !confirmations.hasShownConstructionWarning) {
+      setPendingUpdate({ field, value, confirmationType: 'construction' });
+      return;
+    }
+    
+    // Handle building/equipment values with confirmation
+    if ((field === 'buildingValue' || field === 'plantEquipmentValue') && !confirmations.hasShownBuildingWarning) {
+      setPendingUpdate({ field, value, confirmationType: 'building' });
+      return;
+    }
+    
+    // Execute the update
+    executeFieldUpdate(field, value);
+  }, [propertyData, updateField, confirmations]);
+
+  const executeFieldUpdate = useCallback((field: keyof PropertyData, value: any) => {
     updateField(field, value);
     
-    // Handle cascading updates for construction project
-    if (propertyData.isConstructionProject) {
-      if (field === 'buildingValue' || field === 'plantEquipmentValue') {
-        const newBuildingValue = field === 'buildingValue' ? value : propertyData.buildingValue;
-        const newPlantEquipmentValue = field === 'plantEquipmentValue' ? value : propertyData.plantEquipmentValue;
-        const newTotal = newBuildingValue + newPlantEquipmentValue;
-        
-        // Auto-update construction value
-        updateField('constructionValue', newTotal);
-      } else if (field === 'constructionValue') {
-        // If construction value is manually changed, maintain building/plant ratio
-        const currentTotal = propertyData.buildingValue + propertyData.plantEquipmentValue;
-        if (currentTotal > 0) {
-          const buildingRatio = propertyData.buildingValue / currentTotal;
-          const plantRatio = propertyData.plantEquipmentValue / currentTotal;
-          
-          updateField('buildingValue', Math.round(value * buildingRatio));
-          updateField('plantEquipmentValue', Math.round(value * plantRatio));
-        }
-      }
+    // Handle cascading updates
+    if (field === 'constructionValue') {
+      // Split construction value: 90% building, 10% plant & equipment
+      const buildingValue = Math.round(value * 0.9);
+      const plantEquipmentValue = Math.round(value * 0.1);
+      updateField('buildingValue', buildingValue);
+      updateField('plantEquipmentValue', plantEquipmentValue);
+    } else if (field === 'buildingValue' || field === 'plantEquipmentValue') {
+      // Update construction contract value when building/equipment changes
+      const newBuildingValue = field === 'buildingValue' ? value : propertyData.buildingValue;
+      const newPlantEquipmentValue = field === 'plantEquipmentValue' ? value : propertyData.plantEquipmentValue;
+      const newTotal = newBuildingValue + newPlantEquipmentValue;
+      updateField('constructionValue', newTotal);
     }
   }, [propertyData, updateField]);
+
+  const handleConfirmUpdate = useCallback((dontShowAgain: boolean) => {
+    if (!pendingUpdate) return;
+    
+    if (pendingUpdate.confirmationType === 'construction') {
+      updateConfirmation('hasShownConstructionWarning', dontShowAgain);
+    } else {
+      updateConfirmation('hasShownBuildingWarning', dontShowAgain);
+    }
+    
+    executeFieldUpdate(pendingUpdate.field, pendingUpdate.value);
+    setPendingUpdate(null);
+  }, [pendingUpdate, updateConfirmation, executeFieldUpdate]);
+
+  // Get completion status for each section
+  const personalProfileStatus = validatePersonalProfile(propertyData);
+  const propertyBasicsStatus = validatePropertyBasics(propertyData);
+  const financingStatus = validateFinancing(propertyData);
+  const purchaseCostsStatus = validatePurchaseCosts(propertyData);
+  const annualExpensesStatus = validateAnnualExpenses(propertyData);
 
   const addClient = () => {
     const newClient: Client = {
@@ -228,26 +276,33 @@ export const PropertyInputForm = ({
     sum + allocation.ownershipPercentage, 0);
 
   return (
-    <Card className="w-full">
-      <CardHeader className="bg-gradient-to-r from-card to-accent border-b">
-        <CardTitle className="flex items-center gap-2 text-card-foreground">
-          <Home className="h-5 w-5" />
-          Property Investment Details
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-0">
-        <Accordion 
-          type="multiple" 
-          value={openSections} 
-          onValueChange={setOpenSections}
-          className="w-full"
-        >
+    <div className="space-y-6">
+      {/* Funding Summary Panel */}
+      <FundingSummaryPanel propertyData={propertyData} />
+      
+      <Card className="w-full">
+        <CardHeader className="bg-gradient-to-r from-card to-accent border-b">
+          <CardTitle className="flex items-center gap-2 text-card-foreground">
+            <Home className="h-5 w-5" />
+            Property Investment Details
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Accordion 
+            type="multiple" 
+            value={openSections} 
+            onValueChange={setOpenSections}
+            className="w-full"
+          >
           {/* 1. Personal Financial Profile */}
           <AccordionItem value="personal-profile" className="border-b">
             <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full">
                 <Users className="h-4 w-4 text-primary" />
                 <span className="font-medium">Personal Financial Profile</span>
+                <div className="ml-auto">
+                  <AccordionCompletionIndicator status={personalProfileStatus} />
+                </div>
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-6 pb-6">
@@ -379,9 +434,12 @@ export const PropertyInputForm = ({
           {/* 2. Property Basics */}
           <AccordionItem value="property-basics" className="border-b">
             <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full">
                 <Building2 className="h-4 w-4 text-primary" />
                 <span className="font-medium">Property Basics</span>
+                <div className="ml-auto">
+                  <AccordionCompletionIndicator status={propertyBasicsStatus} />
+                </div>
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-6 pb-6">
@@ -519,9 +577,12 @@ export const PropertyInputForm = ({
           {/* 3. Transaction & Setup Costs */}
           <AccordionItem value="transaction-costs" className="border-b">
             <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full">
                 <Receipt className="h-4 w-4 text-primary" />
                 <span className="font-medium">Transaction & Setup Costs</span>
+                <div className="ml-auto">
+                  <AccordionCompletionIndicator status={purchaseCostsStatus} />
+                </div>
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-6 pb-6">
@@ -606,9 +667,12 @@ export const PropertyInputForm = ({
           {/* 4. Funding & Finance Structure */}
           <AccordionItem value="funding-finance" className="border-b">
             <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full">
                 <CreditCard className="h-4 w-4 text-primary" />
                 <span className="font-medium">Funding & Finance Structure</span>
+                <div className="ml-auto">
+                  <AccordionCompletionIndicator status={financingStatus} />
+                </div>
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-6 pb-6">
@@ -889,9 +953,12 @@ export const PropertyInputForm = ({
           {/* 5. Ongoing Income & Expenses */}
           <AccordionItem value="ongoing-income-expenses" className="border-b">
             <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full">
                 <DollarSign className="h-4 w-4 text-primary" />
                 <span className="font-medium">Ongoing Income & Expenses</span>
+                <div className="ml-auto">
+                  <AccordionCompletionIndicator status={annualExpensesStatus} />
+                </div>
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-6 pb-6">
@@ -983,9 +1050,12 @@ export const PropertyInputForm = ({
           {/* 6. Tax Optimization */}
           <AccordionItem value="tax-optimization" className="border-b">
             <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full">
                 <Calculator className="h-4 w-4 text-primary" />
                 <span className="font-medium">Tax Optimization & Depreciation</span>
+                <div className="ml-auto">
+                  <AccordionCompletionIndicator status="complete" />
+                </div>
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-6 pb-6">
@@ -1077,5 +1147,36 @@ export const PropertyInputForm = ({
         </Accordion>
       </CardContent>
     </Card>
+
+    {/* Confirmation Dialogs */}
+    <FieldUpdateConfirmDialog
+      open={!!pendingUpdate}
+      onOpenChange={(open) => !open && setPendingUpdate(null)}
+      onConfirm={handleConfirmUpdate}
+      title={
+        pendingUpdate?.confirmationType === 'construction'
+          ? "Auto-split Construction Contract Value"
+          : "Auto-update Construction Contract Value"
+      }
+      description={
+        pendingUpdate?.confirmationType === 'construction'
+          ? "This will automatically split the construction contract value into building and plant & equipment values."
+          : "This will automatically update the construction contract value based on your building and equipment values."
+      }
+      details={
+        pendingUpdate?.confirmationType === 'construction'
+          ? [
+              "Building Value: 90% of construction contract",
+              "Plant & Equipment: 10% of construction contract",
+              "You can manually adjust these values later"
+            ]
+          : [
+              "Construction Contract = Building Value + Plant & Equipment Value",
+              "This helps maintain accurate totals",
+              "You can manually adjust the contract value if needed"
+            ]
+      }
+    />
+  </div>
   );
 };

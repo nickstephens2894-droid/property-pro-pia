@@ -90,6 +90,11 @@ interface PropertyDataContextType {
   propertyData: PropertyData;
   setPropertyData: React.Dispatch<React.SetStateAction<PropertyData>>;
   updateField: (field: keyof PropertyData, value: number | boolean | string) => void;
+  updateFieldWithConfirmation: (
+    field: keyof PropertyData, 
+    value: number | boolean | string,
+    onConfirm?: () => void
+  ) => void;
 }
 
 const PropertyDataContext = createContext<PropertyDataContextType | undefined>(undefined);
@@ -192,8 +197,22 @@ export const PropertyDataProvider: React.FC<{ children: ReactNode }> = ({ childr
     setPropertyData(prev => ({ ...prev, [field]: value }));
   };
 
+  const updateFieldWithConfirmation = (
+    field: keyof PropertyData, 
+    value: number | boolean | string,
+    onConfirm?: () => void
+  ) => {
+    updateField(field, value);
+    onConfirm?.();
+  };
+
   return (
-    <PropertyDataContext.Provider value={{ propertyData, setPropertyData, updateField }}>
+    <PropertyDataContext.Provider value={{ 
+      propertyData, 
+      setPropertyData, 
+      updateField, 
+      updateFieldWithConfirmation 
+    }}>
       {children}
     </PropertyDataContext.Provider>
   );
