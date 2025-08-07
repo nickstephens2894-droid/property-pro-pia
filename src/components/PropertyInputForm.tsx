@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Users, Home, Receipt, Calculator, Building2, Hammer, CreditCard, Clock, DollarSign, TrendingUp, Percent, X, Plus, AlertTriangle } from "lucide-react";
 
 interface Client {
@@ -112,31 +113,6 @@ interface PropertyInputFormProps {
   marginalTaxRate: number;
 }
 
-const CurrencyInput = ({ 
-  id, 
-  value, 
-  onChange, 
-  placeholder = "0",
-  className = ""
-}: {
-  id: string;
-  value: number;
-  onChange: (value: number) => void;
-  placeholder?: string;
-  className?: string;
-}) => (
-  <div className="relative">
-    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">$</span>
-    <Input
-      id={id}
-      type="number"
-      value={value || ''}
-      onChange={(e) => onChange(Number(e.target.value))}
-      placeholder={placeholder}
-      className={`pl-8 ${className}`}
-    />
-  </div>
-);
 
 const PercentageInput = ({ 
   id, 
@@ -175,6 +151,36 @@ export const PropertyInputForm = ({
   marginalTaxRate 
 }: PropertyInputFormProps) => {
   const [openSections, setOpenSections] = useState<string[]>(["personal-profile"]);
+
+  // Calculate total construction value
+  const totalConstructionValue = propertyData.buildingValue + propertyData.plantEquipmentValue;
+
+  // Enhanced updateField with cascading updates
+  const updateFieldWithCascade = useCallback((field: keyof PropertyData, value: any) => {
+    updateField(field, value);
+    
+    // Handle cascading updates for construction project
+    if (propertyData.isConstructionProject) {
+      if (field === 'buildingValue' || field === 'plantEquipmentValue') {
+        const newBuildingValue = field === 'buildingValue' ? value : propertyData.buildingValue;
+        const newPlantEquipmentValue = field === 'plantEquipmentValue' ? value : propertyData.plantEquipmentValue;
+        const newTotal = newBuildingValue + newPlantEquipmentValue;
+        
+        // Auto-update construction value
+        updateField('constructionValue', newTotal);
+      } else if (field === 'constructionValue') {
+        // If construction value is manually changed, maintain building/plant ratio
+        const currentTotal = propertyData.buildingValue + propertyData.plantEquipmentValue;
+        if (currentTotal > 0) {
+          const buildingRatio = propertyData.buildingValue / currentTotal;
+          const plantRatio = propertyData.plantEquipmentValue / currentTotal;
+          
+          updateField('buildingValue', Math.round(value * buildingRatio));
+          updateField('plantEquipmentValue', Math.round(value * plantRatio));
+        }
+      }
+    }
+  }, [propertyData, updateField]);
 
   const addClient = () => {
     const newClient: Client = {
@@ -289,6 +295,7 @@ export const PropertyInputForm = ({
                           value={client.annualIncome}
                           onChange={(value) => updateClient(client.id, 'annualIncome', value)}
                           className="mt-1"
+                          placeholder="Enter annual income"
                         />
                       </div>
                       <div>
@@ -300,6 +307,7 @@ export const PropertyInputForm = ({
                           value={client.otherIncome}
                           onChange={(value) => updateClient(client.id, 'otherIncome', value)}
                           className="mt-1"
+                          placeholder="Enter other income"
                         />
                       </div>
                     </div>
@@ -399,17 +407,26 @@ export const PropertyInputForm = ({
                         <CurrencyInput
                           id="landValue"
                           value={propertyData.landValue}
-                          onChange={(value) => updateField('landValue', value)}
+                          onChange={(value) => updateFieldWithCascade('landValue', value)}
                           className="mt-1"
+                          placeholder="Enter land value"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="constructionValue" className="text-sm font-medium">Construction Contract Value</Label>
+                        <Label htmlFor="constructionValue" className="text-sm font-medium">
+                          Construction Contract Value
+                          {totalConstructionValue !== propertyData.constructionValue && (
+                            <span className="text-muted-foreground text-xs ml-2">
+                              (Calculated: ${totalConstructionValue.toLocaleString()})
+                            </span>
+                          )}
+                        </Label>
                         <CurrencyInput
                           id="constructionValue"
                           value={propertyData.constructionValue}
-                          onChange={(value) => updateField('constructionValue', value)}
+                          onChange={(value) => updateFieldWithCascade('constructionValue', value)}
                           className="mt-1"
+                          placeholder="Auto-calculated from building + equipment"
                         />
                       </div>
                       <div>
@@ -439,8 +456,9 @@ export const PropertyInputForm = ({
                     <CurrencyInput
                       id="purchasePrice"
                       value={propertyData.purchasePrice}
-                      onChange={(value) => updateField('purchasePrice', value)}
+                      onChange={(value) => updateFieldWithCascade('purchasePrice', value)}
                       className="mt-1"
+                      placeholder="Enter purchase price"
                     />
                   </div>
                 )}
@@ -454,8 +472,9 @@ export const PropertyInputForm = ({
                       <CurrencyInput
                         id="buildingValue"
                         value={propertyData.buildingValue}
-                        onChange={(value) => updateField('buildingValue', value)}
+                        onChange={(value) => updateFieldWithCascade('buildingValue', value)}
                         className="mt-1"
+                        placeholder="Enter building value"
                       />
                     </div>
                     <div>
@@ -463,10 +482,23 @@ export const PropertyInputForm = ({
                       <CurrencyInput
                         id="plantEquipmentValue"
                         value={propertyData.plantEquipmentValue}
-                        onChange={(value) => updateField('plantEquipmentValue', value)}
+                        onChange={(value) => updateFieldWithCascade('plantEquipmentValue', value)}
                         className="mt-1"
+                        placeholder="Enter equipment value"
                       />
                     </div>
+                    {propertyData.isConstructionProject && (
+                      <div className="col-span-full">
+                        <div className="bg-muted/30 rounded-lg p-3">
+                          <div className="text-sm font-medium text-muted-foreground">
+                            Total Construction Value: ${totalConstructionValue.toLocaleString()}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Building Value + Plant & Equipment Value
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     <div>
                       <Label htmlFor="constructionYear" className="text-sm font-medium">Construction Year</Label>
                       <Input
@@ -502,8 +534,9 @@ export const PropertyInputForm = ({
                       <CurrencyInput
                         id="stampDuty"
                         value={propertyData.stampDuty}
-                        onChange={(value) => updateField('stampDuty', value)}
+                        onChange={(value) => updateFieldWithCascade('stampDuty', value)}
                         className="mt-1"
+                        placeholder="Enter stamp duty"
                       />
                     </div>
                     <div>
@@ -511,8 +544,9 @@ export const PropertyInputForm = ({
                       <CurrencyInput
                         id="legalFees"
                         value={propertyData.legalFees}
-                        onChange={(value) => updateField('legalFees', value)}
+                        onChange={(value) => updateFieldWithCascade('legalFees', value)}
                         className="mt-1"
+                        placeholder="Enter legal fees"
                       />
                     </div>
                     <div>
@@ -520,8 +554,9 @@ export const PropertyInputForm = ({
                       <CurrencyInput
                         id="inspectionFees"
                         value={propertyData.inspectionFees}
-                        onChange={(value) => updateField('inspectionFees', value)}
+                        onChange={(value) => updateFieldWithCascade('inspectionFees', value)}
                         className="mt-1"
+                        placeholder="Enter inspection fees"
                       />
                     </div>
                   </div>
@@ -536,8 +571,9 @@ export const PropertyInputForm = ({
                         <CurrencyInput
                           id="councilFees"
                           value={propertyData.councilFees}
-                          onChange={(value) => updateField('councilFees', value)}
+                          onChange={(value) => updateFieldWithCascade('councilFees', value)}
                           className="mt-1"
+                          placeholder="Enter council fees"
                         />
                       </div>
                       <div>
@@ -545,8 +581,9 @@ export const PropertyInputForm = ({
                         <CurrencyInput
                           id="architectFees"
                           value={propertyData.architectFees}
-                          onChange={(value) => updateField('architectFees', value)}
+                          onChange={(value) => updateFieldWithCascade('architectFees', value)}
                           className="mt-1"
+                          placeholder="Enter architect fees"
                         />
                       </div>
                       <div>
@@ -554,8 +591,9 @@ export const PropertyInputForm = ({
                         <CurrencyInput
                           id="siteCosts"
                           value={propertyData.siteCosts}
-                          onChange={(value) => updateField('siteCosts', value)}
+                          onChange={(value) => updateFieldWithCascade('siteCosts', value)}
                           className="mt-1"
+                          placeholder="Enter site costs"
                         />
                       </div>
                     </div>
@@ -683,8 +721,9 @@ export const PropertyInputForm = ({
                         <CurrencyInput
                           id="primaryPropertyValue"
                           value={propertyData.primaryPropertyValue}
-                          onChange={(value) => updateField('primaryPropertyValue', value)}
+                          onChange={(value) => updateFieldWithCascade('primaryPropertyValue', value)}
                           className="mt-1"
+                          placeholder="Enter property value"
                         />
                       </div>
                       <div>
@@ -692,8 +731,9 @@ export const PropertyInputForm = ({
                         <CurrencyInput
                           id="existingDebt"
                           value={propertyData.existingDebt}
-                          onChange={(value) => updateField('existingDebt', value)}
+                          onChange={(value) => updateFieldWithCascade('existingDebt', value)}
                           className="mt-1"
+                          placeholder="Enter existing debt"
                         />
                       </div>
                       <div>
@@ -776,8 +816,9 @@ export const PropertyInputForm = ({
                       <CurrencyInput
                         id="depositAmount"
                         value={propertyData.depositAmount}
-                        onChange={(value) => updateField('depositAmount', value)}
+                        onChange={(value) => updateFieldWithCascade('depositAmount', value)}
                         className="mt-1"
+                        placeholder="Enter deposit amount"
                       />
                       {propertyData.depositAmount < propertyData.minimumDepositRequired && (
                         <div className="flex items-center gap-2 mt-2 text-warning text-sm">
@@ -864,8 +905,9 @@ export const PropertyInputForm = ({
                       <CurrencyInput
                         id="weeklyRent"
                         value={propertyData.weeklyRent}
-                        onChange={(value) => updateField('weeklyRent', value)}
+                        onChange={(value) => updateFieldWithCascade('weeklyRent', value)}
                         className="mt-1"
+                        placeholder="Enter weekly rent"
                       />
                     </div>
                     <div>
@@ -907,8 +949,9 @@ export const PropertyInputForm = ({
                       <CurrencyInput
                         id="councilRates"
                         value={propertyData.councilRates}
-                        onChange={(value) => updateField('councilRates', value)}
+                        onChange={(value) => updateFieldWithCascade('councilRates', value)}
                         className="mt-1"
+                        placeholder="Enter council rates"
                       />
                     </div>
                     <div>
@@ -916,8 +959,9 @@ export const PropertyInputForm = ({
                       <CurrencyInput
                         id="insurance"
                         value={propertyData.insurance}
-                        onChange={(value) => updateField('insurance', value)}
+                        onChange={(value) => updateFieldWithCascade('insurance', value)}
                         className="mt-1"
+                        placeholder="Enter insurance cost"
                       />
                     </div>
                     <div>
@@ -925,8 +969,9 @@ export const PropertyInputForm = ({
                       <CurrencyInput
                         id="repairs"
                         value={propertyData.repairs}
-                        onChange={(value) => updateField('repairs', value)}
+                        onChange={(value) => updateFieldWithCascade('repairs', value)}
                         className="mt-1"
+                        placeholder="Enter repair costs"
                       />
                     </div>
                   </div>
