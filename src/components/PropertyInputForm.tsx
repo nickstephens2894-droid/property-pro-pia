@@ -11,7 +11,9 @@ import { CurrencyInput } from "@/components/ui/currency-input";
 import { FieldUpdateConfirmDialog } from "@/components/FieldUpdateConfirmDialog";
 import { AccordionCompletionIndicator } from "@/components/AccordionCompletionIndicator";
 import { FundingSummaryPanel } from "@/components/FundingSummaryPanel";
+import { PresetSelector } from "@/components/PresetSelector";
 import { useFieldConfirmations } from "@/hooks/useFieldConfirmations";
+import { usePropertyData, PropertyData } from "@/contexts/PropertyDataContext";
 import { 
   validatePersonalProfile, 
   validatePropertyBasics, 
@@ -35,83 +37,6 @@ interface OwnershipAllocation {
   ownershipPercentage: number;
 }
 
-interface PropertyData {
-  // Multi-client structure
-  clients: Client[];
-  ownershipAllocations: OwnershipAllocation[];
-  
-  // Project Type
-  isConstructionProject: boolean;
-  
-  // Basic Property Details - Enhanced
-  purchasePrice: number;
-  weeklyRent: number;
-  rentalGrowthRate: number;
-  vacancyRate: number;
-  constructionYear: number;
-  buildingValue: number;
-  plantEquipmentValue: number;
-  
-  // Construction-specific
-  landValue: number;
-  constructionValue: number;
-  constructionPeriod: number;
-  constructionInterestRate: number;
-  
-  // Traditional Financing
-  deposit: number;
-  loanAmount: number;
-  interestRate: number;
-  loanTerm: number;
-  lvr: number;
-  
-  // Enhanced Loan Options
-  mainLoanType: 'io' | 'pi';
-  ioTermYears: number;
-  
-  // Equity Funding Enhanced
-  useEquityFunding: boolean;
-  primaryPropertyValue: number;
-  existingDebt: number;
-  maxLVR: number;
-  equityLoanType: 'io' | 'pi';
-  equityLoanIoTermYears: number;
-  equityLoanInterestRate: number;
-  equityLoanTerm: number;
-  
-  // Deposit Management
-  depositAmount: number;
-  minimumDepositRequired: number;
-  
-  // Holding Costs During Construction
-  holdingCostFunding: 'cash' | 'debt' | 'hybrid';
-  holdingCostCashPercentage: number;
-  
-  // Separate interest calculations for tax purposes
-  landHoldingInterest: number; // Land-related interest (non-deductible)
-  constructionHoldingInterest: number; // Construction-related interest (deductible)
-  totalHoldingCosts: number; // Total holding costs during construction
-  
-  // Purchase Costs
-  stampDuty: number;
-  legalFees: number;
-  inspectionFees: number;
-  
-  // Construction Costs
-  councilFees: number;
-  architectFees: number;
-  siteCosts: number;
-  
-  // Annual Expenses
-  propertyManagement: number;
-  councilRates: number;
-  insurance: number;
-  repairs: number;
-  
-  // Depreciation fields
-  depreciationMethod: 'prime-cost' | 'diminishing-value';
-  isNewProperty: boolean;
-}
 
 interface ClientTaxResult {
   client: Client;
@@ -170,6 +95,7 @@ export const PropertyInputForm = ({
 }: PropertyInputFormProps) => {
   const [openSections, setOpenSections] = useState<string[]>(["personal-profile"]);
   const { confirmations, updateConfirmation } = useFieldConfirmations();
+  const { applyPreset } = usePropertyData();
   const [pendingUpdate, setPendingUpdate] = useState<{
     field: keyof PropertyData;
     value: any;
@@ -319,8 +245,21 @@ export const PropertyInputForm = ({
   const totalOwnership = propertyData.ownershipAllocations.reduce((sum, allocation) => 
     sum + allocation.ownershipPercentage, 0);
 
+  const handleApplyPreset = (presetData: any) => {
+    // Extract the PropertyMethod and FundingMethod if they exist in the preset data
+    const { propertyMethod, fundingMethod, ...dataToApply } = presetData;
+    applyPreset(dataToApply, propertyMethod, fundingMethod);
+  };
+
   return (
     <div className="space-y-6">
+      {/* Preset Selector */}
+      <PresetSelector 
+        onApplyPreset={handleApplyPreset}
+        currentPropertyMethod={propertyData.currentPropertyMethod}
+        currentFundingMethod={propertyData.currentFundingMethod}
+      />
+      
       {/* Funding Summary Panel */}
       <FundingSummaryPanel propertyData={propertyData} />
       

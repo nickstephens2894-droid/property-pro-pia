@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { PropertyMethod, FundingMethod } from '@/types/presets';
 
 interface Client {
   id: string;
@@ -89,6 +90,10 @@ export interface PropertyData {
   // Depreciation fields
   depreciationMethod: 'prime-cost' | 'diminishing-value';
   isNewProperty: boolean;
+
+  // Preset tracking
+  currentPropertyMethod?: PropertyMethod;
+  currentFundingMethod?: FundingMethod;
 }
 
 interface PropertyDataContextType {
@@ -100,6 +105,7 @@ interface PropertyDataContextType {
     value: number | boolean | string,
     onConfirm?: () => void
   ) => void;
+  applyPreset: (presetData: Partial<PropertyData>, propertyMethod?: PropertyMethod, fundingMethod?: FundingMethod) => void;
 }
 
 const PropertyDataContext = createContext<PropertyDataContextType | undefined>(undefined);
@@ -110,21 +116,21 @@ const defaultPropertyData: PropertyData = {
     {
       id: '1',
       name: 'Investor 1',
-      annualIncome: 200000,
+      annualIncome: 180000, // High income earner (37% bracket)
       otherIncome: 0,
       hasMedicareLevy: true,
     },
     {
       id: '2',
       name: 'Investor 2',
-      annualIncome: 20000,
+      annualIncome: 65000, // Mid income earner (30% bracket)
       otherIncome: 0,
       hasMedicareLevy: false,
     }
   ],
   ownershipAllocations: [
-    { clientId: '1', ownershipPercentage: 90 },
-    { clientId: '2', ownershipPercentage: 10 }
+    { clientId: '1', ownershipPercentage: 70 }, // Optimized split
+    { clientId: '2', ownershipPercentage: 30 }
   ],
   
   // Project Type
@@ -132,7 +138,7 @@ const defaultPropertyData: PropertyData = {
   
   // Basic Property Details - Enhanced
   purchasePrice: 750000,
-  weeklyRent: 650,
+  weeklyRent: 680, // ~4.7% gross yield
   rentalGrowthRate: 3.0,
   vacancyRate: 2.0,
   constructionYear: 2020,
@@ -167,8 +173,8 @@ const defaultPropertyData: PropertyData = {
   equityLoanTerm: 25,
   
   // Deposit Management
-  depositAmount: 150000,
-  minimumDepositRequired: 150000,
+  depositAmount: 195300, // 20% + transaction costs
+  minimumDepositRequired: 195300,
   
   // Holding Costs During Construction
   holdingCostFunding: 'cash',
@@ -198,6 +204,10 @@ const defaultPropertyData: PropertyData = {
   // Depreciation defaults
   depreciationMethod: 'prime-cost',
   isNewProperty: true,
+
+  // Preset tracking
+  currentPropertyMethod: undefined,
+  currentFundingMethod: undefined,
 };
 
 export const PropertyDataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -216,12 +226,22 @@ export const PropertyDataProvider: React.FC<{ children: ReactNode }> = ({ childr
     onConfirm?.();
   };
 
+  const applyPreset = (presetData: Partial<PropertyData>, propertyMethod?: PropertyMethod, fundingMethod?: FundingMethod) => {
+    setPropertyData(prev => ({
+      ...prev,
+      ...presetData,
+      currentPropertyMethod: propertyMethod,
+      currentFundingMethod: fundingMethod
+    }));
+  };
+
   return (
     <PropertyDataContext.Provider value={{ 
       propertyData, 
       setPropertyData, 
       updateField, 
-      updateFieldWithConfirmation 
+      updateFieldWithConfirmation,
+      applyPreset
     }}>
       {children}
     </PropertyDataContext.Provider>
