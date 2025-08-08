@@ -358,10 +358,13 @@ const Projections = () => {
                 <Input
                   id="yearFrom"
                   type="text"
-                  value={yearRange[0]}
+                  value={yearRange[0].toString()}
                   onChange={(e) => {
                     const value = e.target.value.replace(/[^0-9]/g, '');
-                    if (value === '') return;
+                    if (value === '') {
+                      setYearRange([1, yearRange[1]]);
+                      return;
+                    }
                     const from = Math.max(1, Math.min(40, parseInt(value)));
                     const to = Math.max(from, yearRange[1]);
                     const span = to - from + 1;
@@ -376,10 +379,13 @@ const Projections = () => {
                 <Input
                   id="yearTo"
                   type="text"
-                  value={yearRange[1]}
+                  value={yearRange[1].toString()}
                   onChange={(e) => {
                     const value = e.target.value.replace(/[^0-9]/g, '');
-                    if (value === '') return;
+                    if (value === '') {
+                      setYearRange([yearRange[0], yearRange[0]]);
+                      return;
+                    }
                     const to = Math.max(1, Math.min(40, parseInt(value)));
                     const from = Math.min(to, yearRange[0]);
                     const span = to - from + 1;
@@ -396,11 +402,15 @@ const Projections = () => {
                   <Input
                     id="capitalGrowth"
                     type="text"
-                    value={assumptions.capitalGrowthRate.toFixed(1)}
+                    value={assumptions.capitalGrowthRate === 0 ? '' : assumptions.capitalGrowthRate.toFixed(1)}
                     onChange={(e) => {
                       const value = e.target.value.replace(/[^0-9.]/g, '');
-                      const numValue = parseFloat(value) || 0;
-                      if (numValue >= 0 && numValue <= 15) {
+                      if (value === '') {
+                        setAssumptions(prev => ({ ...prev, capitalGrowthRate: 0 }));
+                        return;
+                      }
+                      const numValue = parseFloat(value);
+                      if (!isNaN(numValue) && numValue >= 0 && numValue <= 15) {
                         setAssumptions(prev => ({ ...prev, capitalGrowthRate: numValue }));
                       }
                     }}
@@ -421,11 +431,15 @@ const Projections = () => {
                   <Input
                     id="rentalGrowth"
                     type="text"
-                    value={assumptions.rentalGrowthRate.toFixed(1)}
+                    value={assumptions.rentalGrowthRate === 0 ? '' : assumptions.rentalGrowthRate.toFixed(1)}
                     onChange={(e) => {
                       const value = e.target.value.replace(/[^0-9.]/g, '');
-                      const numValue = parseFloat(value) || 0;
-                      if (numValue >= 0 && numValue <= 10) {
+                      if (value === '') {
+                        setAssumptions(prev => ({ ...prev, rentalGrowthRate: 0 }));
+                        return;
+                      }
+                      const numValue = parseFloat(value);
+                      if (!isNaN(numValue) && numValue >= 0 && numValue <= 10) {
                         setAssumptions(prev => ({ ...prev, rentalGrowthRate: numValue }));
                       }
                     }}
@@ -446,16 +460,20 @@ const Projections = () => {
                   <Input
                     id="interestRate"
                     type="text"
-                    value={assumptions.mainInterestRate.toFixed(1)}
+                    value={assumptions.mainInterestRate === 0 ? '' : assumptions.mainInterestRate.toFixed(1)}
                     onChange={(e) => {
                       const value = e.target.value.replace(/[^0-9.]/g, '');
-                      const numValue = parseFloat(value) || 0;
-                      if (numValue >= 3 && numValue <= 12) {
+                      if (value === '') {
+                        setAssumptions(prev => ({ ...prev, mainInterestRate: 0 }));
+                        return;
+                      }
+                      const numValue = parseFloat(value);
+                      if (!isNaN(numValue) && numValue >= 0 && numValue <= 12) {
                         setAssumptions(prev => ({ ...prev, mainInterestRate: numValue }));
                       }
                     }}
                     onBlur={(e) => {
-                      const value = Math.max(3, Math.min(12, parseFloat(e.target.value) || 3));
+                      const value = Math.max(0.1, Math.min(12, parseFloat(e.target.value) || 0.1));
                       setAssumptions(prev => ({ ...prev, mainInterestRate: value }));
                     }}
                     className="h-9 pr-8"
