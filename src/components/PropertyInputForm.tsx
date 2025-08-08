@@ -728,7 +728,7 @@ export const PropertyInputForm = ({
             </AccordionContent>
           </AccordionItem>
 
-          {/* 3. Transaction & Setup Costs */}
+          {/* 4. Transaction & Setup Costs */}
           <AccordionItem value="transaction-costs" className="border-b">
             <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
               <div className="flex items-center gap-2 w-full">
@@ -818,7 +818,7 @@ export const PropertyInputForm = ({
             </AccordionContent>
           </AccordionItem>
 
-          {/* 4. Funding & Finance Structure */}
+          {/* 5. Funding & Finance Structure */}
           <AccordionItem value="funding-finance" className="border-b">
             <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
               <div className="flex items-center gap-2 w-full">
@@ -1138,7 +1138,7 @@ export const PropertyInputForm = ({
             </AccordionContent>
           </AccordionItem>
 
-          {/* 5. Ongoing Income & Expenses */}
+          {/* 6. Ongoing Income & Expenses */}
           <AccordionItem value="ongoing-income-expenses" className="border-b">
             <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
               <div className="flex items-center gap-2 w-full">
@@ -1235,7 +1235,7 @@ export const PropertyInputForm = ({
             </AccordionContent>
           </AccordionItem>
 
-          {/* 6. Tax Optimization */}
+          {/* 7. Tax Optimization */}
           <AccordionItem value="tax-optimization" className="border-b">
             <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
               <div className="flex items-center gap-2 w-full">
