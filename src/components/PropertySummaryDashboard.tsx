@@ -82,45 +82,5 @@ export const PropertySummaryDashboard = ({
         };
     }
   };
-  return <div className="space-y-6">
-      {/* Hero Metrics */}
-      <Card className="w-full">
-        <CardHeader className="bg-gradient-to-r from-card to-accent border-b">
-          <CardTitle className="flex items-center gap-2 text-card-foreground">
-            <TrendingUp className="h-5 w-5" />
-            Investment Summary
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-2 lg:grid-cols-3'}`}>
-            {heroMetrics.map((metric, index) => {
-            const styles = getMetricStyles(metric.type);
-            const Icon = metric.icon;
-            return <div key={index} className={`p-4 rounded-lg border transition-all hover:shadow-md ${styles.card}`}>
-                  <div className="flex items-start justify-between mb-3">
-                    <Icon className={`h-5 w-5 ${styles.icon}`} />
-                    {metric.type === 'negative' && <TrendingDown className="h-4 w-4 text-destructive" />}
-                    {metric.type === 'positive' && <TrendingUp className="h-4 w-4 text-success" />}
-                  </div>
-                  <div className={`text-2xl font-bold mb-1 ${styles.value}`}>
-                    {metric.value}
-                  </div>
-                  <div className="text-sm text-muted-foreground font-medium">
-                    {metric.label}
-                  </div>
-                  {metric.sublabel && <div className="text-xs text-muted-foreground mt-1">
-                      {metric.sublabel}
-                    </div>}
-                </div>;
-          })}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Quick Stats */}
-      <Card className="w-full">
-        
-        
-      </Card>
-    </div>;
+  return;
 };
