@@ -82,5 +82,64 @@ export const PropertySummaryDashboard = ({
         };
     }
   };
-  return;
+  return (
+    <div className="space-y-4">
+      <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-3'}`}>
+        {heroMetrics.map((metric, index) => {
+          const styles = getMetricStyles(metric.type);
+          const Icon = metric.icon;
+          
+          return (
+            <Card key={index} className={`transition-all duration-200 hover:shadow-md ${styles.card}`}>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    {metric.label}
+                  </CardTitle>
+                  <Icon className={`h-4 w-4 ${styles.icon}`} />
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className={`text-2xl font-bold ${styles.value}`}>
+                  {metric.value}
+                </div>
+                {metric.sublabel && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {metric.sublabel}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+      
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <div className="text-center">
+          <div className="text-lg font-semibold text-foreground">
+            ${cashOnCashReturn.toFixed(1)}%
+          </div>
+          <div className="text-xs text-muted-foreground">Cash-on-Cash Return</div>
+        </div>
+        <div className="text-center">
+          <div className="text-lg font-semibold text-foreground">
+            ${totalProjectCost.toLocaleString()}
+          </div>
+          <div className="text-xs text-muted-foreground">Total Investment</div>
+        </div>
+        <div className="text-center">
+          <div className="text-lg font-semibold text-foreground">
+            ${actualCashInvested.toLocaleString()}
+          </div>
+          <div className="text-xs text-muted-foreground">Cash Required</div>
+        </div>
+        <div className="text-center">
+          <div className="text-lg font-semibold text-foreground">
+            ${annualRent.toLocaleString()}
+          </div>
+          <div className="text-xs text-muted-foreground">Annual Rent</div>
+        </div>
+      </div>
+    </div>
+  );
 };
