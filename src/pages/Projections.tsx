@@ -10,6 +10,7 @@ import { usePropertyData } from "@/contexts/PropertyDataContext";
 import ProjectionsTable from "@/components/ProjectionsTable";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PropertySummaryDashboard } from "@/components/PropertySummaryDashboard";
+import { PresetSelector } from "@/components/PresetSelector";
 interface YearProjection {
   year: number;
   rentalIncome: number;
@@ -32,10 +33,7 @@ interface YearProjection {
 }
 const Projections = () => {
   const navigate = useNavigate();
-  const {
-    propertyData,
-    setPropertyData
-  } = usePropertyData();
+  const { propertyData, setPropertyData, applyPreset } = usePropertyData();
 
   // Use centralized calculations from context
   const {
@@ -433,6 +431,17 @@ const [inputValues, setInputValues] = useState({
             Export to CSV
           </Button>
         </div>
+
+      <div className="mb-6">
+        <PresetSelector 
+          onApplyPreset={(presetData: any) => {
+            const { propertyMethod, fundingMethod, ...dataToApply } = presetData;
+            applyPreset(dataToApply, propertyMethod, fundingMethod);
+          }}
+          currentPropertyMethod={propertyData.currentPropertyMethod}
+          currentFundingMethod={propertyData.currentFundingMethod}
+        />
+      </div>
 
       {/* Investment Summary Dashboard */}
       <PropertySummaryDashboard

@@ -390,6 +390,17 @@ const PropertyAnalysis = () => {
         {isMobile ? (
           <div className="px-4 sm:px-6 py-6">
             <div className="space-y-6">
+              {/* Quick Setup Presets - Mobile */}
+              <div className="w-full">
+                <PresetSelector 
+                  onApplyPreset={(presetData: any) => {
+                    const { propertyMethod, fundingMethod, ...dataToApply } = presetData;
+                    applyPreset(dataToApply, propertyMethod, fundingMethod);
+                  }}
+                  currentPropertyMethod={propertyData.currentPropertyMethod}
+                  currentFundingMethod={propertyData.currentFundingMethod}
+                />
+              </div>
               <PropertyInputForm
                 propertyData={propertyData}
                 updateField={updateField}
