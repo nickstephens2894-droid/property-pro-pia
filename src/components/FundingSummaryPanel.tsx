@@ -169,11 +169,11 @@ export const FundingSummaryPanel = () => {
               </Collapsible>
             )}
 
-            {/* Construction Holding Interest (Construction only) */}
+            {/* Detailed Interest During Construction */}
             {propertyData.isConstructionProject && (propertyData.constructionPeriod > 0 && propertyData.constructionInterestRate > 0) && (
               <Collapsible open={expandedSections.includes('holding-interest')} onOpenChange={() => toggleSection('holding-interest')}>
                 <CollapsibleTrigger className="flex items-center justify-between w-full text-sm hover:bg-muted/50 p-2 rounded">
-                  <span>Construction Holding Interest</span>
+                  <span>Interest During Construction</span>
                   <div className="flex items-center gap-2">
                     <span className="font-medium">${holdingCosts.total > 0 ? holdingCosts.total.toLocaleString() : '0'}</span>
                     {expandedSections.includes('holding-interest') ? 
@@ -182,35 +182,134 @@ export const FundingSummaryPanel = () => {
                     }
                   </div>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="pl-4 space-y-1">
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Construction Period</span>
-                    <span>{propertyData.constructionPeriod} months</span>
-                  </div>
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Interest Rate</span>
-                    <span>{propertyData.constructionInterestRate}%</span>
-                  </div>
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Funding Method</span>
-                    <span className="capitalize">{propertyData.holdingCostFunding}</span>
-                  </div>
-                  {propertyData.holdingCostFunding === 'hybrid' && (
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Cash Percentage</span>
-                      <span>{propertyData.holdingCostCashPercentage}%</span>
+                <CollapsibleContent className="pl-4 space-y-3">
+                  {/* Construction Parameters */}
+                  <div className="bg-muted/30 p-3 rounded space-y-2">
+                    <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Construction Parameters</div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Period</span>
+                        <span className="font-medium">{propertyData.constructionPeriod} months</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Interest Rate</span>
+                        <span className="font-medium">{propertyData.constructionInterestRate}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Funding Method</span>
+                        <span className="font-medium capitalize">{propertyData.holdingCostFunding}</span>
+                      </div>
+                      {propertyData.holdingCostFunding === 'hybrid' && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Cash %</span>
+                          <span className="font-medium">{propertyData.holdingCostCashPercentage}%</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Land & stamp duty holding interest</span>
-                    <span>${holdingCosts.landInterest.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Construction holding interest</span>
-                    <span>${holdingCosts.constructionInterest.toLocaleString()}</span>
+
+                  {/* Interest Breakdown by Category */}
+                  <div className="space-y-2">
+                    <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Interest by Cost Category</div>
+                    
+                    {/* Land & Acquisition Costs */}
+                    <div className="border rounded p-2 space-y-1">
+                      <div className="flex justify-between text-xs font-medium">
+                        <span>Land & Acquisition Costs</span>
+                        <span>${(holdingCosts.landInterest + holdingCosts.stampDutyInterest).toLocaleString()}</span>
+                      </div>
+                      <div className="pl-2 space-y-1 text-xs text-muted-foreground">
+                        <div className="flex justify-between">
+                          <span>• Land value interest (${propertyData.landValue.toLocaleString()})</span>
+                          <span>${holdingCosts.landInterest.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>• Stamp duty interest (${propertyData.stampDuty.toLocaleString()})</span>
+                          <span>${holdingCosts.stampDutyInterest.toLocaleString()}</span>
+                        </div>
+                      </div>
+                      <div className="text-xs text-orange-600 italic pl-2">Full amount from day 1</div>
+                    </div>
+
+                    {/* Construction Costs */}
+                    <div className="border rounded p-2 space-y-1">
+                      <div className="flex justify-between text-xs font-medium">
+                        <span>Construction Costs</span>
+                        <span>${holdingCosts.constructionInterest.toLocaleString()}</span>
+                      </div>
+                      <div className="pl-2 space-y-1 text-xs text-muted-foreground">
+                        <div className="flex justify-between">
+                          <span>• Construction value (${propertyData.constructionValue.toLocaleString()})</span>
+                          <span>${holdingCosts.constructionInterest.toLocaleString()}</span>
+                        </div>
+                      </div>
+                      <div className="text-xs text-blue-600 italic pl-2">Progressive drawdown (50% average)</div>
+                    </div>
+
+                    {/* Development & Professional Fees */}
+                    {holdingCosts.developmentCostsInterest > 0 && (
+                      <div className="border rounded p-2 space-y-1">
+                        <div className="flex justify-between text-xs font-medium">
+                          <span>Development & Professional Fees</span>
+                          <span>${holdingCosts.developmentCostsInterest.toLocaleString()}</span>
+                        </div>
+                        <div className="pl-2 space-y-1 text-xs text-muted-foreground">
+                          {propertyData.councilFees > 0 && (
+                            <div className="flex justify-between">
+                              <span>• Council fees (${propertyData.councilFees.toLocaleString()})</span>
+                              <span>${Math.round(propertyData.councilFees * ((Math.pow(1 + propertyData.constructionInterestRate/100, propertyData.constructionPeriod/12) - 1))).toLocaleString()}</span>
+                            </div>
+                          )}
+                          {propertyData.architectFees > 0 && (
+                            <div className="flex justify-between">
+                              <span>• Architect fees (${propertyData.architectFees.toLocaleString()})</span>
+                              <span>${Math.round(propertyData.architectFees * ((Math.pow(1 + propertyData.constructionInterestRate/100, propertyData.constructionPeriod/12) - 1))).toLocaleString()}</span>
+                            </div>
+                          )}
+                          {propertyData.siteCosts > 0 && (
+                            <div className="flex justify-between">
+                              <span>• Site costs (${propertyData.siteCosts.toLocaleString()})</span>
+                              <span>${Math.round(propertyData.siteCosts * ((Math.pow(1 + propertyData.constructionInterestRate/100, propertyData.constructionPeriod/12) - 1))).toLocaleString()}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-xs text-green-600 italic pl-2">Paid upfront or early construction</div>
+                      </div>
+                    )}
+
+                    {/* Transaction Costs */}
+                    {holdingCosts.transactionCostsInterest > 0 && (
+                      <div className="border rounded p-2 space-y-1">
+                        <div className="flex justify-between text-xs font-medium">
+                          <span>Transaction Costs</span>
+                          <span>${holdingCosts.transactionCostsInterest.toLocaleString()}</span>
+                        </div>
+                        <div className="pl-2 space-y-1 text-xs text-muted-foreground">
+                          <div className="flex justify-between">
+                            <span>• Legal fees (${propertyData.legalFees.toLocaleString()})</span>
+                            <span>${holdingCosts.transactionCostsInterest.toLocaleString()}</span>
+                          </div>
+                        </div>
+                        <div className="text-xs text-purple-600 italic pl-2">Upfront costs only</div>
+                      </div>
+                    )}
                   </div>
-                  <div className="text-xs text-muted-foreground/80 mt-1 italic">
-                    Tax-deductible construction interest
+
+                  {/* Summary */}
+                  <div className="bg-primary/5 border border-primary/20 p-3 rounded">
+                    <div className="flex justify-between text-sm font-medium">
+                      <span>Total Interest During Construction</span>
+                      <span>${holdingCosts.total.toLocaleString()}</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      <div className="flex justify-between">
+                        <span>Monthly average</span>
+                        <span>${Math.round(holdingCosts.total / propertyData.constructionPeriod).toLocaleString()}</span>
+                      </div>
+                    </div>
+                    <div className="text-xs text-green-600 mt-2 italic">
+                      ✓ Tax-deductible construction interest
+                    </div>
                   </div>
                 </CollapsibleContent>
               </Collapsible>

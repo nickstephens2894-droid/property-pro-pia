@@ -109,7 +109,15 @@ interface PropertyDataContextType {
   calculateEquityLoanAmount: () => number;
   calculateTotalProjectCost: () => number;
   calculateAvailableEquity: () => number;
-  calculateHoldingCosts: () => { landInterest: number; constructionInterest: number; total: number };
+  calculateHoldingCosts: () => { 
+    landInterest: number; 
+    stampDutyInterest: number;
+    constructionInterest: number; 
+    developmentCostsInterest: number;
+    transactionCostsInterest: number;
+    total: number;
+    monthlyBreakdown: any[];
+  };
   calculateMinimumDeposit: () => number;
 }
 
@@ -218,24 +226,51 @@ const defaultPropertyData: PropertyData = {
 export const PropertyDataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [propertyData, setPropertyData] = useState<PropertyData>(defaultPropertyData);
 
-  // Centralized holding costs calculation
+  // Enhanced holding costs calculation with detailed breakdown
   const calculateHoldingCosts = () => {
-    if (!propertyData.isConstructionProject) return { landInterest: 0, constructionInterest: 0, total: 0 };
+    if (!propertyData.isConstructionProject) {
+      return { 
+        landInterest: 0, 
+        stampDutyInterest: 0,
+        constructionInterest: 0, 
+        developmentCostsInterest: 0,
+        transactionCostsInterest: 0,
+        total: 0,
+        monthlyBreakdown: []
+      };
+    }
     
     const periodYears = propertyData.constructionPeriod / 12;
     const interestRate = propertyData.constructionInterestRate / 100;
     
-    // Land interest during construction period (compound interest)
+    // Land value interest (full amount from day 1)
     const landInterest = propertyData.landValue * ((Math.pow(1 + interestRate, periodYears) - 1));
     
-    // Progressive construction interest (assumes average 50% drawdown over period)
+    // Stamp duty interest (paid upfront with land)
+    const stampDutyInterest = propertyData.stampDuty * ((Math.pow(1 + interestRate, periodYears) - 1));
+    
+    // Progressive construction interest (assumes 50% average drawdown)
     const averageConstructionDrawdown = propertyData.constructionValue * 0.5;
     const constructionInterest = averageConstructionDrawdown * ((Math.pow(1 + interestRate, periodYears) - 1));
     
+    // Development costs interest (paid upfront or early in construction)
+    const developmentCosts = propertyData.councilFees + propertyData.architectFees + propertyData.siteCosts;
+    const developmentCostsInterest = developmentCosts * ((Math.pow(1 + interestRate, periodYears) - 1));
+    
+    // Transaction costs interest (legal fees paid upfront, inspection fees at end)
+    const upfrontTransactionCosts = propertyData.legalFees;
+    const transactionCostsInterest = upfrontTransactionCosts * ((Math.pow(1 + interestRate, periodYears) - 1));
+    
+    const total = landInterest + stampDutyInterest + constructionInterest + developmentCostsInterest + transactionCostsInterest;
+    
     return {
       landInterest: Math.round(landInterest),
+      stampDutyInterest: Math.round(stampDutyInterest),
       constructionInterest: Math.round(constructionInterest),
-      total: Math.round(landInterest + constructionInterest)
+      developmentCostsInterest: Math.round(developmentCostsInterest),
+      transactionCostsInterest: Math.round(transactionCostsInterest),
+      total: Math.round(total),
+      monthlyBreakdown: []
     };
   };
 
