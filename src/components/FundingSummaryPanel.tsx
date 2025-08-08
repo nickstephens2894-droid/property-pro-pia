@@ -6,6 +6,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { DollarSign, AlertTriangle, CheckCircle, TrendingUp, ChevronDown, ChevronRight } from "lucide-react";
 import { usePropertyData } from "@/contexts/PropertyDataContext";
 import { useState } from "react";
+import { PROPERTY_METHODS, FUNDING_METHODS } from "@/types/presets";
 
 export const FundingSummaryPanel = () => {
   const { propertyData, calculateTotalProjectCost, calculateEquityLoanAmount, calculateAvailableEquity, calculateHoldingCosts } = usePropertyData();
@@ -69,6 +70,22 @@ export const FundingSummaryPanel = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Selected Presets */}
+        {(propertyData.currentPropertyMethod || propertyData.currentFundingMethod) && (
+          <div className="flex flex-wrap items-center gap-2 p-2 bg-muted/30 border border-border rounded">
+            <span className="text-xs text-muted-foreground">Selected:</span>
+            {propertyData.currentPropertyMethod && (
+              <Badge variant="secondary">
+                {PROPERTY_METHODS[propertyData.currentPropertyMethod].name}
+              </Badge>
+            )}
+            {propertyData.currentFundingMethod && (
+              <Badge variant="outline">
+                {FUNDING_METHODS[propertyData.currentFundingMethod].name}
+              </Badge>
+            )}
+          </div>
+        )}
         {/* Purchase Cost Breakdown */}
         <div className="space-y-3">
           <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
