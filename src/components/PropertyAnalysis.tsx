@@ -1,6 +1,6 @@
 import { PropertyInputForm } from "@/components/PropertyInputForm";
 import { PropertyCalculationDetails } from "@/components/PropertyCalculationDetails";
-import { PropertySummaryDashboard } from "@/components/PropertySummaryDashboard";
+
 import { FundingSummaryPanel } from "@/components/FundingSummaryPanel";
 import { PresetSelector } from "@/components/PresetSelector";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -67,20 +67,8 @@ const DesktopLayout = ({
         
         {/* Right Side - Summaries */}
         <div className="col-span-5 space-y-6">
-          {/* Investment Summary + Funding Summary side by side */}
+          {/* Funding Summary */}
           <div className="grid grid-cols-1 gap-4">
-            <PropertySummaryDashboard
-              weeklyAfterTaxCashFlow={calculationProps.weeklyAfterTaxCashFlow}
-              grossYield={calculationProps.grossYield}
-              cashOnCashReturn={calculationProps.cashOnCashReturn}
-              taxDifference={calculationProps.totalTaxWithProperty - calculationProps.totalTaxWithoutProperty}
-              annualRent={calculationProps.annualRent}
-              totalExpenses={calculationProps.totalDeductibleExpenses}
-              marginalTaxRate={calculationProps.marginalTaxRate}
-              totalProjectCost={calculationProps.totalProjectCost}
-              actualCashInvested={calculationProps.actualCashInvested}
-              isConstructionProject={calculationProps.isConstructionProject}
-            />
             <FundingSummaryPanel />
           </div>
         </div>
