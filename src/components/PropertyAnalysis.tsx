@@ -4,9 +4,7 @@ import { PropertyCalculationDetails } from "@/components/PropertyCalculationDeta
 import { FundingSummaryPanel } from "@/components/FundingSummaryPanel";
 import { PresetSelector } from "@/components/PresetSelector";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Button } from "@/components/ui/button";
-import { TrendingUp } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import AppNav from "@/components/AppNav";
 import { usePropertyData } from "@/contexts/PropertyDataContext";
 
 interface Client {
@@ -83,7 +81,7 @@ const DesktopLayout = ({
 };
 
 const PropertyAnalysis = () => {
-  const navigate = useNavigate();
+  
   const { propertyData, updateField, calculateTotalProjectCost, calculateEquityLoanAmount, applyPreset } = usePropertyData();
 
   // Tax calculations
@@ -361,26 +359,16 @@ const PropertyAnalysis = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Compact Header */}
       <div className="bg-gradient-to-r from-primary/5 to-accent/5 border-b flex-shrink-0">
         <div className="max-w-full px-6 py-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div>
-              <h1 className="text-xl font-bold text-foreground">
-                Property Investment Analysis
-              </h1>
-              <p className="text-muted-foreground text-sm">
-                Comprehensive analysis tool for Australian residential property investments
-              </p>
+              <h1 className="text-xl font-bold text-foreground">Property Investment Analysis</h1>
+              <p className="text-muted-foreground text-sm">Comprehensive analysis tool for Australian residential property investments</p>
             </div>
-            <Button 
-              onClick={() => navigate('/projections')}
-              className="flex items-center gap-2"
-              size="sm"
-            >
-              <TrendingUp className="h-4 w-4" />
-              40-Year Projections
-            </Button>
+            <div className="flex items-center gap-2">
+              <AppNav />
+            </div>
           </div>
         </div>
       </div>

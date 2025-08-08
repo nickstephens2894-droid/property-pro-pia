@@ -4,13 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ArrowLeft, Download, Users, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, Download, Users, Plus, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { usePropertyData } from "@/contexts/PropertyDataContext";
 import ProjectionsTable from "@/components/ProjectionsTable";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PropertySummaryDashboard } from "@/components/PropertySummaryDashboard";
 import { PresetSelector } from "@/components/PresetSelector";
+import AppNav from "@/components/AppNav";
 interface YearProjection {
   year: number;
   rentalIncome: number;
@@ -417,14 +418,11 @@ const [inputValues, setInputValues] = useState({
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" onClick={() => navigate('/')} className="flex items-center gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Back to Analysis
-            </Button>
             <div>
               <h1 className="text-3xl font-bold tracking-tight">40-Year Investment Projections</h1>
               <p className="text-muted-foreground">Year-over-year growth and cashflow analysis</p>
             </div>
+            <AppNav />
           </div>
           <Button variant="outline" className="flex items-center gap-2">
             <Download className="h-4 w-4" />
