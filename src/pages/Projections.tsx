@@ -49,12 +49,12 @@ const Projections = () => {
   const [assumptions, setAssumptions] = useState({
     initialPropertyValue: propertyData.purchasePrice || funding.totalProjectCost,
     initialWeeklyRent: propertyData.weeklyRent,
-    capitalGrowthRate: 4.0,
-    rentalGrowthRate: propertyData.rentalGrowthRate,
+    capitalGrowthRate: 7.0,
+    rentalGrowthRate: 5.0,
     vacancyRate: propertyData.vacancyRate,
     initialMainLoanBalance: funding.mainLoanAmount,
     initialEquityLoanBalance: funding.equityLoanAmount,
-    mainInterestRate: propertyData.interestRate,
+    mainInterestRate: 6.0,
     equityInterestRate: propertyData.equityLoanInterestRate || 7.2, // Default if not set
     mainLoanTerm: propertyData.loanTerm,
     equityLoanTerm: propertyData.equityLoanTerm,
@@ -71,7 +71,7 @@ const Projections = () => {
     depreciationYear1: 15000
   });
 
-  const [yearRange, setYearRange] = useState<[number, number]>([1, 8]);
+  const [yearRange, setYearRange] = useState<[number, number]>([1, 30]);
   const [clientAccordionOpen, setClientAccordionOpen] = useState(false);
 
   // Calculate weighted average marginal tax rate from clients
@@ -357,12 +357,12 @@ const Projections = () => {
                 <Label htmlFor="yearFrom" className="text-sm font-medium">Year From</Label>
                 <Input
                   id="yearFrom"
-                  type="number"
-                  min={1}
-                  max={40}
+                  type="text"
                   value={yearRange[0]}
                   onChange={(e) => {
-                    const from = Math.max(1, Math.min(40, parseInt(e.target.value) || 1));
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    if (value === '') return;
+                    const from = Math.max(1, Math.min(40, parseInt(value)));
                     const to = Math.max(from, yearRange[1]);
                     const span = to - from + 1;
                     setYearRange(span > 25 ? [from, from + 24] : [from, to]);
@@ -375,12 +375,12 @@ const Projections = () => {
                 <Label htmlFor="yearTo" className="text-sm font-medium">Year To</Label>
                 <Input
                   id="yearTo"
-                  type="number"
-                  min={1}
-                  max={40}
+                  type="text"
                   value={yearRange[1]}
                   onChange={(e) => {
-                    const to = Math.max(1, Math.min(40, parseInt(e.target.value) || 1));
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    if (value === '') return;
+                    const to = Math.max(1, Math.min(40, parseInt(value)));
                     const from = Math.min(to, yearRange[0]);
                     const span = to - from + 1;
                     setYearRange(span > 25 ? [to - 24, to] : [from, to]);
@@ -395,12 +395,16 @@ const Projections = () => {
                 <div className="relative">
                   <Input
                     id="capitalGrowth"
-                    type="number"
-                    min={0}
-                    max={15}
-                    step={0.1}
-                    value={assumptions.capitalGrowthRate}
+                    type="text"
+                    value={assumptions.capitalGrowthRate.toFixed(1)}
                     onChange={(e) => {
+                      const value = e.target.value.replace(/[^0-9.]/g, '');
+                      const numValue = parseFloat(value) || 0;
+                      if (numValue >= 0 && numValue <= 15) {
+                        setAssumptions(prev => ({ ...prev, capitalGrowthRate: numValue }));
+                      }
+                    }}
+                    onBlur={(e) => {
                       const value = Math.max(0, Math.min(15, parseFloat(e.target.value) || 0));
                       setAssumptions(prev => ({ ...prev, capitalGrowthRate: value }));
                     }}
@@ -416,12 +420,16 @@ const Projections = () => {
                 <div className="relative">
                   <Input
                     id="rentalGrowth"
-                    type="number"
-                    min={0}
-                    max={10}
-                    step={0.1}
-                    value={assumptions.rentalGrowthRate}
+                    type="text"
+                    value={assumptions.rentalGrowthRate.toFixed(1)}
                     onChange={(e) => {
+                      const value = e.target.value.replace(/[^0-9.]/g, '');
+                      const numValue = parseFloat(value) || 0;
+                      if (numValue >= 0 && numValue <= 10) {
+                        setAssumptions(prev => ({ ...prev, rentalGrowthRate: numValue }));
+                      }
+                    }}
+                    onBlur={(e) => {
                       const value = Math.max(0, Math.min(10, parseFloat(e.target.value) || 0));
                       setAssumptions(prev => ({ ...prev, rentalGrowthRate: value }));
                     }}
@@ -437,12 +445,16 @@ const Projections = () => {
                 <div className="relative">
                   <Input
                     id="interestRate"
-                    type="number"
-                    min={3}
-                    max={12}
-                    step={0.1}
-                    value={assumptions.mainInterestRate}
+                    type="text"
+                    value={assumptions.mainInterestRate.toFixed(1)}
                     onChange={(e) => {
+                      const value = e.target.value.replace(/[^0-9.]/g, '');
+                      const numValue = parseFloat(value) || 0;
+                      if (numValue >= 3 && numValue <= 12) {
+                        setAssumptions(prev => ({ ...prev, mainInterestRate: numValue }));
+                      }
+                    }}
+                    onBlur={(e) => {
                       const value = Math.max(3, Math.min(12, parseFloat(e.target.value) || 3));
                       setAssumptions(prev => ({ ...prev, mainInterestRate: value }));
                     }}
