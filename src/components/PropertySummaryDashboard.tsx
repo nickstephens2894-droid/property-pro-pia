@@ -29,23 +29,31 @@ export const PropertySummaryDashboard = ({
 }: PropertySummaryDashboardProps) => {
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(true);
+  
+  // Add safety checks for undefined values
+  const safeWeeklyCashflow = weeklyCashflowYear1 ?? 0;
+  const safeTaxSavingsYear1 = taxSavingsYear1 ?? 0;
+  const safeTaxSavingsTotal = taxSavingsTotal ?? 0;
+  const safeNetEquity = netEquityAtYearTo ?? 0;
+  const safeYearTo = yearTo ?? 1;
+  
   const heroMetrics: SummaryMetric[] = [{
     label: "Weekly Cashflow Year 1",
-    value: `$${weeklyCashflowYear1.toFixed(2)}`,
+    value: `$${safeWeeklyCashflow.toFixed(2)}`,
     sublabel: "After-tax weekly",
-    type: weeklyCashflowYear1 >= 0 ? 'positive' : 'negative',
+    type: safeWeeklyCashflow >= 0 ? 'positive' : 'negative',
     icon: DollarSign
   }, {
     label: "Tax Savings Year 1",
-    value: `$${Math.abs(taxSavingsYear1).toLocaleString()}`,
+    value: `$${Math.abs(safeTaxSavingsYear1).toLocaleString()}`,
     sublabel: "Annual benefit",
-    type: taxSavingsYear1 >= 0 ? 'positive' : 'warning',
+    type: safeTaxSavingsYear1 >= 0 ? 'positive' : 'warning',
     icon: Calculator
   }, {
-    label: `Tax Savings Total (Year ${yearTo})`,
-    value: `$${Math.abs(taxSavingsTotal).toLocaleString()}`,
-    sublabel: `Cumulative to year ${yearTo}`,
-    type: taxSavingsTotal >= 0 ? 'positive' : 'warning',
+    label: `Tax Savings Total (Year ${safeYearTo})`,
+    value: `$${Math.abs(safeTaxSavingsTotal).toLocaleString()}`,
+    sublabel: `Cumulative to year ${safeYearTo}`,
+    type: safeTaxSavingsTotal >= 0 ? 'positive' : 'warning',
     icon: PiggyBank
   }];
   const getMetricStyles = (type: SummaryMetric['type']) => {
@@ -130,10 +138,10 @@ export const PropertySummaryDashboard = ({
               <CardContent className="pt-6">
                 <div className="text-center space-y-3">
                   <div className="text-3xl font-bold text-primary">
-                    ${netEquityAtYearTo.toLocaleString()}
+                    ${safeNetEquity.toLocaleString()}
                   </div>
                   <div className="text-sm text-muted-foreground font-medium">
-                    Net Equity at End of Year {yearTo}
+                    Net Equity at End of Year {safeYearTo}
                   </div>
                   <div className="text-xs text-muted-foreground">
                     Property value minus loan balances
