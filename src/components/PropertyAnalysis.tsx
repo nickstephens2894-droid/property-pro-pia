@@ -1,5 +1,4 @@
 import { PropertyInputForm } from "@/components/PropertyInputForm";
-import { PropertySummaryDashboard } from "@/components/PropertySummaryDashboard";
 import { PropertyCalculationDetails } from "@/components/PropertyCalculationDetails";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
@@ -335,21 +334,6 @@ const PropertyAnalysis = () => {
           {/* Summary & Details - Takes 2 columns on desktop, appears second */}
           <div className={`space-y-6 ${isMobile ? 'order-2' : 'lg:col-span-2'}`}>
             
-            {/* Summary Dashboard */}
-            <PropertySummaryDashboard
-              weeklyAfterTaxCashFlow={weeklyAfterTaxCashFlow}
-              grossYield={grossYield}
-              
-              cashOnCashReturn={cashOnCashReturn}
-              taxDifference={totalTaxDifference}
-              annualRent={annualRent}
-              totalExpenses={totalDeductibleExpenses}
-              marginalTaxRate={marginalTaxRate}
-              totalProjectCost={totalProjectCost}
-              actualCashInvested={actualCashInvested}
-              isConstructionProject={propertyData.isConstructionProject}
-            />
-
             {/* Calculation Details */}
             <PropertyCalculationDetails
               monthlyRepayment={totalWeeklyLoanPayments * 52 / 12}

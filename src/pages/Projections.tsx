@@ -8,6 +8,8 @@ import { ChevronDown, ArrowLeft, Download, Users, Plus, Trash2 } from "lucide-re
 import { useNavigate } from "react-router-dom";
 import { usePropertyData } from "@/contexts/PropertyDataContext";
 import ProjectionsTable from "@/components/ProjectionsTable";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PropertySummaryDashboard } from "@/components/PropertySummaryDashboard";
 
 interface YearProjection {
   year: number;
@@ -71,9 +73,9 @@ const Projections = () => {
     depreciationYear1: 15000
   });
 
-  const [yearRange, setYearRange] = useState<[number, number]>([1, 30]);
-  const [clientAccordionOpen, setClientAccordionOpen] = useState(false);
-  
+const [yearRange, setYearRange] = useState<[number, number]>([1, 30]);
+const [clientAccordionOpen, setClientAccordionOpen] = useState(false);
+const [viewMode, setViewMode] = useState<'year' | 'table'>("table");
   // Separate state for input values to allow free editing - initialize once
   const [inputValues, setInputValues] = useState({
     yearFrom: yearRange[0].toString(),
@@ -283,7 +285,18 @@ const Projections = () => {
   const finalPropertyValue = projections[39]?.propertyValue || 0;
   const finalEquity = projections[39]?.propertyEquity || 0;
   const totalTaxBenefits = projections.reduce((sum, p) => sum + Math.max(0, p.taxBenefit), 0);
-  const equityAtYearTo = projections.find(p => p.year === validatedYearRange[1])?.propertyEquity ?? 0;
+const equityAtYearTo = projections.find(p => p.year === validatedYearRange[1])?.propertyEquity ?? 0;
+
+// Investment Summary metrics based on Year From
+const yearFrom = validatedYearRange[0];
+const currentYearData = projections.find(p => p.year === yearFrom);
+const weeklyAfterTaxCashFlowSummary = ((currentYearData?.afterTaxCashFlow ?? 0) / 52);
+const grossYieldSummary = funding.totalProjectCost ? (((currentYearData?.rentalIncome ?? 0) / funding.totalProjectCost) * 100) : 0;
+const cashOnCashReturnSummary = propertyData.depositAmount > 0 ? (((currentYearData?.afterTaxCashFlow ?? 0) / propertyData.depositAmount) * 100) : 0;
+const taxDifferenceSummary = -((currentYearData?.taxBenefit ?? 0));
+const annualRentSummary = currentYearData?.rentalIncome ?? 0;
+const totalExpensesSummary = (currentYearData?.totalInterest ?? 0) + (currentYearData?.otherExpenses ?? 0) + (currentYearData?.depreciation ?? 0);
+const marginalTaxRateSummary = calculateWeightedTaxRate() / 100;
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
@@ -310,58 +323,72 @@ const Projections = () => {
           </Button>
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Break-even Year</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{breakEvenYear}</div>
-              <p className="text-xs text-muted-foreground">When cash flow turns positive</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Total Cash Invested</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(totalCashInvested)}</div>
-              <p className="text-xs text-muted-foreground">Including negative cash flows</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Year 40 Property Value</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(finalPropertyValue)}</div>
-              <p className="text-xs text-muted-foreground">With {formatPercentage(assumptions.capitalGrowthRate)} growth</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Total Tax Benefits</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(totalTaxBenefits)}</div>
-              <p className="text-xs text-muted-foreground">Cumulative over 40 years</p>
-            </CardContent>
-          </Card>
+{/* Investment Summary Dashboard */}
+<PropertySummaryDashboard
+  weeklyAfterTaxCashFlow={weeklyAfterTaxCashFlowSummary}
+  grossYield={grossYieldSummary}
+  cashOnCashReturn={cashOnCashReturnSummary}
+  taxDifference={taxDifferenceSummary}
+  annualRent={annualRentSummary}
+  totalExpenses={totalExpensesSummary}
+  marginalTaxRate={marginalTaxRateSummary}
+  totalProjectCost={funding.totalProjectCost}
+  actualCashInvested={propertyData.depositAmount}
+  isConstructionProject={propertyData.isConstructionProject}
+/>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Equity at Year {validatedYearRange[1]}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(equityAtYearTo)}</div>
-              <p className="text-xs text-muted-foreground">End of selected range</p>
-            </CardContent>
-          </Card>
-        </div>
+{/* Summary Cards */}
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <Card>
+    <CardHeader className="pb-3">
+      <CardTitle className="text-sm font-medium">Break-even Year</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold">{breakEvenYear}</div>
+      <p className="text-xs text-muted-foreground">When cash flow turns positive</p>
+    </CardContent>
+  </Card>
+  
+  <Card>
+    <CardHeader className="pb-3">
+      <CardTitle className="text-sm font-medium">Total Cash Invested</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold">{formatCurrency(totalCashInvested)}</div>
+      <p className="text-xs text-muted-foreground">Including negative cash flows</p>
+    </CardContent>
+  </Card>
+  
+  <Card>
+    <CardHeader className="pb-3">
+      <CardTitle className="text-sm font-medium">Year 40 Property Value</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold">{formatCurrency(finalPropertyValue)}</div>
+      <p className="text-xs text-muted-foreground">With {formatPercentage(assumptions.capitalGrowthRate)} growth</p>
+    </CardContent>
+  </Card>
+  
+  <Card>
+    <CardHeader className="pb-3">
+      <CardTitle className="text-sm font-medium">Total Tax Benefits</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold">{formatCurrency(totalTaxBenefits)}</div>
+      <p className="text-xs text-muted-foreground">Cumulative over 40 years</p>
+    </CardContent>
+  </Card>
+
+  <Card>
+    <CardHeader className="pb-3">
+      <CardTitle className="text-sm font-medium">Equity at Year {validatedYearRange[1]}</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold">{formatCurrency(equityAtYearTo)}</div>
+      <p className="text-xs text-muted-foreground">End of selected range</p>
+    </CardContent>
+  </Card>
+</div>
 
         {/* Controls */}
         <Card className="mb-6">
@@ -485,18 +512,27 @@ const Projections = () => {
 
         {/* Projections Table */}
         <Card>
-          <CardHeader>
-            <CardTitle>Investment Analysis - Projections over {validatedYearRange[1] - validatedYearRange[0] + 1} years</CardTitle>
-            <CardDescription>Financial breakdown with metrics in rows and years in columns</CardDescription>
-          </CardHeader>
+<CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+  <div>
+    <CardTitle>Investment Analysis - Projections over {validatedYearRange[1] - validatedYearRange[0] + 1} years</CardTitle>
+    <CardDescription>Financial breakdown with metrics in rows and years in columns</CardDescription>
+  </div>
+  <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'year' | 'table')}>
+    <TabsList>
+      <TabsTrigger value="year">Year by Year</TabsTrigger>
+      <TabsTrigger value="table">Full Table</TabsTrigger>
+    </TabsList>
+  </Tabs>
+</CardHeader>
           <CardContent>
-            <ProjectionsTable
-              projections={projections}
-              assumptions={assumptions}
-              validatedYearRange={validatedYearRange}
-              formatCurrency={formatCurrency}
-              formatPercentage={formatPercentage}
-            />
+<ProjectionsTable
+  projections={projections}
+  assumptions={assumptions}
+  validatedYearRange={validatedYearRange}
+  formatCurrency={formatCurrency}
+  formatPercentage={formatPercentage}
+  viewMode={viewMode}
+/>
           </CardContent>
         </Card>
 
