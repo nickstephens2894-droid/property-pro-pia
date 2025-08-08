@@ -1,6 +1,8 @@
 import { PropertyInputForm } from "@/components/PropertyInputForm";
 import { PropertyCalculationDetails } from "@/components/PropertyCalculationDetails";
 import { PropertySummaryDashboard } from "@/components/PropertySummaryDashboard";
+import { FundingSummaryPanel } from "@/components/FundingSummaryPanel";
+import { PresetSelector } from "@/components/PresetSelector";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { TrendingUp } from "lucide-react";
@@ -22,6 +24,7 @@ interface DesktopLayoutProps {
   totalTaxableIncome: number;
   marginalTaxRate: number;
   calculationProps: any;
+  applyPreset: (dataToApply: any, propertyMethod?: any, fundingMethod?: any) => void;
 }
 
 const DesktopLayout = ({ 
@@ -30,43 +33,62 @@ const DesktopLayout = ({
   clientTaxResults, 
   totalTaxableIncome, 
   marginalTaxRate, 
-  calculationProps 
+  calculationProps,
+  applyPreset
 }: DesktopLayoutProps) => {
   return (
-    <div className="grid grid-cols-12 gap-4 h-full p-4">
-      {/* Left Panel - Input Form (4 columns) */}
-      <div className="col-span-4 h-full overflow-y-auto">
-        <PropertyInputForm
-          propertyData={propertyData}
-          updateField={updateField}
-          clientTaxResults={clientTaxResults}
-          totalTaxableIncome={totalTaxableIncome}
-          marginalTaxRate={marginalTaxRate}
+    <div className="space-y-6 p-6 max-w-full">
+      {/* Quick Setup Presets - Collapsible at top */}
+      <div className="w-full">
+        <PresetSelector 
+          onApplyPreset={(presetData: any) => {
+            const { propertyMethod, fundingMethod, ...dataToApply } = presetData;
+            applyPreset(dataToApply, propertyMethod, fundingMethod);
+          }}
+          currentPropertyMethod={propertyData.currentPropertyMethod}
+          currentFundingMethod={propertyData.currentFundingMethod}
         />
       </div>
-      
-      {/* Right Panel - Summary & Calculations (8 columns) */}
-      <div className="col-span-8 flex flex-col gap-4 h-full">
-        {/* Top Section - Summary Dashboard */}
-        <div className="flex-shrink-0 overflow-y-auto" style={{ height: '35%' }}>
-          <PropertySummaryDashboard
-            weeklyAfterTaxCashFlow={calculationProps.weeklyAfterTaxCashFlow}
-            grossYield={calculationProps.grossYield}
-            cashOnCashReturn={calculationProps.cashOnCashReturn}
-            taxDifference={calculationProps.totalTaxWithProperty - calculationProps.totalTaxWithoutProperty}
-            annualRent={calculationProps.annualRent}
-            totalExpenses={calculationProps.totalDeductibleExpenses}
-            marginalTaxRate={calculationProps.marginalTaxRate}
-            totalProjectCost={calculationProps.totalProjectCost}
-            actualCashInvested={calculationProps.actualCashInvested}
-            isConstructionProject={calculationProps.isConstructionProject}
-          />
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-12 gap-6">
+        {/* Property Investment Details - Prominent Left Section */}
+        <div className="col-span-7">
+          <div className="sticky top-4">
+            <PropertyInputForm
+              propertyData={propertyData}
+              updateField={updateField}
+              clientTaxResults={clientTaxResults}
+              totalTaxableIncome={totalTaxableIncome}
+              marginalTaxRate={marginalTaxRate}
+            />
+          </div>
         </div>
         
-        {/* Bottom Section - Detailed Calculations */}
-        <div className="flex-1 overflow-y-auto min-h-0">
-          <PropertyCalculationDetails {...calculationProps} />
+        {/* Right Side - Summaries */}
+        <div className="col-span-5 space-y-6">
+          {/* Investment Summary + Funding Summary side by side */}
+          <div className="grid grid-cols-1 gap-4">
+            <PropertySummaryDashboard
+              weeklyAfterTaxCashFlow={calculationProps.weeklyAfterTaxCashFlow}
+              grossYield={calculationProps.grossYield}
+              cashOnCashReturn={calculationProps.cashOnCashReturn}
+              taxDifference={calculationProps.totalTaxWithProperty - calculationProps.totalTaxWithoutProperty}
+              annualRent={calculationProps.annualRent}
+              totalExpenses={calculationProps.totalDeductibleExpenses}
+              marginalTaxRate={calculationProps.marginalTaxRate}
+              totalProjectCost={calculationProps.totalProjectCost}
+              actualCashInvested={calculationProps.actualCashInvested}
+              isConstructionProject={calculationProps.isConstructionProject}
+            />
+            <FundingSummaryPanel />
+          </div>
         </div>
+      </div>
+
+      {/* Detailed Calculations - Full Width Below */}
+      <div className="w-full">
+        <PropertyCalculationDetails {...calculationProps} />
       </div>
     </div>
   );
@@ -74,7 +96,7 @@ const DesktopLayout = ({
 
 const PropertyAnalysis = () => {
   const navigate = useNavigate();
-  const { propertyData, updateField, calculateTotalProjectCost, calculateEquityLoanAmount } = usePropertyData();
+  const { propertyData, updateField, calculateTotalProjectCost, calculateEquityLoanAmount, applyPreset } = usePropertyData();
 
   // Tax calculations
   const calculateTax = (income: number) => {
@@ -376,9 +398,9 @@ const PropertyAnalysis = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         {isMobile ? (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+          <div className="px-4 sm:px-6 py-6">
             <div className="space-y-6">
               <PropertyInputForm
                 propertyData={propertyData}
@@ -430,6 +452,7 @@ const PropertyAnalysis = () => {
             clientTaxResults={clientTaxResults}
             totalTaxableIncome={totalTaxableIncome}
             marginalTaxRate={marginalTaxRate}
+            applyPreset={applyPreset}
             calculationProps={{
               monthlyRepayment: totalWeeklyLoanPayments * 52 / 12,
               annualRepayment: totalAnnualLoanPayments,

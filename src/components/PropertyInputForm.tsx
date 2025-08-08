@@ -270,24 +270,19 @@ export const PropertyInputForm = ({
 
   return (
     <div className="space-y-6">
-      {/* Preset Selector */}
-<PresetSelector 
-  onApplyPreset={handleApplyPreset}
-  currentPropertyMethod={propertyData.currentPropertyMethod}
-  currentFundingMethod={propertyData.currentFundingMethod}
-/>
-      
       {/* Validation Warnings */}
       <ValidationWarnings />
       
-      {/* Funding Summary Panel */}
-      <FundingSummaryPanel />
-      
-      <Card className="w-full">
-        <CardHeader className="bg-gradient-to-r from-card to-accent border-b">
-          <CardTitle className="flex items-center gap-2 text-card-foreground">
-            <Home className="h-5 w-5" />
-            Property Investment Details
+      <Card className="w-full border-2 border-primary/20 shadow-lg">
+        <CardHeader className="bg-gradient-to-r from-primary/10 to-accent/10 border-b-2 border-primary/20">
+          <CardTitle className="flex items-center gap-3 text-primary text-xl">
+            <Home className="h-6 w-6" />
+            <div>
+              <div>Property Investment Details</div>
+              <div className="text-sm font-normal text-muted-foreground mt-1">
+                Configure your property investment parameters
+              </div>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
