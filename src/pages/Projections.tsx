@@ -242,14 +242,11 @@ const Projections = () => {
           const monthsElapsed = (year - 1) * 12;
           const totalMonths = assumptions.mainLoanTerm * 12;
           const monthlyRate = assumptions.mainInterestRate / 100 / 12;
-          
           if (monthsElapsed >= totalMonths) {
             mainLoanBalance = 0;
           } else {
             // Standard amortization formula: remaining balance after n payments
-            mainLoanBalance = assumptions.initialMainLoanBalance * 
-              (Math.pow(1 + monthlyRate, totalMonths) - Math.pow(1 + monthlyRate, monthsElapsed)) /
-              (Math.pow(1 + monthlyRate, totalMonths) - 1);
+            mainLoanBalance = assumptions.initialMainLoanBalance * (Math.pow(1 + monthlyRate, totalMonths) - Math.pow(1 + monthlyRate, monthsElapsed)) / (Math.pow(1 + monthlyRate, totalMonths) - 1);
           }
         } else {
           // IO first, then P&I - calculate balance after IO period ended
@@ -257,9 +254,7 @@ const Projections = () => {
           const remainingMonths = assumptions.mainLoanTerm * 12 - assumptions.mainIOTermYears * 12;
           if (remainingMonths > 0 && monthsFromPIStart >= 0) {
             const monthlyRate = assumptions.mainInterestRate / 100 / 12;
-            mainLoanBalance = assumptions.initialMainLoanBalance * 
-              (Math.pow(1 + monthlyRate, remainingMonths) - Math.pow(1 + monthlyRate, monthsFromPIStart)) / 
-              (Math.pow(1 + monthlyRate, remainingMonths) - 1);
+            mainLoanBalance = assumptions.initialMainLoanBalance * (Math.pow(1 + monthlyRate, remainingMonths) - Math.pow(1 + monthlyRate, monthsFromPIStart)) / (Math.pow(1 + monthlyRate, remainingMonths) - 1);
           }
         }
       }
@@ -276,14 +271,11 @@ const Projections = () => {
             const monthsElapsed = (year - 1) * 12;
             const totalMonths = assumptions.equityLoanTerm * 12;
             const monthlyRate = assumptions.equityInterestRate / 100 / 12;
-            
             if (monthsElapsed >= totalMonths) {
               equityLoanBalance = 0;
             } else {
               // Standard amortization formula: remaining balance after n payments
-              equityLoanBalance = assumptions.initialEquityLoanBalance * 
-                (Math.pow(1 + monthlyRate, totalMonths) - Math.pow(1 + monthlyRate, monthsElapsed)) /
-                (Math.pow(1 + monthlyRate, totalMonths) - 1);
+              equityLoanBalance = assumptions.initialEquityLoanBalance * (Math.pow(1 + monthlyRate, totalMonths) - Math.pow(1 + monthlyRate, monthsElapsed)) / (Math.pow(1 + monthlyRate, totalMonths) - 1);
             }
           } else {
             // IO first, then P&I - calculate balance after IO period ended
@@ -291,9 +283,7 @@ const Projections = () => {
             const remainingMonths = assumptions.equityLoanTerm * 12 - assumptions.equityIOTermYears * 12;
             if (remainingMonths > 0 && monthsFromPIStart >= 0) {
               const monthlyRate = assumptions.equityInterestRate / 100 / 12;
-              equityLoanBalance = assumptions.initialEquityLoanBalance * 
-                (Math.pow(1 + monthlyRate, remainingMonths) - Math.pow(1 + monthlyRate, monthsFromPIStart)) / 
-                (Math.pow(1 + monthlyRate, remainingMonths) - 1);
+              equityLoanBalance = assumptions.initialEquityLoanBalance * (Math.pow(1 + monthlyRate, remainingMonths) - Math.pow(1 + monthlyRate, monthsFromPIStart)) / (Math.pow(1 + monthlyRate, remainingMonths) - 1);
             }
           }
         }
@@ -419,55 +409,7 @@ const Projections = () => {
       <PropertySummaryDashboard weeklyAfterTaxCashFlow={weeklyAfterTaxCashFlowSummary} grossYield={grossYieldSummary} cashOnCashReturn={cashOnCashReturnSummary} taxDifference={taxDifferenceSummary} annualRent={annualRentSummary} totalExpenses={totalExpensesSummary} marginalTaxRate={marginalTaxRateSummary} totalProjectCost={funding.totalProjectCost} actualCashInvested={propertyData.depositAmount} isConstructionProject={propertyData.isConstructionProject} />
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-  <Card>
-    
-    <CardContent>
-      <div className="text-2xl font-bold">{breakEvenYear}</div>
-      <p className="text-xs text-muted-foreground">When cash flow turns positive</p>
-    </CardContent>
-  </Card>
-  
-  <Card>
-    <CardHeader className="pb-3">
-      <CardTitle className="text-sm font-medium">Total Cash Invested</CardTitle>
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold">{formatCurrency(totalCashInvested)}</div>
-      <p className="text-xs text-muted-foreground">Including negative cash flows</p>
-    </CardContent>
-  </Card>
-  
-  <Card>
-    <CardHeader className="pb-3">
-      <CardTitle className="text-sm font-medium">Year 40 Property Value</CardTitle>
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold">{formatCurrency(finalPropertyValue)}</div>
-      <p className="text-xs text-muted-foreground">With {formatPercentage(assumptions.capitalGrowthRate)} growth</p>
-    </CardContent>
-  </Card>
-  
-  <Card>
-    <CardHeader className="pb-3">
-      <CardTitle className="text-sm font-medium">Total Tax Benefits</CardTitle>
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold">{formatCurrency(totalTaxBenefits)}</div>
-      <p className="text-xs text-muted-foreground">Cumulative over 40 years</p>
-    </CardContent>
-  </Card>
-
-  <Card>
-    <CardHeader className="pb-3">
-      <CardTitle className="text-sm font-medium">Equity at Year {validatedYearRange[1]}</CardTitle>
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold">{formatCurrency(equityAtYearTo)}</div>
-      <p className="text-xs text-muted-foreground">End of selected range</p>
-    </CardContent>
-  </Card>
-      </div>
+      
 
         {/* Controls */}
         <Card className="mb-6">
