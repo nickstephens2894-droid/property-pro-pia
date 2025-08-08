@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -335,42 +334,42 @@ const DesktopProjectionsTable = ({
   ))}
 </tr>
 
-          {/* Annual Mortgage Repayments - Expandable */}
-          <Collapsible open={showLoanDetails} onOpenChange={setShowLoanDetails}>
-<CollapsibleTrigger asChild>
-  <tr className="border-b hover:bg-muted/50 cursor-pointer">
-    <td className="sticky left-0 bg-background z-10 font-medium p-3">
-      <div className="flex items-center gap-2">
-        {showLoanDetails ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-        Annual mortgage repayments
-      </div>
-    </td>
-    {projections.map((projection: YearProjection) => (
-      <td key={projection.year} className="text-center font-mono text-sm p-3">
-        {formatCurrency(projection.mainLoanPayment + projection.equityLoanPayment)}
-      </td>
-    ))}
-  </tr>
-</CollapsibleTrigger>
-            <CollapsibleContent>
-<tr className="bg-blue-50 dark:bg-blue-950/20 border-b">
-  <td className="sticky left-0 bg-blue-50 dark:bg-blue-950/20 z-10 pl-8 text-sm p-3">
-    Main Loan ({assumptions.mainLoanType.toUpperCase()})
+{/* Annual Mortgage Repayments - Expandable */}
+<tr className="border-b hover:bg-muted/50 cursor-pointer" onClick={() => setShowLoanDetails(!showLoanDetails)}>
+  <td className="sticky left-0 bg-background z-10 font-medium p-3">
+    <div className="flex items-center gap-2">
+      {showLoanDetails ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+      Annual mortgage repayments
+    </div>
   </td>
   {projections.map((projection: YearProjection) => (
-    <td key={projection.year} className="text-center font-mono text-xs p-3">
-      <div>{formatCurrency(projection.mainLoanPayment)}</div>
-      {projection.year !== 0 && (
-        <Badge variant={projection.mainLoanIOStatus === 'IO' ? 'secondary' : 'default'} className="text-xs mt-1">
-          {projection.mainLoanIOStatus}
-        </Badge>
-      )}
+    <td key={projection.year} className="text-center font-mono text-sm p-3">
+      {formatCurrency(projection.mainLoanPayment + projection.equityLoanPayment)}
     </td>
   ))}
 </tr>
-              
+
+{/* Main Loan Details */}
+{showLoanDetails && (
+  <tr className="bg-blue-50 dark:bg-blue-950/20 border-b">
+    <td className="sticky left-0 bg-blue-50 dark:bg-blue-950/20 z-10 pl-8 text-sm p-3">
+      Main Loan ({assumptions.mainLoanType.toUpperCase()})
+    </td>
+    {projections.map((projection: YearProjection) => (
+      <td key={projection.year} className="text-center font-mono text-xs p-3">
+        <div>{formatCurrency(projection.mainLoanPayment)}</div>
+        {projection.year !== 0 && (
+          <Badge variant={projection.mainLoanIOStatus === 'IO' ? 'secondary' : 'default'} className="text-xs mt-1">
+            {projection.mainLoanIOStatus}
+          </Badge>
+        )}
+      </td>
+    ))}
+  </tr>
+)}
+
 {/* Equity Loan Details */}
-{assumptions.initialEquityLoanBalance > 0 && (
+{showLoanDetails && assumptions.initialEquityLoanBalance > 0 && (
   <tr className="bg-green-50 dark:bg-green-950/20 border-b">
     <td className="sticky left-0 bg-green-50 dark:bg-green-950/20 z-10 pl-8 text-sm p-3">
       Equity Loan ({assumptions.equityLoanType.toUpperCase()})
@@ -387,8 +386,6 @@ const DesktopProjectionsTable = ({
     ))}
   </tr>
 )}
-            </CollapsibleContent>
-          </Collapsible>
           
 {/* Rental Income */}
 <tr className="border-b">
