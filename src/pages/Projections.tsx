@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -76,12 +76,23 @@ const Projections = () => {
   
   // Separate state for input values to allow free editing
   const [inputValues, setInputValues] = useState({
-    yearFrom: '1',
-    yearTo: '30',
-    capitalGrowth: '7',
-    rentalGrowth: '5',
-    interestRate: '6'
+    yearFrom: yearRange[0].toString(),
+    yearTo: yearRange[1].toString(),
+    capitalGrowth: assumptions.capitalGrowthRate.toString(),
+    rentalGrowth: assumptions.rentalGrowthRate.toString(),
+    interestRate: assumptions.mainInterestRate.toString()
   });
+
+  // Update input values when the actual values change
+  useEffect(() => {
+    setInputValues({
+      yearFrom: yearRange[0].toString(),
+      yearTo: yearRange[1].toString(),
+      capitalGrowth: assumptions.capitalGrowthRate.toString(),
+      rentalGrowth: assumptions.rentalGrowthRate.toString(),
+      interestRate: assumptions.mainInterestRate.toString()
+    });
+  }, [yearRange, assumptions.capitalGrowthRate, assumptions.rentalGrowthRate, assumptions.mainInterestRate]);
 
   // Calculate weighted average marginal tax rate from clients
   const calculateWeightedTaxRate = () => {
