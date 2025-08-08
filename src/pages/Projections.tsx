@@ -368,23 +368,32 @@ const Projections = () => {
   const totalTaxBenefits = projections.reduce((sum, p) => sum + Math.max(0, p.taxBenefit), 0);
   const equityAtYearTo = projections.find(p => p.year === validatedYearRange[1])?.propertyEquity ?? 0;
 
-  // Investment Summary metrics based on Year From
-  const yearFrom = validatedYearRange[0];
-  const currentYearData = projections.find(p => p.year === yearFrom);
-  const weeklyAfterTaxCashFlowSummary = (currentYearData?.afterTaxCashFlow ?? 0) / 52;
-  const grossYieldSummary = funding.totalProjectCost ? (currentYearData?.rentalIncome ?? 0) / funding.totalProjectCost * 100 : 0;
-  const cashOnCashReturnSummary = propertyData.depositAmount > 0 ? (currentYearData?.afterTaxCashFlow ?? 0) / propertyData.depositAmount * 100 : 0;
-  const taxDifferenceSummary = -(currentYearData?.taxBenefit ?? 0);
-  const annualRentSummary = currentYearData?.rentalIncome ?? 0;
-  const totalExpensesSummary = (currentYearData?.totalInterest ?? 0) + (currentYearData?.otherExpenses ?? 0) + (currentYearData?.depreciation ?? 0);
-  const marginalTaxRateSummary = propertyData.clients.length > 0 ? Math.max(...propertyData.clients.map(c => {
-    const income = c.annualIncome + c.otherIncome;
-    if (income <= 18200) return 0;
-    if (income <= 45000) return 0.19;
-    if (income <= 120000) return 0.325;
-    if (income <= 180000) return 0.37;
-    return 0.45;
-  })) : 0.325;
+  // Investment Summary metrics based on Year From - memoized to update when year range changes
+  const investmentSummary = useMemo(() => {
+    const yearFrom = validatedYearRange[0];
+    const yearTo = validatedYearRange[1];
+    const currentYearData = projections.find(p => p.year === yearFrom);
+    const weeklyAfterTaxCashFlowSummary = (currentYearData?.afterTaxCashFlow ?? 0) / 52;
+    const taxDifferenceSummary = -(currentYearData?.taxBenefit ?? 0);
+    const taxSavingsTotal = projections.slice(0, yearTo).reduce((sum, p) => sum + Math.max(0, p.taxBenefit), 0);
+    const equityAtYearTo = projections.find(p => p.year === yearTo)?.propertyEquity ?? 0;
+    const marginalTaxRateSummary = propertyData.clients.length > 0 ? Math.max(...propertyData.clients.map(c => {
+      const income = c.annualIncome + c.otherIncome;
+      if (income <= 18200) return 0;
+      if (income <= 45000) return 0.19;
+      if (income <= 120000) return 0.325;
+      if (income <= 180000) return 0.37;
+      return 0.45;
+    })) : 0.325;
+    
+    return {
+      weeklyAfterTaxCashFlowSummary,
+      taxDifferenceSummary,
+      taxSavingsTotal,
+      equityAtYearTo,
+      marginalTaxRateSummary
+    };
+  }, [projections, validatedYearRange, propertyData.clients]);
   return <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {/* Header */}
@@ -407,10 +416,10 @@ const Projections = () => {
 
       {/* Investment Summary Dashboard */}
       <PropertySummaryDashboard
-        weeklyCashflowYear1={weeklyAfterTaxCashFlowSummary}
-        taxSavingsYear1={-taxDifferenceSummary}
-        taxSavingsTotal={projections.slice(0, validatedYearRange[1]).reduce((sum, p) => sum + Math.max(0, p.taxBenefit), 0)}
-        netEquityAtYearTo={equityAtYearTo}
+        weeklyCashflowYear1={investmentSummary.weeklyAfterTaxCashFlowSummary}
+        taxSavingsYear1={-investmentSummary.taxDifferenceSummary}
+        taxSavingsTotal={investmentSummary.taxSavingsTotal}
+        netEquityAtYearTo={investmentSummary.equityAtYearTo}
         yearTo={validatedYearRange[1]}
       />
 
@@ -536,7 +545,7 @@ const Projections = () => {
             </div>
             
             <div className="mt-4 text-sm text-muted-foreground">
-Tax Rate: {formatPercentage(marginalTaxRateSummary * 100)} (highest client marginal rate)
+Tax Rate: {formatPercentage(investmentSummary.marginalTaxRateSummary * 100)} (highest client marginal rate)
             </div>
           </CardContent>
         </Card>
