@@ -50,14 +50,13 @@ const ProjectionsTable = ({
   const [showOperatingDetails, setShowOperatingDetails] = useState(false);
   const [showDepreciationDetails, setShowDepreciationDetails] = useState(false);
   const [showCashFlowDetails, setShowCashFlowDetails] = useState(false);
+  const [currentYearIndex, setCurrentYearIndex] = useState(0);
   
   const filteredProjections = projections.filter(p => 
     p.year >= validatedYearRange[0] && p.year <= validatedYearRange[1]
   );
 
 if (isMobile || viewMode === 'year') {
-  const [currentYearIndex, setCurrentYearIndex] = useState(0);
-  
   return <MobileProjectionsView 
     projections={filteredProjections}
     assumptions={assumptions}
