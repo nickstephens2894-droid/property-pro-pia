@@ -58,7 +58,7 @@ const Projections = () => {
     vacancyRate: propertyData.vacancyRate,
     initialMainLoanBalance: funding.mainLoanAmount,
     initialEquityLoanBalance: funding.equityLoanAmount,
-    mainInterestRate: 6.0,
+    mainInterestRate: propertyData.interestRate,
     equityInterestRate: propertyData.equityLoanInterestRate || 7.2,
     // Default if not set
     mainLoanTerm: propertyData.loanTerm,
@@ -83,7 +83,7 @@ const [inputValues, setInputValues] = useState({
     yearTo: yearRange[1].toString(),
     capitalGrowth: assumptions.capitalGrowthRate.toString(),
     rentalGrowth: assumptions.rentalGrowthRate.toString(),
-    interestRate: assumptions.mainInterestRate.toString(),
+    interestRate: propertyData.interestRate.toString(),
     interestAdjValue: '',
     interestAdjStartYear: ''
   });
@@ -144,12 +144,12 @@ const [inputValues, setInputValues] = useState({
     return totalDifference;
   };
 
-  // Validate year range (max 25 year span)
+  // Validate year range (max 30 year span)
   const validatedYearRange = useMemo((): [number, number] => {
     const [start, end] = yearRange;
     const span = end - start + 1;
-    if (span > 25) {
-      return [start, start + 24];
+    if (span > 30) {
+      return [start, start + 29];
     }
     return [start, end];
   }, [yearRange]);
@@ -158,6 +158,17 @@ const [inputValues, setInputValues] = useState({
     const annualRent = assumptions.initialWeeklyRent * 52;
     let mainLoanBalance = assumptions.initialMainLoanBalance;
     let equityLoanBalance = assumptions.initialEquityLoanBalance;
+
+    // Apply interest rate adjustment if specified
+    const adjustmentStartYear = parseInt(inputValues.interestAdjStartYear) || null;
+    const adjustmentValue = parseFloat(inputValues.interestAdjValue) || null;
+    
+    const getEffectiveInterestRate = (baseRate: number, year: number) => {
+      if (adjustmentStartYear && adjustmentValue && year >= adjustmentStartYear) {
+        return adjustmentValue; // Override with adjustment value
+      }
+      return baseRate;
+    };
 
     // Calculate loan payments for both loans
     const calculateLoanPayment = (balance: number, rate: number, term: number) => {
@@ -291,9 +302,11 @@ const [inputValues, setInputValues] = useState({
         }
       }
 
-      // Interest expense (tax deductible) - calculated on current year's balance
-      const mainInterest = mainLoanBalance * (assumptions.mainInterestRate / 100);
-      const equityInterest = equityLoanBalance * (assumptions.equityInterestRate / 100);
+      // Interest expense (tax deductible) - calculated on current year's balance with effective rates
+      const effectiveMainRate = getEffectiveInterestRate(assumptions.mainInterestRate, year);
+      const effectiveEquityRate = getEffectiveInterestRate(assumptions.equityInterestRate, year);
+      const mainInterest = mainLoanBalance * (effectiveMainRate / 100);
+      const equityInterest = equityLoanBalance * (effectiveEquityRate / 100);
       const totalInterest = mainInterest + equityInterest;
 
       // Operating expenses with inflation
@@ -348,7 +361,7 @@ const [inputValues, setInputValues] = useState({
       return [constructionPeriodProjection, ...years];
     }
     return years;
-  }, [assumptions, propertyData, calculateTotalTaxDifference, calculateHoldingCosts]);
+  }, [assumptions, propertyData, calculateTotalTaxDifference, calculateHoldingCosts, inputValues]);
 
   // Filter projections based on selected year range
   const filteredProjections = projections.filter(p => p.year >= validatedYearRange[0] && p.year <= validatedYearRange[1]);
