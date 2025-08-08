@@ -87,83 +87,88 @@ export const PropertySummaryDashboard = ({
     }
   };
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-foreground">Investment Summary</h3>
+    <Card className="bg-card border shadow-sm">
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <CollapsibleTrigger asChild>
-          <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-            <span>{isOpen ? 'Hide' : 'Show'} Details</span>
-            <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
-          </button>
-        </CollapsibleTrigger>
-      </div>
-      
-      <CollapsibleContent className="space-y-4">
-        {/* Hero Metrics - Main KPIs */}
-        <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-3'}`}>
-          {heroMetrics.map((metric, index) => {
-            const styles = getMetricStyles(metric.type);
-            const Icon = metric.icon;
-            
-            return (
-              <Card key={index} className={`transition-all duration-300 hover:shadow-lg hover:scale-[1.02] ${styles.card} border`}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                      {metric.label}
-                    </CardTitle>
-                    <div className={`p-2 rounded-full bg-background/50 ${styles.icon}`}>
-                      <Icon className="h-4 w-4" />
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className={`text-3xl font-bold ${styles.value} mb-1`}>
-                    {metric.value}
-                  </div>
-                  {metric.sublabel && (
-                    <p className="text-xs text-muted-foreground">
-                      {metric.sublabel}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-        
-        {/* Secondary Metrics - More detailed view */}
-        <Card className="bg-muted/30 border-muted">
-          <CardContent className="pt-6">
-            <div className="grid gap-6 grid-cols-2 lg:grid-cols-4">
-              <div className="text-center space-y-2">
-                <div className={`text-xl font-bold ${cashOnCashReturn >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                  {cashOnCashReturn.toFixed(1)}%
-                </div>
-                <div className="text-xs text-muted-foreground font-medium">Cash-on-Cash Return</div>
-              </div>
-              <div className="text-center space-y-2">
-                <div className="text-xl font-bold text-foreground">
-                  ${totalProjectCost.toLocaleString()}
-                </div>
-                <div className="text-xs text-muted-foreground font-medium">Total Investment</div>
-              </div>
-              <div className="text-center space-y-2">
-                <div className="text-xl font-bold text-foreground">
-                  ${actualCashInvested.toLocaleString()}
-                </div>
-                <div className="text-xs text-muted-foreground font-medium">Cash Required</div>
-              </div>
-              <div className="text-center space-y-2">
-                <div className="text-xl font-bold text-foreground">
-                  ${annualRent.toLocaleString()}
-                </div>
-                <div className="text-xs text-muted-foreground font-medium">Annual Rent</div>
-              </div>
+          <CardHeader className="pb-4 cursor-pointer hover:bg-muted/50 transition-colors">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg font-semibold text-foreground">
+                Investment Summary
+              </CardTitle>
+              <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
             </div>
+          </CardHeader>
+        </CollapsibleTrigger>
+        
+        <CollapsibleContent>
+          <CardContent className="pt-0 space-y-6">
+            {/* Hero Metrics - Main KPIs */}
+            <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-3'}`}>
+              {heroMetrics.map((metric, index) => {
+                const styles = getMetricStyles(metric.type);
+                const Icon = metric.icon;
+                
+                return (
+                  <Card key={index} className={`transition-all duration-300 hover:shadow-md hover:scale-[1.02] ${styles.card} border`}>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">
+                          {metric.label}
+                        </CardTitle>
+                        <div className={`p-2 rounded-full bg-background/50 ${styles.icon}`}>
+                          <Icon className="h-4 w-4" />
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className={`text-3xl font-bold ${styles.value} mb-1`}>
+                        {metric.value}
+                      </div>
+                      {metric.sublabel && (
+                        <p className="text-xs text-muted-foreground">
+                          {metric.sublabel}
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+            
+            {/* Secondary Metrics - More detailed view */}
+            <Card className="bg-muted/20 border-muted/50">
+              <CardContent className="pt-6">
+                <div className="grid gap-6 grid-cols-2 lg:grid-cols-4">
+                  <div className="text-center space-y-2">
+                    <div className={`text-xl font-bold ${cashOnCashReturn >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                      {cashOnCashReturn.toFixed(1)}%
+                    </div>
+                    <div className="text-xs text-muted-foreground font-medium">Cash-on-Cash Return</div>
+                  </div>
+                  <div className="text-center space-y-2">
+                    <div className="text-xl font-bold text-foreground">
+                      ${totalProjectCost.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-muted-foreground font-medium">Total Investment</div>
+                  </div>
+                  <div className="text-center space-y-2">
+                    <div className="text-xl font-bold text-foreground">
+                      ${actualCashInvested.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-muted-foreground font-medium">Cash Required</div>
+                  </div>
+                  <div className="text-center space-y-2">
+                    <div className="text-xl font-bold text-foreground">
+                      ${annualRent.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-muted-foreground font-medium">Annual Rent</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </CardContent>
-        </Card>
-      </CollapsibleContent>
-    </Collapsible>
+        </CollapsibleContent>
+      </Collapsible>
+    </Card>
   );
 };
