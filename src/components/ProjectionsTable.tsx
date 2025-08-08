@@ -45,10 +45,11 @@ const ProjectionsTable = ({
   viewMode = 'table'
 }: ProjectionsTableProps) => {
   const isMobile = useIsMobile();
-const [showLoanDetails, setShowLoanDetails] = useState(false);
-const [showOperatingDetails, setShowOperatingDetails] = useState(false);
-const [showDepreciationDetails, setShowDepreciationDetails] = useState(false);
-const [showCashFlowDetails, setShowCashFlowDetails] = useState(false);
+  const [showLoanDetails, setShowLoanDetails] = useState(false);
+  const [showMortgageDetails, setShowMortgageDetails] = useState(false);
+  const [showOperatingDetails, setShowOperatingDetails] = useState(false);
+  const [showDepreciationDetails, setShowDepreciationDetails] = useState(false);
+  const [showCashFlowDetails, setShowCashFlowDetails] = useState(false);
   
   const filteredProjections = projections.filter(p => 
     p.year >= validatedYearRange[0] && p.year <= validatedYearRange[1]
@@ -74,6 +75,8 @@ return <DesktopProjectionsTable
   assumptions={assumptions}
   showLoanDetails={showLoanDetails}
   setShowLoanDetails={setShowLoanDetails}
+  showMortgageDetails={showMortgageDetails}
+  setShowMortgageDetails={setShowMortgageDetails}
   showOperatingDetails={showOperatingDetails}
   setShowOperatingDetails={setShowOperatingDetails}
   showDepreciationDetails={showDepreciationDetails}
@@ -304,6 +307,8 @@ const DesktopProjectionsTable = ({
   assumptions, 
   showLoanDetails, 
   setShowLoanDetails,
+  showMortgageDetails,
+  setShowMortgageDetails,
   showOperatingDetails,
   setShowOperatingDetails,
   showDepreciationDetails,
@@ -393,17 +398,18 @@ const DesktopProjectionsTable = ({
   </tr>
 )}
 
-{/* Rental Income */}
-<tr className="border-b">
-  <td className="sticky left-0 bg-background z-10 font-medium p-3">Rental income</td>
-  {projections.map((projection: YearProjection) => (
-    <td key={projection.year} className="text-center font-mono text-sm p-3">{formatCurrency(projection.rentalIncome)}</td>
-  ))}
-</tr>
-
-{/* Annual Mortgage Repayments */}
-<tr className="border-b">
-  <td className="sticky left-0 bg-background z-10 font-medium p-3">Annual mortgage repayments</td>
+{/* Annual Mortgage Repayments - Expandable */}
+<tr className="border-b hover:bg-muted/50 cursor-pointer" onClick={() => setShowMortgageDetails(!showMortgageDetails)}>
+  <td className="sticky left-0 bg-background z-10 font-medium p-3">
+    <div className="flex items-center gap-2">
+      {showMortgageDetails ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+      Annual mortgage repayments
+      <Badge variant="outline" className="ml-2">
+        {/* Check if any loan is IO */}
+        {projections[0]?.mainLoanIOStatus === 'IO' || projections[0]?.equityLoanIOStatus === 'IO' ? 'IO' : 'P&I'}
+      </Badge>
+    </div>
+  </td>
   {projections.map((projection: YearProjection) => (
     <td key={projection.year} className="text-center font-mono text-sm p-3">
       {formatCurrency(projection.mainLoanPayment + projection.equityLoanPayment)}
@@ -412,12 +418,16 @@ const DesktopProjectionsTable = ({
 </tr>
 
 {/* Interest Expense */}
-<tr className="border-b">
-  <td className="sticky left-0 bg-background z-10 font-medium p-3">Interest expense</td>
-  {projections.map((projection: YearProjection) => (
-    <td key={projection.year} className="text-center font-mono text-sm p-3">{formatCurrency(projection.totalInterest)}</td>
-  ))}
-</tr>
+{showMortgageDetails && (
+  <tr className="bg-red-50 dark:bg-red-950/20 border-b">
+    <td className="sticky left-0 bg-red-50 dark:bg-red-950/20 z-10 pl-8 text-sm p-3">
+      Net interest expense
+    </td>
+    {projections.map((projection: YearProjection) => (
+      <td key={projection.year} className="text-center font-mono text-xs p-3">{formatCurrency(projection.totalInterest)}</td>
+    ))}
+  </tr>
+)}
 
 {/* Operating Expenses - Expandable */}
 <tr className="border-b hover:bg-muted/50 cursor-pointer" onClick={() => setShowOperatingDetails(!showOperatingDetails)}>
@@ -429,6 +439,14 @@ const DesktopProjectionsTable = ({
   </td>
   {projections.map((projection: YearProjection) => (
     <td key={projection.year} className="text-center font-mono text-sm p-3">{formatCurrency(projection.otherExpenses)}</td>
+  ))}
+</tr>
+
+{/* Rental Income */}
+<tr className="border-b">
+  <td className="sticky left-0 bg-background z-10 font-medium p-3">Rental income</td>
+  {projections.map((projection: YearProjection) => (
+    <td key={projection.year} className="text-center font-mono text-sm p-3">{formatCurrency(projection.rentalIncome)}</td>
   ))}
 </tr>
 
