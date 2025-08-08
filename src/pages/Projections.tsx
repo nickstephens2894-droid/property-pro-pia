@@ -10,6 +10,7 @@ import { usePropertyData } from "@/contexts/PropertyDataContext";
 import ProjectionsTable from "@/components/ProjectionsTable";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PropertySummaryDashboard } from "@/components/PropertySummaryDashboard";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 interface YearProjection {
   year: number;
   rentalIncome: number;
@@ -78,12 +79,15 @@ const Projections = () => {
   const [clientAccordionOpen, setClientAccordionOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'year' | 'table'>("table");
   // Separate state for input values to allow free editing - initialize once
-  const [inputValues, setInputValues] = useState({
+const [inputValues, setInputValues] = useState({
     yearFrom: yearRange[0].toString(),
     yearTo: yearRange[1].toString(),
     capitalGrowth: assumptions.capitalGrowthRate.toString(),
     rentalGrowth: assumptions.rentalGrowthRate.toString(),
-    interestRate: assumptions.mainInterestRate.toString()
+    interestRate: assumptions.mainInterestRate.toString(),
+    interestAdjMode: 'absolute' as 'absolute' | 'delta',
+    interestAdjValue: '',
+    interestAdjStartYear: ''
   });
 
   // Calculate per-client progressive tax instead of weighted average
@@ -539,28 +543,37 @@ const Projections = () => {
                 </div>
               </div>
               
-              {/* Main Interest Rate */}
-              <div className="space-y-2">
-                <Label htmlFor="interestRate" className="text-sm font-medium">Interest Rate</Label>
-                <div className="relative">
-                  <Input id="interestRate" type="text" value={inputValues.interestRate} onChange={e => {
-                  setInputValues(prev => ({
-                    ...prev,
-                    interestRate: e.target.value
-                  }));
-                }} onBlur={e => {
-                  const value = Math.max(0.1, Math.min(12, parseFloat(e.target.value) || 0.1));
-                  setAssumptions(prev => ({
-                    ...prev,
-                    mainInterestRate: value
-                  }));
-                  setInputValues(prev => ({
-                    ...prev,
-                    interestRate: value.toString()
-                  }));
-                }} className="h-9 pr-8" />
-                  <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">%</span>
+{/* Interest Rate Adjustment */}
+              <div className="space-y-2 col-span-2 lg:col-span-2">
+                <Label htmlFor="interestAdj" className="text-sm font-medium">Interest Rate Adjustment</Label>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                  <ToggleGroup type="single" value={inputValues.interestAdjMode} onValueChange={(v) => v && setInputValues(prev => ({ ...prev, interestAdjMode: v as 'absolute' | 'delta' }))}>
+                    <ToggleGroupItem value="absolute">Absolute (%)</ToggleGroupItem>
+                    <ToggleGroupItem value="delta">Delta (bps)</ToggleGroupItem>
+                  </ToggleGroup>
+                  <div className="relative flex-1">
+                    <Input id="interestAdj" type="text" value={inputValues.interestAdjValue} onChange={e => {
+                      const raw = e.target.value.replace(/[^0-9.-]/g, '');
+                      setInputValues(prev => ({ ...prev, interestAdjValue: raw }));
+                    }} onBlur={e => {
+                      // Keep as-is; application to calculations handled separately
+                      setInputValues(prev => ({ ...prev, interestAdjValue: e.target.value }));
+                    }} className="h-9 pr-12" />
+                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">{inputValues.interestAdjMode === 'delta' ? 'bps' : '%'}</span>
+                  </div>
+                  <div className="relative w-36">
+                    <Input id="interestAdjStartYear" placeholder="Start Year" type="text" value={inputValues.interestAdjStartYear} onChange={e => {
+                      const raw = e.target.value.replace(/[^0-9]/g, '');
+                      setInputValues(prev => ({ ...prev, interestAdjStartYear: raw }));
+                    }} onBlur={e => {
+                      const val = Math.max(1, Math.min(40, parseInt(e.target.value || '0')));
+                      setInputValues(prev => ({ ...prev, interestAdjStartYear: isNaN(val) ? '' : val.toString() }));
+                    }} className="h-9 pr-8" />
+                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">Yr</span>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => setInputValues(prev => ({ ...prev, interestAdjValue: '', interestAdjStartYear: '' }))}>Clear</Button>
                 </div>
+                <p className="text-xs text-muted-foreground">Choose Absolute to override base rates, or Delta to adjust by basis points. Clear to revert to Funding & Finance rates.</p>
               </div>
             </div>
             
