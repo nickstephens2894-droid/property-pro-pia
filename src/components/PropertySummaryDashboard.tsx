@@ -1,19 +1,18 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, DollarSign, Calculator, AlertCircle, PiggyBank } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-
 interface SummaryMetric {
   label: string;
   value: string;
   sublabel?: string;
   type: 'positive' | 'negative' | 'neutral' | 'warning';
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{
+    className?: string;
+  }>;
 }
-
 interface PropertySummaryDashboardProps {
   weeklyAfterTaxCashFlow: number;
   grossYield: number;
-  
   cashOnCashReturn: number;
   taxDifference: number;
   annualRent: number;
@@ -23,11 +22,9 @@ interface PropertySummaryDashboardProps {
   actualCashInvested: number;
   isConstructionProject: boolean;
 }
-
 export const PropertySummaryDashboard = ({
   weeklyAfterTaxCashFlow,
   grossYield,
-  
   cashOnCashReturn,
   taxDifference,
   annualRent,
@@ -38,31 +35,25 @@ export const PropertySummaryDashboard = ({
   isConstructionProject
 }: PropertySummaryDashboardProps) => {
   const isMobile = useIsMobile();
-
-  const heroMetrics: SummaryMetric[] = [
-    {
-      label: "Weekly Cash Flow",
-      value: `$${weeklyAfterTaxCashFlow.toFixed(2)}`,
-      sublabel: "After-tax",
-      type: weeklyAfterTaxCashFlow >= 0 ? 'positive' : 'negative',
-      icon: DollarSign
-    },
-    {
-      label: "Gross Yield",
-      value: `${grossYield.toFixed(2)}%`,
-      sublabel: "Before expenses",
-      type: 'neutral',
-      icon: TrendingUp
-    },
-    {
-      label: taxDifference <= 0 ? "Tax Savings" : "Additional Tax",
-      value: `$${Math.abs(taxDifference).toLocaleString()}`,
-      sublabel: taxDifference <= 0 ? "Annual benefit" : "Annual cost",
-      type: taxDifference <= 0 ? 'positive' : 'warning',
-      icon: Calculator
-    }
-  ];
-
+  const heroMetrics: SummaryMetric[] = [{
+    label: "Weekly Cash Flow",
+    value: `$${weeklyAfterTaxCashFlow.toFixed(2)}`,
+    sublabel: "After-tax",
+    type: weeklyAfterTaxCashFlow >= 0 ? 'positive' : 'negative',
+    icon: DollarSign
+  }, {
+    label: "Gross Yield",
+    value: `${grossYield.toFixed(2)}%`,
+    sublabel: "Before expenses",
+    type: 'neutral',
+    icon: TrendingUp
+  }, {
+    label: taxDifference <= 0 ? "Tax Savings" : "Additional Tax",
+    value: `$${Math.abs(taxDifference).toLocaleString()}`,
+    sublabel: taxDifference <= 0 ? "Annual benefit" : "Annual cost",
+    type: taxDifference <= 0 ? 'positive' : 'warning',
+    icon: Calculator
+  }];
   const getMetricStyles = (type: SummaryMetric['type']) => {
     switch (type) {
       case 'positive':
@@ -91,9 +82,7 @@ export const PropertySummaryDashboard = ({
         };
     }
   };
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       {/* Hero Metrics */}
       <Card className="w-full">
         <CardHeader className="bg-gradient-to-r from-card to-accent border-b">
@@ -105,14 +94,9 @@ export const PropertySummaryDashboard = ({
         <CardContent className="p-6">
           <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-2 lg:grid-cols-3'}`}>
             {heroMetrics.map((metric, index) => {
-              const styles = getMetricStyles(metric.type);
-              const Icon = metric.icon;
-              
-              return (
-                <div
-                  key={index}
-                  className={`p-4 rounded-lg border transition-all hover:shadow-md ${styles.card}`}
-                >
+            const styles = getMetricStyles(metric.type);
+            const Icon = metric.icon;
+            return <div key={index} className={`p-4 rounded-lg border transition-all hover:shadow-md ${styles.card}`}>
                   <div className="flex items-start justify-between mb-3">
                     <Icon className={`h-5 w-5 ${styles.icon}`} />
                     {metric.type === 'negative' && <TrendingDown className="h-4 w-4 text-destructive" />}
@@ -124,69 +108,19 @@ export const PropertySummaryDashboard = ({
                   <div className="text-sm text-muted-foreground font-medium">
                     {metric.label}
                   </div>
-                  {metric.sublabel && (
-                    <div className="text-xs text-muted-foreground mt-1">
+                  {metric.sublabel && <div className="text-xs text-muted-foreground mt-1">
                       {metric.sublabel}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                    </div>}
+                </div>;
+          })}
           </div>
         </CardContent>
       </Card>
 
       {/* Quick Stats */}
       <Card className="w-full">
-        <CardHeader className="bg-gradient-to-r from-card to-accent border-b">
-          <CardTitle className="flex items-center gap-2 text-card-foreground">
-            <Calculator className="h-5 w-5" />
-            Financial Breakdown
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`}>
-            <div className="space-y-3">
-              <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Income</h4>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center py-2 border-b border-border/50">
-                  <span className="text-sm">Annual Rental Income</span>
-                  <span className="font-medium">${annualRent.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-sm">Monthly Rental Income</span>
-                  <span className="font-medium">${(annualRent / 12).toFixed(0)}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Expenses</h4>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center py-2 border-b border-border/50">
-                  <span className="text-sm">Total Annual Expenses</span>
-                  <span className="font-medium text-destructive">${totalExpenses.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-sm">Your Marginal Tax Rate</span>
-                  <span className="font-medium">{(marginalTaxRate * 100).toFixed(0)}%</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6 p-4 bg-muted/30 rounded-lg border border-muted">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-              <div className="text-xs text-muted-foreground">
-                <p className="font-medium mb-1">Investment Analysis Note:</p>
-                <p>This analysis includes depreciation benefits and tax implications based on your marginal tax rate. 
-                Actual returns may vary based on market conditions, vacancy rates, and property management efficiency.</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
+        
+        
       </Card>
-    </div>
-  );
+    </div>;
 };
