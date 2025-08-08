@@ -27,13 +27,21 @@ export const NumberInput = ({
   min,
   max
 }: NumberInputProps) => {
-  // Separate state for input values to allow free editing - initialize once
-  const [displayValue, setDisplayValue] = useState<string>(value === 0 ? "" : value.toString());
+  // Helpers for formatting/unformatting with thousands separators
+  const formatNumber = (num: number) =>
+    new Intl.NumberFormat("en-US", { maximumFractionDigits: 20 }).format(num);
+  const unformat = (val: string) => val.replace(/,/g, "");
+
+  // Separate state for input values to allow free editing - initialize once (formatted when not focused)
+  const [displayValue, setDisplayValue] = useState<string>(
+    value === 0 ? "" : formatNumber(value)
+  );
   const [isFocused, setIsFocused] = useState(false);
 
   const handleFocus = () => {
     setIsFocused(true);
-    // Select all text on focus for easy replacement
+    // Remove formatting while editing and select all for easy replacement
+    setDisplayValue((prev) => unformat(prev));
     setTimeout(() => {
       const input = document.getElementById(id) as HTMLInputElement;
       input?.select();
@@ -42,13 +50,16 @@ export const NumberInput = ({
 
   const handleBlur = () => {
     setIsFocused(false);
-    let numericValue = displayValue === "" ? 0 : Number(displayValue);
+    let raw = displayValue.trim();
+    let numericValue = raw === "" ? 0 : Number(unformat(raw));
     
     // Apply min/max constraints
     if (min !== undefined) numericValue = Math.max(min, numericValue);
     if (max !== undefined) numericValue = Math.min(max, numericValue);
     
     onChange(numericValue);
+    // Re-apply formatting after editing (keep empty if user cleared)
+    setDisplayValue(raw === "" ? "" : formatNumber(numericValue));
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
