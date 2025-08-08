@@ -428,10 +428,19 @@ const Projections = () => {
 
         {/* Controls */}
         <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Scenario Controls</CardTitle>
-            <CardDescription>Adjust key assumptions and projection range</CardDescription>
-          </CardHeader>
+          <Collapsible>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Scenario Controls</CardTitle>
+                    <CardDescription>Adjust key assumptions and projection range</CardDescription>
+                  </div>
+                  <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-200 data-[state=open]:rotate-180" />
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
               {/* Year Range From/To */}
@@ -548,7 +557,9 @@ const Projections = () => {
 Tax Rate: {formatPercentage(investmentSummary.marginalTaxRateSummary * 100)} (highest client marginal rate)
             </div>
           </CardContent>
-        </Card>
+        </CollapsibleContent>
+      </Collapsible>
+    </Card>
 
         {/* Projections Table */}
         <Card>

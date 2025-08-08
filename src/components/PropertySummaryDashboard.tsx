@@ -91,7 +91,7 @@ export const PropertySummaryDashboard = ({
           <CardHeader className="pb-4 cursor-pointer hover:bg-muted/50 transition-colors">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-semibold text-foreground">
-                Investment Summary
+                Investment Results
               </CardTitle>
               <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
             </div>
