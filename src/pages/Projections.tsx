@@ -1,8 +1,10 @@
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Slider } from "@/components/ui/slider";
-import { ArrowLeft, Download } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronDown, ArrowLeft, Download, Users, Plus, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { usePropertyData } from "@/contexts/PropertyDataContext";
 import ProjectionsTable from "@/components/ProjectionsTable";
@@ -30,7 +32,7 @@ interface YearProjection {
 
 const Projections = () => {
   const navigate = useNavigate();
-  const { propertyData } = usePropertyData();
+  const { propertyData, setPropertyData } = usePropertyData();
   
   // Use centralized calculations from context
   const { calculateTotalProjectCost, calculateEquityLoanAmount } = usePropertyData();
@@ -65,11 +67,46 @@ const Projections = () => {
     insurance: propertyData.insurance,
     repairs: propertyData.repairs,
     expenseInflationRate: 2.5,
-    marginalTaxRate: 37.0,
+    
     depreciationYear1: 15000
   });
 
   const [yearRange, setYearRange] = useState<[number, number]>([1, 8]);
+  const [clientAccordionOpen, setClientAccordionOpen] = useState(false);
+
+  // Calculate weighted average marginal tax rate from clients
+  const calculateWeightedTaxRate = () => {
+    const totalIncome = propertyData.clients.reduce((sum, client) => {
+      const ownership = propertyData.ownershipAllocations.find(o => o.clientId === client.id)?.ownershipPercentage || 0;
+      return sum + (client.annualIncome + client.otherIncome) * (ownership / 100);
+    }, 0);
+
+    if (totalIncome === 0) return 32.5; // Default middle tax rate
+
+    let weightedRate = 0;
+    propertyData.clients.forEach(client => {
+      const ownership = propertyData.ownershipAllocations.find(o => o.clientId === client.id)?.ownershipPercentage || 0;
+      const clientIncome = client.annualIncome + client.otherIncome;
+      const weight = (clientIncome * (ownership / 100)) / totalIncome;
+      
+      // Australian tax brackets 2024-25 + Medicare levy
+      let taxRate = 0;
+      if (clientIncome <= 18200) taxRate = 0;
+      else if (clientIncome <= 45000) taxRate = 19;
+      else if (clientIncome <= 120000) taxRate = 32.5;
+      else if (clientIncome <= 180000) taxRate = 37;
+      else taxRate = 45;
+
+      // Add Medicare levy (2%) for applicable clients
+      if (client.hasMedicareLevy && clientIncome > 24276) {
+        taxRate += 2;
+      }
+
+      weightedRate += taxRate * weight;
+    });
+
+    return weightedRate;
+  };
 
   // Validate year range (max 25 year span)
   const validatedYearRange = useMemo((): [number, number] => {
@@ -173,9 +210,10 @@ const Projections = () => {
       // Depreciation (diminishing over time)
       const depreciation = Math.max(0, assumptions.depreciationYear1 * Math.pow(0.95, year - 1));
       
-      // Tax calculations
+      // Tax calculations using weighted average rate
       const taxableIncome = rentalIncome - totalInterest - otherExpenses - depreciation;
-      const taxBenefit = taxableIncome < 0 ? Math.abs(taxableIncome) * (assumptions.marginalTaxRate / 100) : -taxableIncome * (assumptions.marginalTaxRate / 100);
+      const weightedTaxRate = calculateWeightedTaxRate();
+      const taxBenefit = taxableIncome < 0 ? Math.abs(taxableIncome) * (weightedTaxRate / 100) : -taxableIncome * (weightedTaxRate / 100);
       
       // Cash flow calculations
       const totalLoanPayments = mainLoanPayment + equityLoanPayment;
@@ -313,84 +351,110 @@ const Projections = () => {
             <CardDescription>Adjust key assumptions and projection range</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-6">
-              {/* Year Range Selector */}
-              <div className="space-y-3">
-                <label className="text-sm font-medium">Projection Range (Years {yearRange[0]} - {yearRange[1]})</label>
-                <div className="px-3">
-                  <Slider
-                    value={yearRange}
-                    onValueChange={(value) => setYearRange([value[0], value[1]])}
-                    max={40}
-                    min={1}
-                    step={1}
-                    className="w-full"
-                  />
-                </div>
-                <div className="text-center text-sm text-muted-foreground">Maximum 25 year range</div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {/* Year Range From/To */}
+              <div className="space-y-2">
+                <Label htmlFor="yearFrom" className="text-sm font-medium">Year From</Label>
+                <Input
+                  id="yearFrom"
+                  type="number"
+                  min={1}
+                  max={40}
+                  value={yearRange[0]}
+                  onChange={(e) => {
+                    const from = Math.max(1, Math.min(40, parseInt(e.target.value) || 1));
+                    const to = Math.max(from, yearRange[1]);
+                    const span = to - from + 1;
+                    setYearRange(span > 25 ? [from, from + 24] : [from, to]);
+                  }}
+                  className="h-9"
+                />
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Capital Growth Rate</label>
-                  <div className="px-3">
-                    <Slider
-                      value={[assumptions.capitalGrowthRate]}
-                      onValueChange={(value) => setAssumptions(prev => ({ ...prev, capitalGrowthRate: value[0] }))}
-                      max={15}
-                      min={0}
-                      step={0.5}
-                      className="w-full"
-                    />
-                  </div>
-                  <div className="text-center text-sm text-muted-foreground">{formatPercentage(assumptions.capitalGrowthRate)}</div>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Rental Growth Rate</label>
-                  <div className="px-3">
-                    <Slider
-                      value={[assumptions.rentalGrowthRate]}
-                      onValueChange={(value) => setAssumptions(prev => ({ ...prev, rentalGrowthRate: value[0] }))}
-                      max={10}
-                      min={0}
-                      step={0.5}
-                      className="w-full"
-                    />
-                  </div>
-                  <div className="text-center text-sm text-muted-foreground">{formatPercentage(assumptions.rentalGrowthRate)}</div>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Main Interest Rate</label>
-                  <div className="px-3">
-                    <Slider
-                      value={[assumptions.mainInterestRate]}
-                      onValueChange={(value) => setAssumptions(prev => ({ ...prev, mainInterestRate: value[0] }))}
-                      max={12}
-                      min={3}
-                      step={0.25}
-                      className="w-full"
-                    />
-                  </div>
-                  <div className="text-center text-sm text-muted-foreground">{formatPercentage(assumptions.mainInterestRate)}</div>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Marginal Tax Rate</label>
-                  <div className="px-3">
-                    <Slider
-                      value={[assumptions.marginalTaxRate]}
-                      onValueChange={(value) => setAssumptions(prev => ({ ...prev, marginalTaxRate: value[0] }))}
-                      max={47}
-                      min={0}
-                      step={1}
-                      className="w-full"
-                    />
-                  </div>
-                  <div className="text-center text-sm text-muted-foreground">{formatPercentage(assumptions.marginalTaxRate)}</div>
+              <div className="space-y-2">
+                <Label htmlFor="yearTo" className="text-sm font-medium">Year To</Label>
+                <Input
+                  id="yearTo"
+                  type="number"
+                  min={1}
+                  max={40}
+                  value={yearRange[1]}
+                  onChange={(e) => {
+                    const to = Math.max(1, Math.min(40, parseInt(e.target.value) || 1));
+                    const from = Math.min(to, yearRange[0]);
+                    const span = to - from + 1;
+                    setYearRange(span > 25 ? [to - 24, to] : [from, to]);
+                  }}
+                  className="h-9"
+                />
+              </div>
+              
+              {/* Capital Growth Rate */}
+              <div className="space-y-2">
+                <Label htmlFor="capitalGrowth" className="text-sm font-medium">Capital Growth</Label>
+                <div className="relative">
+                  <Input
+                    id="capitalGrowth"
+                    type="number"
+                    min={0}
+                    max={15}
+                    step={0.1}
+                    value={assumptions.capitalGrowthRate}
+                    onChange={(e) => {
+                      const value = Math.max(0, Math.min(15, parseFloat(e.target.value) || 0));
+                      setAssumptions(prev => ({ ...prev, capitalGrowthRate: value }));
+                    }}
+                    className="h-9 pr-8"
+                  />
+                  <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">%</span>
                 </div>
               </div>
+              
+              {/* Rental Growth Rate */}
+              <div className="space-y-2">
+                <Label htmlFor="rentalGrowth" className="text-sm font-medium">Rental Growth</Label>
+                <div className="relative">
+                  <Input
+                    id="rentalGrowth"
+                    type="number"
+                    min={0}
+                    max={10}
+                    step={0.1}
+                    value={assumptions.rentalGrowthRate}
+                    onChange={(e) => {
+                      const value = Math.max(0, Math.min(10, parseFloat(e.target.value) || 0));
+                      setAssumptions(prev => ({ ...prev, rentalGrowthRate: value }));
+                    }}
+                    className="h-9 pr-8"
+                  />
+                  <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                </div>
+              </div>
+              
+              {/* Main Interest Rate */}
+              <div className="space-y-2">
+                <Label htmlFor="interestRate" className="text-sm font-medium">Interest Rate</Label>
+                <div className="relative">
+                  <Input
+                    id="interestRate"
+                    type="number"
+                    min={3}
+                    max={12}
+                    step={0.1}
+                    value={assumptions.mainInterestRate}
+                    onChange={(e) => {
+                      const value = Math.max(3, Math.min(12, parseFloat(e.target.value) || 3));
+                      setAssumptions(prev => ({ ...prev, mainInterestRate: value }));
+                    }}
+                    className="h-9 pr-8"
+                  />
+                  <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-4 text-sm text-muted-foreground">
+              Tax Rate: {formatPercentage(calculateWeightedTaxRate())} (calculated from client incomes)
             </div>
           </CardContent>
         </Card>
@@ -410,6 +474,236 @@ const Projections = () => {
               formatPercentage={formatPercentage}
             />
           </CardContent>
+        </Card>
+
+        {/* Client Income & Tax Optimization */}
+        <Card>
+          <Collapsible open={clientAccordionOpen} onOpenChange={setClientAccordionOpen}>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-5 w-5 text-primary" />
+                    <div>
+                      <CardTitle>Client Income & Tax Optimization</CardTitle>
+                      <CardDescription>Manage client details and ownership structure for optimal tax outcomes</CardDescription>
+                    </div>
+                  </div>
+                  <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${clientAccordionOpen ? 'rotate-180' : ''}`} />
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="pt-0">
+                <div className="space-y-6">
+                  {/* Tax Summary */}
+                  <div className="bg-muted/30 rounded-lg p-4">
+                    <h4 className="font-medium mb-2">Current Tax Calculation</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Weighted Tax Rate:</span>
+                        <div className="font-semibold">{formatPercentage(calculateWeightedTaxRate())}</div>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Total Ownership:</span>
+                        <div className="font-semibold">
+                          {propertyData.ownershipAllocations.reduce((sum, o) => sum + o.ownershipPercentage, 0)}%
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Combined Income:</span>
+                        <div className="font-semibold">
+                          {formatCurrency(propertyData.clients.reduce((sum, c) => sum + c.annualIncome + c.otherIncome, 0))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Client List */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium">Clients & Ownership</h4>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const newClient = {
+                            id: Date.now().toString(),
+                            name: `Investor ${propertyData.clients.length + 1}`,
+                            annualIncome: 75000,
+                            otherIncome: 0,
+                            hasMedicareLevy: true
+                          };
+                          const newAllocation = {
+                            clientId: newClient.id,
+                            ownershipPercentage: 0
+                          };
+                          propertyData.clients.push(newClient);
+                          propertyData.ownershipAllocations.push(newAllocation);
+                          setPropertyData({ ...propertyData });
+                        }}
+                        className="flex items-center gap-2"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Add Client
+                      </Button>
+                    </div>
+
+                    {propertyData.clients.map((client, index) => {
+                      const allocation = propertyData.ownershipAllocations.find(o => o.clientId === client.id);
+                      const individualTaxRate = (() => {
+                        const income = client.annualIncome + client.otherIncome;
+                        let rate = 0;
+                        if (income <= 18200) rate = 0;
+                        else if (income <= 45000) rate = 19;
+                        else if (income <= 120000) rate = 32.5;
+                        else if (income <= 180000) rate = 37;
+                        else rate = 45;
+                        if (client.hasMedicareLevy && income > 24276) rate += 2;
+                        return rate;
+                      })();
+
+                      return (
+                        <div key={client.id} className="border rounded-lg p-4 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="font-medium">Client {index + 1}</div>
+                              <div className="text-sm text-muted-foreground">
+                                Tax Rate: {formatPercentage(individualTaxRate)}
+                              </div>
+                            </div>
+                            {propertyData.clients.length > 1 && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  const updatedClients = propertyData.clients.filter(c => c.id !== client.id);
+                                  const updatedAllocations = propertyData.ownershipAllocations.filter(o => o.clientId !== client.id);
+                                  setPropertyData({
+                                    ...propertyData,
+                                    clients: updatedClients,
+                                    ownershipAllocations: updatedAllocations
+                                  });
+                                }}
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor={`client-name-${client.id}`}>Name</Label>
+                              <Input
+                                id={`client-name-${client.id}`}
+                                value={client.name}
+                                onChange={(e) => {
+                                  const updatedClients = propertyData.clients.map(c =>
+                                    c.id === client.id ? { ...c, name: e.target.value } : c
+                                  );
+                                  setPropertyData({ ...propertyData, clients: updatedClients });
+                                }}
+                                className="h-9"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor={`client-income-${client.id}`}>Annual Income</Label>
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">$</span>
+                                <Input
+                                  id={`client-income-${client.id}`}
+                                  type="number"
+                                  min={0}
+                                  value={client.annualIncome}
+                                  onChange={(e) => {
+                                    const updatedClients = propertyData.clients.map(c =>
+                                      c.id === client.id ? { ...c, annualIncome: parseInt(e.target.value) || 0 } : c
+                                    );
+                                    setPropertyData({ ...propertyData, clients: updatedClients });
+                                  }}
+                                  className="h-9 pl-8"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor={`client-other-${client.id}`}>Other Income</Label>
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">$</span>
+                                <Input
+                                  id={`client-other-${client.id}`}
+                                  type="number"
+                                  min={0}
+                                  value={client.otherIncome}
+                                  onChange={(e) => {
+                                    const updatedClients = propertyData.clients.map(c =>
+                                      c.id === client.id ? { ...c, otherIncome: parseInt(e.target.value) || 0 } : c
+                                    );
+                                    setPropertyData({ ...propertyData, clients: updatedClients });
+                                  }}
+                                  className="h-9 pl-8"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor={`client-ownership-${client.id}`}>Ownership %</Label>
+                              <Input
+                                id={`client-ownership-${client.id}`}
+                                type="number"
+                                min={0}
+                                max={100}
+                                step={0.1}
+                                value={allocation?.ownershipPercentage || 0}
+                                onChange={(e) => {
+                                  const value = Math.max(0, Math.min(100, parseFloat(e.target.value) || 0));
+                                  const updatedAllocations = propertyData.ownershipAllocations.map(o =>
+                                    o.clientId === client.id ? { ...o, ownershipPercentage: value } : o
+                                  );
+                                  setPropertyData({ ...propertyData, ownershipAllocations: updatedAllocations });
+                                }}
+                                className="h-9"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={client.hasMedicareLevy}
+                                  onChange={(e) => {
+                                    const updatedClients = propertyData.clients.map(c =>
+                                      c.id === client.id ? { ...c, hasMedicareLevy: e.target.checked } : c
+                                    );
+                                    setPropertyData({ ...propertyData, clients: updatedClients });
+                                  }}
+                                  className="rounded"
+                                />
+                                Medicare Levy
+                              </Label>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Optimization Tips */}
+                  <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4">
+                    <h4 className="font-medium mb-2 text-blue-900 dark:text-blue-100">Tax Optimization Tips</h4>
+                    <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                      <li>• Consider shifting more ownership to the lower income earner</li>
+                      <li>• Ensure total ownership equals 100% for accurate projections</li>
+                      <li>• Higher income earners benefit more from negative gearing</li>
+                      <li>• Medicare levy applies to income over $24,276 (singles)</li>
+                    </ul>
+                  </div>
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
         </Card>
       </div>
     </div>
