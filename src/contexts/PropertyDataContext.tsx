@@ -37,6 +37,14 @@ export interface PropertyData {
   constructionPeriod: number; // months
   constructionInterestRate: number;
   
+  // Construction Progress Payments
+  constructionProgressPayments: Array<{
+    id: string;
+    percentage: number;
+    month: number;
+    description: string;
+  }>;
+  
   // Traditional Financing
   deposit: number;
   loanAmount: number;
@@ -164,6 +172,15 @@ const defaultPropertyData: PropertyData = {
   constructionPeriod: 8, // months
   constructionInterestRate: 7.0, // typically higher than standard rate
   
+  // Construction Progress Payments
+  constructionProgressPayments: [
+    { id: '1', percentage: 10, month: 1, description: 'Site preparation & slab' },
+    { id: '2', percentage: 20, month: 2, description: 'Frame & roof' },
+    { id: '3', percentage: 25, month: 4, description: 'Lock-up stage' },
+    { id: '4', percentage: 25, month: 6, description: 'Fixing stage' },
+    { id: '5', percentage: 20, month: 8, description: 'Completion' }
+  ],
+  
   // Traditional Financing
   deposit: 150000,
   loanAmount: 600000, // 80% of purchase price
@@ -249,9 +266,24 @@ export const PropertyDataProvider: React.FC<{ children: ReactNode }> = ({ childr
     // Stamp duty interest (paid upfront with land)
     const stampDutyInterest = propertyData.stampDuty * ((Math.pow(1 + interestRate, periodYears) - 1));
     
-    // Progressive construction interest (assumes 50% average drawdown)
-    const averageConstructionDrawdown = propertyData.constructionValue * 0.5;
-    const constructionInterest = averageConstructionDrawdown * ((Math.pow(1 + interestRate, periodYears) - 1));
+    // Progressive construction interest based on payment schedule
+    let constructionInterest = 0;
+    const progressPayments = propertyData.constructionProgressPayments || [];
+    if (progressPayments.length > 0) {
+      // Calculate interest based on actual payment schedule
+      progressPayments.forEach(payment => {
+        const paymentAmount = propertyData.constructionValue * (payment.percentage / 100);
+        const monthsRemaining = Math.max(0, propertyData.constructionPeriod - payment.month);
+        const yearsRemaining = monthsRemaining / 12;
+        if (yearsRemaining > 0) {
+          constructionInterest += paymentAmount * ((Math.pow(1 + interestRate, yearsRemaining) - 1));
+        }
+      });
+    } else {
+      // Fallback to 50% average drawdown method
+      const averageConstructionDrawdown = propertyData.constructionValue * 0.5;
+      constructionInterest = averageConstructionDrawdown * ((Math.pow(1 + interestRate, periodYears) - 1));
+    }
     
     // Development costs interest (paid upfront or early in construction)
     const developmentCosts = propertyData.councilFees + propertyData.architectFees + propertyData.siteCosts;

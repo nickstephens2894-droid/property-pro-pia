@@ -422,18 +422,6 @@ export const PropertyInputForm = ({
 
                 {propertyData.isConstructionProject ? (
                   <div className="space-y-4">
-                    {/* Construction Year - moved to top */}
-                    <div>
-                      <Label htmlFor="constructionYear" className="text-sm font-medium">Construction Year</Label>
-                      <Input
-                        id="constructionYear"
-                        type="number"
-                        value={propertyData.constructionYear || ''}
-                        onChange={(e) => updateField('constructionYear', Number(e.target.value))}
-                        placeholder="e.g., 2024"
-                        className="mt-1"
-                      />
-                    </div>
 
                     {/* Total Property Value */}
                     <div className="bg-primary/10 rounded-lg p-4 border-l-4 border-primary">
@@ -599,42 +587,143 @@ export const PropertyInputForm = ({
                         </div>
                       </div>
                     </div>
+
+                    {/* Construction Timeline & Financing - moved below plant & equipment */}
+                    {propertyData.isConstructionProject && (
+                      <div className="bg-accent/20 rounded-lg p-4 mt-4">
+                        <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                          <Clock className="h-4 w-4" />
+                          Construction Timeline & Financing
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                          <div>
+                            <Label htmlFor="constructionPeriod" className="text-sm font-medium">Construction Period (months)</Label>
+                            <Input
+                              id="constructionPeriod"
+                              type="number"
+                              value={propertyData.constructionPeriod || ''}
+                              onChange={(e) => updateField('constructionPeriod', Number(e.target.value))}
+                              className="mt-1"
+                              placeholder="e.g., 12"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="constructionInterestRate" className="text-sm font-medium">Construction Interest Rate</Label>
+                            <PercentageInput
+                              id="constructionInterestRate"
+                              value={propertyData.constructionInterestRate}
+                              onChange={(value) => updateField('constructionInterestRate', value)}
+                              className="mt-1"
+                              placeholder="Enter rate"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Construction Progress Payments */}
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-sm font-medium">Construction Progress Payments</Label>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const newPayment = {
+                                  id: Date.now().toString(),
+                                  percentage: 0,
+                                  month: 1,
+                                  description: 'New payment'
+                                };
+                                updateField('constructionProgressPayments', [...(propertyData.constructionProgressPayments || []), newPayment]);
+                              }}
+                            >
+                              Add Payment
+                            </Button>
+                          </div>
+                          
+                          <div className="space-y-2 max-h-60 overflow-y-auto">
+                            {propertyData.constructionProgressPayments?.map((payment, index) => (
+                              <div key={payment.id} className="grid grid-cols-12 gap-2 items-end bg-muted/30 p-3 rounded">
+                                <div className="col-span-4">
+                                  <Label className="text-xs">Description</Label>
+                                  <Input
+                                    value={payment.description}
+                                    onChange={(e) => {
+                                      const updated = [...(propertyData.constructionProgressPayments || [])];
+                                      updated[index] = { ...payment, description: e.target.value };
+                                      updateField('constructionProgressPayments', updated);
+                                    }}
+                                    className="mt-1 text-sm"
+                                    placeholder="Payment description"
+                                  />
+                                </div>
+                                <div className="col-span-3">
+                                  <Label className="text-xs">Percentage (%)</Label>
+                                  <Input
+                                    type="number"
+                                    value={payment.percentage}
+                                    onChange={(e) => {
+                                      const updated = [...(propertyData.constructionProgressPayments || [])];
+                                      updated[index] = { ...payment, percentage: Number(e.target.value) };
+                                      updateField('constructionProgressPayments', updated);
+                                    }}
+                                    className="mt-1 text-sm"
+                                    placeholder="0"
+                                    min="0"
+                                    max="100"
+                                  />
+                                </div>
+                                <div className="col-span-3">
+                                  <Label className="text-xs">Month</Label>
+                                  <Input
+                                    type="number"
+                                    value={payment.month}
+                                    onChange={(e) => {
+                                      const updated = [...(propertyData.constructionProgressPayments || [])];
+                                      updated[index] = { ...payment, month: Number(e.target.value) };
+                                      updateField('constructionProgressPayments', updated);
+                                    }}
+                                    className="mt-1 text-sm"
+                                    placeholder="1"
+                                    min="1"
+                                    max={propertyData.constructionPeriod || 12}
+                                  />
+                                </div>
+                                <div className="col-span-2">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      const updated = (propertyData.constructionProgressPayments || []).filter((_, i) => i !== index);
+                                      updateField('constructionProgressPayments', updated);
+                                    }}
+                                    className="text-destructive hover:bg-destructive/10"
+                                  >
+                                    Remove
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          
+                          {propertyData.constructionProgressPayments?.length > 0 && (
+                            <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
+                              <div className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                                Total: {propertyData.constructionProgressPayments.reduce((sum, p) => sum + p.percentage, 0)}% 
+                                {propertyData.constructionProgressPayments.reduce((sum, p) => sum + p.percentage, 0) !== 100 && (
+                                  <span className="text-warning ml-2">⚠️ Should total 100%</span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
                 </div>
 
-                {/* Construction Timeline - moved below breakdown */}
-                {propertyData.isConstructionProject && (
-                  <div className="bg-accent/20 rounded-lg p-4">
-                    <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      Construction Timeline & Financing
-                    </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="constructionPeriod" className="text-sm font-medium">Construction Period (months)</Label>
-                        <Input
-                          id="constructionPeriod"
-                          type="number"
-                          value={propertyData.constructionPeriod || ''}
-                          onChange={(e) => updateField('constructionPeriod', Number(e.target.value))}
-                          className="mt-1"
-                          placeholder="e.g., 12"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="constructionInterestRate" className="text-sm font-medium">Construction Interest Rate</Label>
-                        <PercentageInput
-                          id="constructionInterestRate"
-                          value={propertyData.constructionInterestRate}
-                          onChange={(value) => updateField('constructionInterestRate', value)}
-                          className="mt-1"
-                          placeholder="Enter rate"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             </AccordionContent>
           </AccordionItem>
