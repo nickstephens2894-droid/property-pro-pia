@@ -373,10 +373,19 @@ const Projections = () => {
     const yearFrom = validatedYearRange[0];
     const yearTo = validatedYearRange[1];
     const currentYearData = projections.find(p => p.year === yearFrom);
+    const yearToData = projections.find(p => p.year === yearTo);
+    
     const weeklyAfterTaxCashFlowSummary = (currentYearData?.afterTaxCashFlow ?? 0) / 52;
     const taxDifferenceSummary = -(currentYearData?.taxBenefit ?? 0);
     const taxSavingsTotal = projections.slice(0, yearTo).reduce((sum, p) => sum + Math.max(0, p.taxBenefit), 0);
-    const equityAtYearTo = projections.find(p => p.year === yearTo)?.propertyEquity ?? 0;
+    const equityAtYearTo = yearToData?.propertyEquity ?? 0;
+    
+    // Calculate cumulative cash contribution (all negative cash flows = money put in)
+    const cumulativeCashContribution = Math.abs(Math.min(0, projections.slice(0, yearTo).reduce((sum, p) => sum + p.afterTaxCashFlow, 0)));
+    
+    // Calculate ROI = Net Equity / Cumulative Cash Contribution * 100
+    const roiAtYearTo = cumulativeCashContribution > 0 ? (equityAtYearTo / cumulativeCashContribution) * 100 : 0;
+    
     const marginalTaxRateSummary = propertyData.clients.length > 0 ? Math.max(...propertyData.clients.map(c => {
       const income = c.annualIncome + c.otherIncome;
       if (income <= 18200) return 0;
@@ -391,6 +400,7 @@ const Projections = () => {
       taxDifferenceSummary,
       taxSavingsTotal,
       equityAtYearTo,
+      roiAtYearTo,
       marginalTaxRateSummary
     };
   }, [projections, validatedYearRange, propertyData.clients]);
@@ -420,6 +430,7 @@ const Projections = () => {
         taxSavingsYear1={-investmentSummary.taxDifferenceSummary}
         taxSavingsTotal={investmentSummary.taxSavingsTotal}
         netEquityAtYearTo={investmentSummary.equityAtYearTo}
+        roiAtYearTo={investmentSummary.roiAtYearTo}
         yearTo={validatedYearRange[1]}
       />
 

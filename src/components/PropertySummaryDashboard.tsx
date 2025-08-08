@@ -18,6 +18,7 @@ interface PropertySummaryDashboardProps {
   taxSavingsYear1: number;
   taxSavingsTotal: number;
   netEquityAtYearTo: number;
+  roiAtYearTo: number;
   yearTo: number;
 }
 export const PropertySummaryDashboard = ({
@@ -25,6 +26,7 @@ export const PropertySummaryDashboard = ({
   taxSavingsYear1,
   taxSavingsTotal,
   netEquityAtYearTo,
+  roiAtYearTo,
   yearTo
 }: PropertySummaryDashboardProps) => {
   const isMobile = useIsMobile();
@@ -35,6 +37,7 @@ export const PropertySummaryDashboard = ({
   const safeTaxSavingsYear1 = taxSavingsYear1 ?? 0;
   const safeTaxSavingsTotal = taxSavingsTotal ?? 0;
   const safeNetEquity = netEquityAtYearTo ?? 0;
+  const safeROI = roiAtYearTo ?? 0;
   const safeYearTo = yearTo ?? 1;
   
   const heroMetrics: SummaryMetric[] = [{
@@ -133,22 +136,42 @@ export const PropertySummaryDashboard = ({
               })}
             </div>
             
-            {/* Net Equity at Year To */}
-            <Card className="bg-muted/20 border-muted/50">
-              <CardContent className="pt-6">
-                <div className="text-center space-y-3">
-                  <div className="text-3xl font-bold text-primary">
-                    ${safeNetEquity.toLocaleString()}
+            {/* Net Equity and ROI - Side by side */}
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+              {/* Net Equity at Year To */}
+              <Card className="bg-muted/20 border-muted/50">
+                <CardContent className="pt-6">
+                  <div className="text-center space-y-3">
+                    <div className="text-3xl font-bold text-primary">
+                      ${safeNetEquity.toLocaleString()}
+                    </div>
+                    <div className="text-sm text-muted-foreground font-medium">
+                      Net Equity at End of Year {safeYearTo}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Property value minus loan balances
+                    </div>
                   </div>
-                  <div className="text-sm text-muted-foreground font-medium">
-                    Net Equity at End of Year {safeYearTo}
+                </CardContent>
+              </Card>
+              
+              {/* ROI at Year To */}
+              <Card className="bg-muted/20 border-muted/50">
+                <CardContent className="pt-6">
+                  <div className="text-center space-y-3">
+                    <div className={`text-3xl font-bold ${safeROI >= 0 ? 'text-success' : 'text-destructive'}`}>
+                      {safeROI.toFixed(1)}%
+                    </div>
+                    <div className="text-sm text-muted-foreground font-medium">
+                      ROI at End of Year {safeYearTo}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Net equity / cumulative cash contribution
+                    </div>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    Property value minus loan balances
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           </CardContent>
         </CollapsibleContent>
       </Collapsible>
