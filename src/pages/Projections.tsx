@@ -670,12 +670,13 @@ const Projections = () => {
                                 <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">$</span>
                                 <Input
                                   id={`client-income-${client.id}`}
-                                  type="number"
-                                  min={0}
-                                  value={client.annualIncome}
+                                  type="text"
+                                  value={client.annualIncome.toString()}
                                   onChange={(e) => {
+                                    const value = e.target.value.replace(/[^0-9]/g, '');
+                                    const numericValue = parseInt(value) || 0;
                                     const updatedClients = propertyData.clients.map(c =>
-                                      c.id === client.id ? { ...c, annualIncome: parseInt(e.target.value) || 0 } : c
+                                      c.id === client.id ? { ...c, annualIncome: numericValue } : c
                                     );
                                     setPropertyData({ ...propertyData, clients: updatedClients });
                                   }}
@@ -690,12 +691,13 @@ const Projections = () => {
                                 <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">$</span>
                                 <Input
                                   id={`client-other-${client.id}`}
-                                  type="number"
-                                  min={0}
-                                  value={client.otherIncome}
+                                  type="text"
+                                  value={client.otherIncome.toString()}
                                   onChange={(e) => {
+                                    const value = e.target.value.replace(/[^0-9]/g, '');
+                                    const numericValue = parseInt(value) || 0;
                                     const updatedClients = propertyData.clients.map(c =>
-                                      c.id === client.id ? { ...c, otherIncome: parseInt(e.target.value) || 0 } : c
+                                      c.id === client.id ? { ...c, otherIncome: numericValue } : c
                                     );
                                     setPropertyData({ ...propertyData, clients: updatedClients });
                                   }}
@@ -708,12 +710,17 @@ const Projections = () => {
                               <Label htmlFor={`client-ownership-${client.id}`}>Ownership %</Label>
                               <Input
                                 id={`client-ownership-${client.id}`}
-                                type="number"
-                                min={0}
-                                max={100}
-                                step={0.1}
-                                value={allocation?.ownershipPercentage || 0}
+                                type="text"
+                                value={(allocation?.ownershipPercentage || 0).toFixed(1)}
                                 onChange={(e) => {
+                                  const value = e.target.value.replace(/[^0-9.]/g, '');
+                                  const numericValue = Math.max(0, Math.min(100, parseFloat(value) || 0));
+                                  const updatedAllocations = propertyData.ownershipAllocations.map(o =>
+                                    o.clientId === client.id ? { ...o, ownershipPercentage: numericValue } : o
+                                  );
+                                  setPropertyData({ ...propertyData, ownershipAllocations: updatedAllocations });
+                                }}
+                                onBlur={(e) => {
                                   const value = Math.max(0, Math.min(100, parseFloat(e.target.value) || 0));
                                   const updatedAllocations = propertyData.ownershipAllocations.map(o =>
                                     o.clientId === client.id ? { ...o, ownershipPercentage: value } : o

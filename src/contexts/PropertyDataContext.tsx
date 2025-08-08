@@ -160,7 +160,7 @@ const defaultPropertyData: PropertyData = {
   // Basic Property Details - Enhanced
   purchasePrice: 750000,
   weeklyRent: 680, // ~4.7% gross yield
-  rentalGrowthRate: 3.0,
+  rentalGrowthRate: 5.0,
   vacancyRate: 2.0,
   constructionYear: 2024,
   buildingValue: 600000,
@@ -184,7 +184,7 @@ const defaultPropertyData: PropertyData = {
   // Traditional Financing
   deposit: 150000,
   loanAmount: 600000, // 80% of purchase price
-  interestRate: 6.8, // Current market rates
+  interestRate: 6.0, // Current market rates
   loanTerm: 30,
   lvr: 80,
   
