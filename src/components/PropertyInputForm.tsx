@@ -8,6 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CurrencyInput } from "@/components/ui/currency-input";
+import { NumberInput } from "@/components/ui/number-input";
 import { FieldUpdateConfirmDialog } from "@/components/FieldUpdateConfirmDialog";
 import { AccordionCompletionIndicator } from "@/components/AccordionCompletionIndicator";
 import { FundingSummaryPanel } from "@/components/FundingSummaryPanel";
@@ -73,27 +74,34 @@ const PercentageInput = ({
   step?: string;
   placeholder?: string;
   className?: string;
-}) => (
-  <div className="relative">
-    <Input
-      id={id}
-      type="text"
-      value={value?.toFixed(1) || ''}
-      onChange={(e) => {
-        const inputValue = e.target.value.replace(/[^0-9.]/g, '');
-        const numericValue = parseFloat(inputValue) || 0;
-        onChange(numericValue);
-      }}
-      onBlur={(e) => {
-        const numericValue = parseFloat(e.target.value) || 0;
-        onChange(numericValue);
-      }}
-      placeholder={placeholder}
-      className={`pr-8 ${className}`}
-    />
-    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">%</span>
-  </div>
-);
+}) => {
+  const [displayValue, setDisplayValue] = useState<string>(value?.toFixed(1) || '');
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value.replace(/[^0-9.]/g, '');
+    setDisplayValue(inputValue);
+  };
+
+  const handleBlur = () => {
+    const numericValue = parseFloat(displayValue) || 0;
+    onChange(numericValue);
+  };
+
+  return (
+    <div className="relative">
+      <Input
+        id={id}
+        type="text"
+        value={displayValue}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        placeholder={placeholder}
+        className={`pr-8 ${className}`}
+      />
+      <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">%</span>
+    </div>
+  );
+};
 
 export const PropertyInputForm = ({ 
   propertyData, 
@@ -557,16 +565,14 @@ export const PropertyInputForm = ({
             </div>
             <div>
               <Label htmlFor="constructionYear" className="text-sm font-medium">Construction Year</Label>
-              <Input
+              <NumberInput
                 id="constructionYear"
-                type="text"
-                value={propertyData.constructionYear.toString()}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/[^0-9]/g, '');
-                  updateField('constructionYear', parseInt(value) || new Date().getFullYear());
-                }}
+                value={propertyData.constructionYear}
+                onChange={(value) => updateField('constructionYear', value)}
                 className="mt-1"
                 placeholder="2020"
+                min={1900}
+                max={new Date().getFullYear() + 10}
               />
             </div>
           </div>
@@ -645,16 +651,14 @@ export const PropertyInputForm = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div>
               <Label htmlFor="constructionPeriod" className="text-sm font-medium">Construction Period (months)</Label>
-              <Input
+              <NumberInput
                 id="constructionPeriod"
-                type="text"
-                value={(propertyData.constructionPeriod || '').toString()}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/[^0-9]/g, '');
-                  updateField('constructionPeriod', parseInt(value) || 0);
-                }}
+                value={propertyData.constructionPeriod || 0}
+                onChange={(value) => updateField('constructionPeriod', value)}
                 className="mt-1"
                 placeholder="e.g., 12"
+                min={1}
+                max={60}
               />
             </div>
             <div>
@@ -707,34 +711,34 @@ export const PropertyInputForm = ({
                   </div>
                   <div className="col-span-3">
                     <Label className="text-xs">Percentage (%)</Label>
-                    <Input
-                      type="text"
-                      value={payment.percentage.toString()}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/[^0-9.]/g, '');
-                        const numericValue = Math.max(0, Math.min(100, parseFloat(value) || 0));
+                    <NumberInput
+                      value={payment.percentage}
+                      onChange={(value) => {
                         const updated = [...(propertyData.constructionProgressPayments || [])];
-                        updated[index] = { ...payment, percentage: numericValue };
+                        updated[index] = { ...payment, percentage: value };
                         updateField('constructionProgressPayments', updated);
                       }}
                       className="mt-1 text-sm"
                       placeholder="0"
+                      min={0}
+                      max={100}
+                      id={`percentage-${payment.id}`}
                     />
                   </div>
                   <div className="col-span-3">
                     <Label className="text-xs">Month</Label>
-                    <Input
-                      type="text"
-                      value={payment.month.toString()}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/[^0-9]/g, '');
-                        const numericValue = Math.max(1, Math.min(60, parseInt(value) || 1));
+                    <NumberInput
+                      value={payment.month}
+                      onChange={(value) => {
                         const updated = [...(propertyData.constructionProgressPayments || [])];
-                        updated[index] = { ...payment, month: numericValue };
+                        updated[index] = { ...payment, month: value };
                         updateField('constructionProgressPayments', updated);
                       }}
                       className="mt-1 text-sm"
                       placeholder="1"
+                      min={1}
+                      max={60}
+                      id={`month-${payment.id}`}
                     />
                   </div>
                   <div className="col-span-2">
@@ -940,15 +944,13 @@ export const PropertyInputForm = ({
                       </div>
                       <div>
                         <Label htmlFor="loanTerm" className="text-sm font-medium">Loan Term (years)</Label>
-                        <Input
+                        <NumberInput
                           id="loanTerm"
-                          type="text"
-                          value={propertyData.loanTerm.toString()}
-                          onChange={(e) => {
-                            const value = e.target.value.replace(/[^0-9]/g, '');
-                            updateField('loanTerm', parseInt(value) || 30);
-                          }}
+                          value={propertyData.loanTerm}
+                          onChange={(value) => updateField('loanTerm', value)}
                           className="mt-1"
+                          min={1}
+                          max={50}
                         />
                       </div>
                       {!propertyData.useEquityFunding && (
@@ -988,16 +990,13 @@ export const PropertyInputForm = ({
                       <div className="ml-4 space-y-2">
                         <Label htmlFor="ioTermYears" className="text-sm font-medium">Interest Only Period (years)</Label>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
-                          <Input
+                          <NumberInput
                             id="ioTermYears"
-                            type="text"
-                            value={propertyData.ioTermYears.toString()}
-                            onChange={(e) => {
-                              const value = e.target.value.replace(/[^0-9]/g, '');
-                              const numericValue = Math.max(1, Math.min(40, parseInt(value) || 1));
-                              updateField('ioTermYears', numericValue);
-                            }}
+                            value={propertyData.ioTermYears}
+                            onChange={(value) => updateField('ioTermYears', value)}
                             className="mt-1"
+                            min={1}
+                            max={40}
                           />
                           <div className="text-xs text-muted-foreground">
                             Maximum 40 years allowed
@@ -1099,15 +1098,13 @@ export const PropertyInputForm = ({
                         </div>
                         <div>
                           <Label htmlFor="equityLoanTerm" className="text-sm font-medium">Equity Loan Term (years)</Label>
-                          <Input
+                          <NumberInput
                             id="equityLoanTerm"
-                            type="text"
-                            value={propertyData.equityLoanTerm.toString()}
-                            onChange={(e) => {
-                              const value = e.target.value.replace(/[^0-9]/g, '');
-                              updateField('equityLoanTerm', parseInt(value) || 30);
-                            }}
+                            value={propertyData.equityLoanTerm}
+                            onChange={(value) => updateField('equityLoanTerm', value)}
                             className="mt-1"
+                            min={1}
+                            max={50}
                           />
                         </div>
                       </div>
@@ -1135,16 +1132,13 @@ export const PropertyInputForm = ({
                       {propertyData.equityLoanType === 'io' && (
                         <div className="ml-4 space-y-2">
                           <Label htmlFor="equityLoanIoTermYears" className="text-sm font-medium">Equity Loan IO Period (years)</Label>
-                          <Input
+                          <NumberInput
                             id="equityLoanIoTermYears"
-                            type="text"
-                            value={propertyData.equityLoanIoTermYears.toString()}
-                            onChange={(e) => {
-                              const value = e.target.value.replace(/[^0-9]/g, '');
-                              const numericValue = Math.max(1, Math.min(40, parseInt(value) || 1));
-                              updateField('equityLoanIoTermYears', numericValue);
-                            }}
+                            value={propertyData.equityLoanIoTermYears}
+                            onChange={(value) => updateField('equityLoanIoTermYears', value)}
                             className="mt-1"
+                            min={1}
+                            max={40}
                           />
                         </div>
                       )}
