@@ -573,6 +573,7 @@ export const PropertyInputForm = ({
                 placeholder="2020"
                 min={1900}
                 max={new Date().getFullYear() + 10}
+                formatThousands={false}
               />
             </div>
           </div>

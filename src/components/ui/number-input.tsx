@@ -13,6 +13,7 @@ interface NumberInputProps {
   step?: string;
   min?: number;
   max?: number;
+  formatThousands?: boolean;
 }
 
 export const NumberInput = ({ 
@@ -25,11 +26,14 @@ export const NumberInput = ({
   readOnly = false,
   step = "1",
   min,
-  max
+  max,
+  formatThousands = true
 }: NumberInputProps) => {
   // Helpers for formatting/unformatting with thousands separators
   const formatNumber = (num: number) =>
-    new Intl.NumberFormat("en-US", { maximumFractionDigits: 20 }).format(num);
+    formatThousands
+      ? new Intl.NumberFormat("en-US", { maximumFractionDigits: 20 }).format(num)
+      : num.toString();
   const unformat = (val: string) => val.replace(/,/g, "");
 
   // Separate state for input values to allow free editing - initialize once (formatted when not focused)
