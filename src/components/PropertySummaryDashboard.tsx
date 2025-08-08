@@ -14,49 +14,39 @@ interface SummaryMetric {
   }>;
 }
 interface PropertySummaryDashboardProps {
-  weeklyAfterTaxCashFlow: number;
-  grossYield: number;
-  cashOnCashReturn: number;
-  taxDifference: number;
-  annualRent: number;
-  totalExpenses: number;
-  marginalTaxRate: number;
-  totalProjectCost: number;
-  actualCashInvested: number;
-  isConstructionProject: boolean;
+  weeklyCashflowYear1: number;
+  taxSavingsYear1: number;
+  taxSavingsTotal: number;
+  netEquityAtYearTo: number;
+  yearTo: number;
 }
 export const PropertySummaryDashboard = ({
-  weeklyAfterTaxCashFlow,
-  grossYield,
-  cashOnCashReturn,
-  taxDifference,
-  annualRent,
-  totalExpenses,
-  marginalTaxRate,
-  totalProjectCost,
-  actualCashInvested,
-  isConstructionProject
+  weeklyCashflowYear1,
+  taxSavingsYear1,
+  taxSavingsTotal,
+  netEquityAtYearTo,
+  yearTo
 }: PropertySummaryDashboardProps) => {
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(true);
   const heroMetrics: SummaryMetric[] = [{
-    label: "Weekly Cash Flow",
-    value: `$${weeklyAfterTaxCashFlow.toFixed(2)}`,
-    sublabel: "After-tax",
-    type: weeklyAfterTaxCashFlow >= 0 ? 'positive' : 'negative',
+    label: "Weekly Cashflow Year 1",
+    value: `$${weeklyCashflowYear1.toFixed(2)}`,
+    sublabel: "After-tax weekly",
+    type: weeklyCashflowYear1 >= 0 ? 'positive' : 'negative',
     icon: DollarSign
   }, {
-    label: "Gross Yield",
-    value: `${grossYield.toFixed(2)}%`,
-    sublabel: "Before expenses",
-    type: 'neutral',
-    icon: TrendingUp
-  }, {
-    label: taxDifference <= 0 ? "Tax Savings" : "Additional Tax",
-    value: `$${Math.abs(taxDifference).toLocaleString()}`,
-    sublabel: taxDifference <= 0 ? "Annual benefit" : "Annual cost",
-    type: taxDifference <= 0 ? 'positive' : 'warning',
+    label: "Tax Savings Year 1",
+    value: `$${Math.abs(taxSavingsYear1).toLocaleString()}`,
+    sublabel: "Annual benefit",
+    type: taxSavingsYear1 >= 0 ? 'positive' : 'warning',
     icon: Calculator
+  }, {
+    label: `Tax Savings Total (Year ${yearTo})`,
+    value: `$${Math.abs(taxSavingsTotal).toLocaleString()}`,
+    sublabel: `Cumulative to year ${yearTo}`,
+    type: taxSavingsTotal >= 0 ? 'positive' : 'warning',
+    icon: PiggyBank
   }];
   const getMetricStyles = (type: SummaryMetric['type']) => {
     switch (type) {
@@ -135,33 +125,18 @@ export const PropertySummaryDashboard = ({
               })}
             </div>
             
-            {/* Secondary Metrics - More detailed view */}
+            {/* Net Equity at Year To */}
             <Card className="bg-muted/20 border-muted/50">
               <CardContent className="pt-6">
-                <div className="grid gap-6 grid-cols-2 lg:grid-cols-4">
-                  <div className="text-center space-y-2">
-                    <div className={`text-xl font-bold ${cashOnCashReturn >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                      {cashOnCashReturn.toFixed(1)}%
-                    </div>
-                    <div className="text-xs text-muted-foreground font-medium">Cash-on-Cash Return</div>
+                <div className="text-center space-y-3">
+                  <div className="text-3xl font-bold text-primary">
+                    ${netEquityAtYearTo.toLocaleString()}
                   </div>
-                  <div className="text-center space-y-2">
-                    <div className="text-xl font-bold text-foreground">
-                      ${totalProjectCost.toLocaleString()}
-                    </div>
-                    <div className="text-xs text-muted-foreground font-medium">Total Investment</div>
+                  <div className="text-sm text-muted-foreground font-medium">
+                    Net Equity at End of Year {yearTo}
                   </div>
-                  <div className="text-center space-y-2">
-                    <div className="text-xl font-bold text-foreground">
-                      ${actualCashInvested.toLocaleString()}
-                    </div>
-                    <div className="text-xs text-muted-foreground font-medium">Cash Required</div>
-                  </div>
-                  <div className="text-center space-y-2">
-                    <div className="text-xl font-bold text-foreground">
-                      ${annualRent.toLocaleString()}
-                    </div>
-                    <div className="text-xs text-muted-foreground font-medium">Annual Rent</div>
+                  <div className="text-xs text-muted-foreground">
+                    Property value minus loan balances
                   </div>
                 </div>
               </CardContent>

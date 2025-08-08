@@ -406,7 +406,13 @@ const Projections = () => {
         </div>
 
       {/* Investment Summary Dashboard */}
-      <PropertySummaryDashboard weeklyAfterTaxCashFlow={weeklyAfterTaxCashFlowSummary} grossYield={grossYieldSummary} cashOnCashReturn={cashOnCashReturnSummary} taxDifference={taxDifferenceSummary} annualRent={annualRentSummary} totalExpenses={totalExpensesSummary} marginalTaxRate={marginalTaxRateSummary} totalProjectCost={funding.totalProjectCost} actualCashInvested={propertyData.depositAmount} isConstructionProject={propertyData.isConstructionProject} />
+      <PropertySummaryDashboard
+        weeklyCashflowYear1={weeklyAfterTaxCashFlowSummary}
+        taxSavingsYear1={-taxDifferenceSummary}
+        taxSavingsTotal={projections.slice(0, validatedYearRange[1]).reduce((sum, p) => sum + Math.max(0, p.taxBenefit), 0)}
+        netEquityAtYearTo={equityAtYearTo}
+        yearTo={validatedYearRange[1]}
+      />
 
       {/* Summary Cards */}
       
