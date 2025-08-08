@@ -397,6 +397,7 @@ const PropertyAnalysis = () => {
                 totalTaxableIncome={totalTaxableIncome}
                 marginalTaxRate={marginalTaxRate}
               />
+              <FundingSummaryPanel />
               <PropertyCalculationDetails
                 monthlyRepayment={totalWeeklyLoanPayments * 52 / 12}
                 annualRepayment={totalAnnualLoanPayments}
