@@ -56,35 +56,39 @@ const ProjectionsTable = ({
     p.year >= validatedYearRange[0] && p.year <= validatedYearRange[1]
   );
 
-if (isMobile || viewMode === 'year') {
-  return <MobileProjectionsView 
-    projections={filteredProjections}
-    assumptions={assumptions}
-    currentYearIndex={currentYearIndex}
-    setCurrentYearIndex={setCurrentYearIndex}
-    showLoanDetails={showLoanDetails}
-    setShowLoanDetails={setShowLoanDetails}
-    formatCurrency={formatCurrency}
-    formatPercentage={formatPercentage}
-  />;
-}
+const isMobileView = isMobile || viewMode === 'year';
 
-return <DesktopProjectionsTable 
-  projections={filteredProjections}
-  assumptions={assumptions}
-  showLoanDetails={showLoanDetails}
-  setShowLoanDetails={setShowLoanDetails}
-  showMortgageDetails={showMortgageDetails}
-  setShowMortgageDetails={setShowMortgageDetails}
-  showOperatingDetails={showOperatingDetails}
-  setShowOperatingDetails={setShowOperatingDetails}
-  showDepreciationDetails={showDepreciationDetails}
-  setShowDepreciationDetails={setShowDepreciationDetails}
-  showCashFlowDetails={showCashFlowDetails}
-  setShowCashFlowDetails={setShowCashFlowDetails}
-  formatCurrency={formatCurrency}
-  formatPercentage={formatPercentage}
-/>;
+return (
+  isMobileView ? (
+    <MobileProjectionsView 
+      projections={filteredProjections}
+      assumptions={assumptions}
+      currentYearIndex={currentYearIndex}
+      setCurrentYearIndex={setCurrentYearIndex}
+      showLoanDetails={showLoanDetails}
+      setShowLoanDetails={setShowLoanDetails}
+      formatCurrency={formatCurrency}
+      formatPercentage={formatPercentage}
+    />
+  ) : (
+    <DesktopProjectionsTable 
+      projections={filteredProjections}
+      assumptions={assumptions}
+      showLoanDetails={showLoanDetails}
+      setShowLoanDetails={setShowLoanDetails}
+      showMortgageDetails={showMortgageDetails}
+      setShowMortgageDetails={setShowMortgageDetails}
+      showOperatingDetails={showOperatingDetails}
+      setShowOperatingDetails={setShowOperatingDetails}
+      showDepreciationDetails={showDepreciationDetails}
+      setShowDepreciationDetails={setShowDepreciationDetails}
+      showCashFlowDetails={showCashFlowDetails}
+      setShowCashFlowDetails={setShowCashFlowDetails}
+      formatCurrency={formatCurrency}
+      formatPercentage={formatPercentage}
+    />
+  )
+);
 };
 
 const MobileProjectionsView = ({ 
