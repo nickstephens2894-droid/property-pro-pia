@@ -552,13 +552,16 @@ const [inputValues, setInputValues] = useState({
                     <ToggleGroupItem value="delta">Delta (bps)</ToggleGroupItem>
                   </ToggleGroup>
                   <div className="relative flex-1">
-                    <Input id="interestAdj" type="text" value={inputValues.interestAdjValue} onChange={e => {
-                      const raw = e.target.value.replace(/[^0-9.-]/g, '');
-                      setInputValues(prev => ({ ...prev, interestAdjValue: raw }));
-                    }} onBlur={e => {
-                      // Keep as-is; application to calculations handled separately
-                      setInputValues(prev => ({ ...prev, interestAdjValue: e.target.value }));
-                    }} className="h-9 pr-12" />
+                    <Input 
+                      id="interestAdj" 
+                      type="text" 
+                      placeholder={inputValues.interestAdjMode === 'delta' ? 'e.g. 50' : 'e.g. 6.5'}
+                      value={inputValues.interestAdjValue} 
+                      onChange={e => {
+                        setInputValues(prev => ({ ...prev, interestAdjValue: e.target.value }));
+                      }} 
+                      className="h-9 pr-12" 
+                    />
                     <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">{inputValues.interestAdjMode === 'delta' ? 'bps' : '%'}</span>
                   </div>
                   <div className="relative w-36">
