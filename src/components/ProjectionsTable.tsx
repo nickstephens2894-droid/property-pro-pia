@@ -304,101 +304,95 @@ const DesktopProjectionsTable = ({
         <thead>
 <tr>
   <th className="sticky left-0 top-0 bg-background z-20 min-w-[180px] text-left p-3 border-b">End of year</th>
-  <th className="sticky top-0 bg-muted/30 z-20 text-center font-medium p-3 border-b">Input</th>
+  {assumptions.isConstructionProject && assumptions.constructionPeriod > 0 && (
+    <th className="sticky top-0 bg-muted/30 z-20 text-center font-medium p-3 border-b">Construction</th>
+  )}
   {projections.map((projection: YearProjection) => (
     <th key={projection.year} className="sticky top-0 bg-background z-20 text-center min-w-[100px] font-medium p-3 border-b">
-      {projection.year}yr
+      {projection.year === 0 ? 'Construction' : `Year ${projection.year}`}
     </th>
   ))}
 </tr>
         </thead>
         <tbody>
-          {/* Property Value */}
-          <tr className="border-b">
-            <td className="sticky left-0 bg-background z-10 font-medium p-3">Property value</td>
-            <td className="text-center bg-muted/30 font-mono text-sm p-3">{formatCurrency(assumptions.initialPropertyValue)}</td>
-            {projections.map((projection: YearProjection) => (
-              <td key={projection.year} className="text-center font-mono text-sm p-3">{formatCurrency(projection.propertyValue)}</td>
-            ))}
-          </tr>
+{/* Property Value */}
+<tr className="border-b">
+  <td className="sticky left-0 bg-background z-10 font-medium p-3">Property value</td>
+  {projections.map((projection: YearProjection) => (
+    <td key={projection.year} className="text-center font-mono text-sm p-3">
+      {projection.year === 0 ? "—" : formatCurrency(projection.propertyValue)}
+    </td>
+  ))}
+</tr>
           
-          {/* Main Loan Balance */}
-          <tr className="border-b">
-            <td className="sticky left-0 bg-background z-10 font-medium p-3">Main loan balance</td>
-            <td className="text-center bg-muted/30 font-mono text-sm p-3">{formatCurrency(assumptions.initialMainLoanBalance)}</td>
-            {projections.map((projection: YearProjection) => (
-              <td key={projection.year} className="text-center font-mono text-sm p-3">{formatCurrency(projection.mainLoanBalance)}</td>
-            ))}
-          </tr>
+{/* Main Loan Balance */}
+<tr className="border-b">
+  <td className="sticky left-0 bg-background z-10 font-medium p-3">Main loan balance</td>
+  {projections.map((projection: YearProjection) => (
+    <td key={projection.year} className="text-center font-mono text-sm p-3">
+      {projection.year === 0 ? "—" : formatCurrency(projection.mainLoanBalance)}
+    </td>
+  ))}
+</tr>
 
           {/* Annual Mortgage Repayments - Expandable */}
           <Collapsible open={showLoanDetails} onOpenChange={setShowLoanDetails}>
-            <CollapsibleTrigger asChild>
-              <tr className="border-b hover:bg-muted/50 cursor-pointer">
-                <td className="sticky left-0 bg-background z-10 font-medium p-3">
-                  <div className="flex items-center gap-2">
-                    {showLoanDetails ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                    Annual mortgage repayments
-                  </div>
-                </td>
-                <td className="text-center bg-muted/30 font-mono text-sm p-3">
-                  {formatCurrency((assumptions.initialMainLoanBalance * (assumptions.mainInterestRate / 100)) + 
-                                 (assumptions.initialEquityLoanBalance * (assumptions.equityInterestRate / 100)))}
-                </td>
-                {projections.map((projection: YearProjection) => (
-                  <td key={projection.year} className="text-center font-mono text-sm p-3">
-                    {formatCurrency(projection.mainLoanPayment + projection.equityLoanPayment)}
-                  </td>
-                ))}
-              </tr>
-            </CollapsibleTrigger>
+<CollapsibleTrigger asChild>
+  <tr className="border-b hover:bg-muted/50 cursor-pointer">
+    <td className="sticky left-0 bg-background z-10 font-medium p-3">
+      <div className="flex items-center gap-2">
+        {showLoanDetails ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        Annual mortgage repayments
+      </div>
+    </td>
+    {projections.map((projection: YearProjection) => (
+      <td key={projection.year} className="text-center font-mono text-sm p-3">
+        {formatCurrency(projection.mainLoanPayment + projection.equityLoanPayment)}
+      </td>
+    ))}
+  </tr>
+</CollapsibleTrigger>
             <CollapsibleContent>
-              {/* Main Loan Details */}
-              <tr className="bg-blue-50 dark:bg-blue-950/20 border-b">
-                <td className="sticky left-0 bg-blue-50 dark:bg-blue-950/20 z-10 pl-8 text-sm p-3">
-                  Main Loan ({assumptions.mainLoanType.toUpperCase()})
-                </td>
-                <td className="text-center bg-blue-100 dark:bg-blue-900/30 font-mono text-xs p-3">
-                  {formatCurrency(assumptions.initialMainLoanBalance)} @ {formatPercentage(assumptions.mainInterestRate)}
-                </td>
-                {projections.map((projection: YearProjection) => (
-                  <td key={projection.year} className="text-center font-mono text-xs p-3">
-                    <div>{formatCurrency(projection.mainLoanPayment)}</div>
-                    <Badge variant={projection.mainLoanIOStatus === 'IO' ? 'secondary' : 'default'} className="text-xs mt-1">
-                      {projection.mainLoanIOStatus}
-                    </Badge>
-                  </td>
-                ))}
-              </tr>
+<tr className="bg-blue-50 dark:bg-blue-950/20 border-b">
+  <td className="sticky left-0 bg-blue-50 dark:bg-blue-950/20 z-10 pl-8 text-sm p-3">
+    Main Loan ({assumptions.mainLoanType.toUpperCase()})
+  </td>
+  {projections.map((projection: YearProjection) => (
+    <td key={projection.year} className="text-center font-mono text-xs p-3">
+      <div>{formatCurrency(projection.mainLoanPayment)}</div>
+      {projection.year !== 0 && (
+        <Badge variant={projection.mainLoanIOStatus === 'IO' ? 'secondary' : 'default'} className="text-xs mt-1">
+          {projection.mainLoanIOStatus}
+        </Badge>
+      )}
+    </td>
+  ))}
+</tr>
               
-              {/* Equity Loan Details */}
-              {assumptions.initialEquityLoanBalance > 0 && (
-                <tr className="bg-green-50 dark:bg-green-950/20 border-b">
-                  <td className="sticky left-0 bg-green-50 dark:bg-green-950/20 z-10 pl-8 text-sm p-3">
-                    Equity Loan ({assumptions.equityLoanType.toUpperCase()})
-                  </td>
-                  <td className="text-center bg-green-100 dark:bg-green-900/30 font-mono text-xs p-3">
-                    {formatCurrency(assumptions.initialEquityLoanBalance)} @ {formatPercentage(assumptions.equityInterestRate)}
-                  </td>
-                  {projections.map((projection: YearProjection) => (
-                    <td key={projection.year} className="text-center font-mono text-xs p-3">
-                      <div>{formatCurrency(projection.equityLoanPayment)}</div>
-                      <Badge variant={projection.equityLoanIOStatus === 'IO' ? 'secondary' : 'default'} className="text-xs mt-1">
-                        {projection.equityLoanIOStatus}
-                      </Badge>
-                    </td>
-                  ))}
-                </tr>
-              )}
+{/* Equity Loan Details */}
+{assumptions.initialEquityLoanBalance > 0 && (
+  <tr className="bg-green-50 dark:bg-green-950/20 border-b">
+    <td className="sticky left-0 bg-green-50 dark:bg-green-950/20 z-10 pl-8 text-sm p-3">
+      Equity Loan ({assumptions.equityLoanType.toUpperCase()})
+    </td>
+    {projections.map((projection: YearProjection) => (
+      <td key={projection.year} className="text-center font-mono text-xs p-3">
+        <div>{formatCurrency(projection.equityLoanPayment)}</div>
+        {projection.year !== 0 && (
+          <Badge variant={projection.equityLoanIOStatus === 'IO' ? 'secondary' : 'default'} className="text-xs mt-1">
+            {projection.equityLoanIOStatus}
+          </Badge>
+        )}
+      </td>
+    ))}
+  </tr>
+)}
             </CollapsibleContent>
           </Collapsible>
           
 {/* Rental Income */}
 <tr className="border-b">
   <td className="sticky left-0 bg-background z-10 font-medium p-3">Rental income</td>
-  <td className="text-center bg-muted/30 font-mono text-sm p-3">
-    {formatCurrency(assumptions.initialWeeklyRent * 52 * (1 - assumptions.vacancyRate / 100))}
-  </td>
   {projections.map((projection: YearProjection) => (
     <td key={projection.year} className="text-center font-mono text-sm p-3">{formatCurrency(projection.rentalIncome)}</td>
   ))}
@@ -407,12 +401,6 @@ const DesktopProjectionsTable = ({
 {/* Interest Expense */}
 <tr className="border-b">
   <td className="sticky left-0 bg-background z-10 font-medium p-3">Interest expense</td>
-  <td className="text-center bg-muted/30 font-mono text-sm p-3">
-    {formatCurrency(
-      (assumptions.initialMainLoanBalance * (assumptions.mainInterestRate / 100)) +
-      (assumptions.initialEquityLoanBalance * (assumptions.equityInterestRate / 100))
-    )}
-  </td>
   {projections.map((projection: YearProjection) => (
     <td key={projection.year} className="text-center font-mono text-sm p-3">{formatCurrency(projection.totalInterest)}</td>
   ))}
@@ -421,12 +409,6 @@ const DesktopProjectionsTable = ({
 {/* Operating Expenses */}
 <tr className="border-b">
   <td className="sticky left-0 bg-background z-10 font-medium p-3">Operating expenses</td>
-  <td className="text-center bg-muted/30 font-mono text-sm p-3">
-    {formatCurrency(
-      (assumptions.initialWeeklyRent * 52 * (1 - assumptions.vacancyRate / 100)) * (assumptions.propertyManagementRate / 100) +
-      assumptions.councilRates + assumptions.insurance + assumptions.repairs
-    )}
-  </td>
   {projections.map((projection: YearProjection) => (
     <td key={projection.year} className="text-center font-mono text-sm p-3">{formatCurrency(projection.otherExpenses)}</td>
   ))}
@@ -435,7 +417,6 @@ const DesktopProjectionsTable = ({
 {/* Depreciation */}
 <tr className="border-b">
   <td className="sticky left-0 bg-background z-10 font-medium p-3">Depreciation</td>
-  <td className="text-center bg-muted/30 font-mono text-sm p-3">{formatCurrency(assumptions.depreciationYear1)}</td>
   {projections.map((projection: YearProjection) => (
     <td key={projection.year} className="text-center font-mono text-sm p-3">{formatCurrency(projection.depreciation)}</td>
   ))}
@@ -444,7 +425,6 @@ const DesktopProjectionsTable = ({
 {/* Tax Benefit */}
 <tr className="border-b">
   <td className="sticky left-0 bg-background z-10 font-medium p-3">Tax benefit</td>
-  <td className="text-center bg-muted/30 font-mono text-sm p-3">{formatCurrency(Math.max(0, projections[0]?.taxBenefit || 0))}</td>
   {projections.map((projection: YearProjection) => (
     <td key={projection.year} className={`text-center font-mono text-sm p-3 ${projection.taxBenefit > 0 ? 'text-green-600' : 'text-destructive'}`}>
       {formatCurrency(projection.taxBenefit)}
@@ -455,12 +435,9 @@ const DesktopProjectionsTable = ({
 {/* Equity */}
 <tr className="border-b">
   <td className="sticky left-0 bg-background z-10 font-medium p-3">Equity</td>
-  <td className="text-center bg-muted/30 font-mono text-sm text-destructive p-3">
-    {formatCurrency(assumptions.initialPropertyValue - assumptions.initialMainLoanBalance - assumptions.initialEquityLoanBalance)}
-  </td>
   {projections.map((projection: YearProjection) => (
-    <td key={projection.year} className={`text-center font-mono text-sm p-3 ${projection.propertyEquity < 0 ? 'text-destructive' : 'text-foreground'}`}>
-      {formatCurrency(projection.propertyEquity)}
+    <td key={projection.year} className={`text-center font-mono text-sm p-3 ${projection.year === 0 ? 'text-muted-foreground' : projection.propertyEquity < 0 ? 'text-destructive' : 'text-foreground'}`}>
+      {projection.year === 0 ? "—" : formatCurrency(projection.propertyEquity)}
     </td>
   ))}
 </tr>
@@ -468,7 +445,6 @@ const DesktopProjectionsTable = ({
 {/* Cumulative Cash Flow */}
 <tr className="border-b">
   <td className="sticky left-0 bg-background z-10 font-medium p-3">Cumulative cash flow</td>
-  <td className="text-center bg-muted/30 font-mono text-sm p-3">$0</td>
   {projections.map((projection: YearProjection) => (
     <td key={projection.year} className="text-center font-mono text-sm p-3">{formatCurrency(projection.cumulativeCashFlow)}</td>
   ))}
@@ -477,7 +453,6 @@ const DesktopProjectionsTable = ({
 {/* After-tax Cash Flow */}
 <tr className="bg-muted/50 border-t-2 border-b">
   <td className="sticky left-0 bg-muted/50 z-10 font-bold p-3">After-tax cash flow</td>
-  <td className="text-center bg-muted font-mono text-sm p-3">$0</td>
   {projections.map((projection: YearProjection) => (
     <td key={projection.year} className={`text-center bg-muted/50 font-mono text-sm font-bold p-3 ${projection.afterTaxCashFlow >= 0 ? 'text-green-600' : 'text-destructive'}`}>
       {formatCurrency(projection.afterTaxCashFlow)}
@@ -488,7 +463,6 @@ const DesktopProjectionsTable = ({
 {/* Total Return */}
 <tr>
   <td className="sticky left-0 bg-background z-10 font-medium p-3">Total return</td>
-  <td className="text-center bg-muted/30 font-mono text-sm p-3">$0</td>
   {projections.map((projection: YearProjection) => (
     <td key={projection.year} className="text-center font-mono text-sm p-3">{formatCurrency(projection.totalReturn)}</td>
   ))}

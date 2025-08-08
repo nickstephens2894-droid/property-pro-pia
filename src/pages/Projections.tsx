@@ -36,8 +36,8 @@ const Projections = () => {
   const navigate = useNavigate();
   const { propertyData, setPropertyData } = usePropertyData();
   
-  // Use centralized calculations from context
-  const { calculateTotalProjectCost, calculateEquityLoanAmount } = usePropertyData();
+// Use centralized calculations from context
+const { calculateTotalProjectCost, calculateEquityLoanAmount, calculateHoldingCosts } = usePropertyData();
   
   const funding = {
     mainLoanAmount: propertyData.loanAmount,
@@ -85,39 +85,56 @@ const [viewMode, setViewMode] = useState<'year' | 'table'>("table");
     interestRate: assumptions.mainInterestRate.toString()
   });
 
-  // Calculate weighted average marginal tax rate from clients
-  const calculateWeightedTaxRate = () => {
-    const totalIncome = propertyData.clients.reduce((sum, client) => {
-      const ownership = propertyData.ownershipAllocations.find(o => o.clientId === client.id)?.ownershipPercentage || 0;
-      return sum + (client.annualIncome + client.otherIncome) * (ownership / 100);
-    }, 0);
+// Calculate per-client progressive tax instead of weighted average
+const calculateClientTax = (client: any, totalIncome: number) => {
+  let tax = 0;
+  
+  // 2024-25 Australian tax brackets
+  const brackets = [
+    { min: 0, max: 18200, rate: 0 },
+    { min: 18201, max: 45000, rate: 0.19 },
+    { min: 45001, max: 120000, rate: 0.325 },
+    { min: 120001, max: 180000, rate: 0.37 },
+    { min: 180001, max: Infinity, rate: 0.45 }
+  ];
 
-    if (totalIncome === 0) return 32.5; // Default middle tax rate
+  for (const bracket of brackets) {
+    if (totalIncome <= bracket.min) break;
+    
+    const taxableInThisBracket = Math.min(totalIncome - bracket.min, bracket.max - bracket.min);
+    if (taxableInThisBracket > 0) {
+      tax += taxableInThisBracket * bracket.rate;
+    }
+  }
 
-    let weightedRate = 0;
-    propertyData.clients.forEach(client => {
-      const ownership = propertyData.ownershipAllocations.find(o => o.clientId === client.id)?.ownershipPercentage || 0;
-      const clientIncome = client.annualIncome + client.otherIncome;
-      const weight = (clientIncome * (ownership / 100)) / totalIncome;
+  // Add Medicare levy (2%) for applicable clients
+  if (client.hasMedicareLevy && totalIncome > 26000) {
+    tax += totalIncome * 0.02;
+  }
+
+  return tax;
+};
+
+const calculateTotalTaxDifference = (propertyTaxableIncome: number) => {
+  let totalDifference = 0;
+  
+  propertyData.clients.forEach(client => {
+    const ownership = propertyData.ownershipAllocations.find(o => o.clientId === client.id);
+    const ownershipPercentage = ownership ? ownership.ownershipPercentage / 100 : 0;
+    
+    if (ownershipPercentage > 0) {
+      const baseIncome = client.annualIncome + client.otherIncome;
+      const allocatedPropertyIncome = propertyTaxableIncome * ownershipPercentage;
       
-      // Australian tax brackets 2024-25 + Medicare levy
-      let taxRate = 0;
-      if (clientIncome <= 18200) taxRate = 0;
-      else if (clientIncome <= 45000) taxRate = 19;
-      else if (clientIncome <= 120000) taxRate = 32.5;
-      else if (clientIncome <= 180000) taxRate = 37;
-      else taxRate = 45;
-
-      // Add Medicare levy (2%) for applicable clients
-      if (client.hasMedicareLevy && clientIncome > 24276) {
-        taxRate += 2;
-      }
-
-      weightedRate += taxRate * weight;
-    });
-
-    return weightedRate;
-  };
+      const taxWithoutProperty = calculateClientTax(client, baseIncome);
+      const taxWithProperty = calculateClientTax(client, baseIncome + allocatedPropertyIncome);
+      
+      totalDifference += (taxWithProperty - taxWithoutProperty);
+    }
+  });
+  
+  return totalDifference;
+};
 
   // Validate year range (max 25 year span)
   const validatedYearRange = useMemo((): [number, number] => {
@@ -129,138 +146,183 @@ const [viewMode, setViewMode] = useState<'year' | 'table'>("table");
     return [start, end];
   }, [yearRange]);
 
-  const projections = useMemo(() => {
-    const years: YearProjection[] = [];
-    const annualRent = assumptions.initialWeeklyRent * 52;
-    let mainLoanBalance = assumptions.initialMainLoanBalance;
-    let equityLoanBalance = assumptions.initialEquityLoanBalance;
-    
-    // Calculate loan payments for both loans
-    const calculateLoanPayment = (balance: number, rate: number, term: number) => {
-      const monthlyRate = rate / 100 / 12;
-      const totalMonths = term * 12;
-      return balance * (monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) / (Math.pow(1 + monthlyRate, totalMonths) - 1);
-    };
+const projections = useMemo(() => {
+  const years: YearProjection[] = [];
+  const annualRent = assumptions.initialWeeklyRent * 52;
+  let mainLoanBalance = assumptions.initialMainLoanBalance;
+  let equityLoanBalance = assumptions.initialEquityLoanBalance;
+  
+  // Calculate loan payments for both loans
+  const calculateLoanPayment = (balance: number, rate: number, term: number) => {
+    const monthlyRate = rate / 100 / 12;
+    const totalMonths = term * 12;
+    return balance * (monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) / (Math.pow(1 + monthlyRate, totalMonths) - 1);
+  };
 
-    const mainPIMonthlyPayment = calculateLoanPayment(assumptions.initialMainLoanBalance, assumptions.mainInterestRate, assumptions.mainLoanTerm);
-    const mainIOMonthlyPayment = assumptions.initialMainLoanBalance * (assumptions.mainInterestRate / 100 / 12);
+  const mainPIMonthlyPayment = calculateLoanPayment(assumptions.initialMainLoanBalance, assumptions.mainInterestRate, assumptions.mainLoanTerm);
+  const mainIOMonthlyPayment = assumptions.initialMainLoanBalance * (assumptions.mainInterestRate / 100 / 12);
+  
+  const equityPIMonthlyPayment = assumptions.initialEquityLoanBalance > 0 
+    ? calculateLoanPayment(assumptions.initialEquityLoanBalance, assumptions.equityInterestRate, assumptions.equityLoanTerm)
+    : 0;
+  const equityIOMonthlyPayment = assumptions.initialEquityLoanBalance * (assumptions.equityInterestRate / 100 / 12);
+  
+  let cumulativeCashFlow = 0;
+  
+  // Construction period calculation (if applicable)
+  const holdingCosts = calculateHoldingCosts();
+  let constructionPeriodProjection = null;
+  
+  if (propertyData.isConstructionProject && propertyData.constructionPeriod > 0) {
+    // Calculate construction period loan payments
+    const constructionMonths = propertyData.constructionPeriod;
+    const constructionMainPayment = mainIOMonthlyPayment * constructionMonths; // Assume IO during construction
+    const constructionEquityPayment = equityIOMonthlyPayment * constructionMonths;
+    const totalConstructionPayments = constructionMainPayment + constructionEquityPayment;
     
-    const equityPIMonthlyPayment = assumptions.initialEquityLoanBalance > 0 
-      ? calculateLoanPayment(assumptions.initialEquityLoanBalance, assumptions.equityInterestRate, assumptions.equityLoanTerm)
+    // Tax benefit from holding costs (interest only is deductible)
+    const constructionTaxableIncome = -holdingCosts.total; // Negative income from interest deductions
+    const constructionTaxBenefit = -calculateTotalTaxDifference(constructionTaxableIncome);
+    
+    // After-tax cash flow for construction period
+    const constructionAfterTaxCashFlow = -totalConstructionPayments + constructionTaxBenefit;
+    cumulativeCashFlow += constructionAfterTaxCashFlow;
+    
+    constructionPeriodProjection = {
+      year: 0, // Construction period
+      rentalIncome: 0,
+      propertyValue: 0, // Not applicable during construction
+      mainLoanBalance: 0, // Not applicable during construction
+      equityLoanBalance: 0, // Not applicable during construction
+      totalInterest: holdingCosts.total,
+      mainLoanPayment: constructionMainPayment,
+      equityLoanPayment: constructionEquityPayment,
+      mainLoanIOStatus: 'IO' as const,
+      equityLoanIOStatus: 'IO' as const,
+      otherExpenses: 0,
+      depreciation: 0,
+      taxableIncome: constructionTaxableIncome,
+      taxBenefit: constructionTaxBenefit,
+      afterTaxCashFlow: constructionAfterTaxCashFlow,
+      cumulativeCashFlow,
+      propertyEquity: 0, // Not applicable during construction
+      totalReturn: constructionAfterTaxCashFlow
+    };
+  }
+  
+  for (let year = 1; year <= 40; year++) {
+    // Rental income with growth and vacancy
+    const grossRentalIncome = annualRent * Math.pow(1 + assumptions.rentalGrowthRate / 100, year - 1);
+    const rentalIncome = grossRentalIncome * (1 - assumptions.vacancyRate / 100);
+    
+    // Property value with capital growth
+    const propertyValue = assumptions.initialPropertyValue * Math.pow(1 + assumptions.capitalGrowthRate / 100, year - 1);
+    
+    // Main loan calculations
+    const mainIsIOPeriod = assumptions.mainLoanType === 'io' && year <= assumptions.mainIOTermYears;
+    const mainLoanIOStatus: 'IO' | 'P&I' = mainIsIOPeriod ? 'IO' : 'P&I';
+    const mainLoanPayment = mainIsIOPeriod ? mainIOMonthlyPayment * 12 : mainPIMonthlyPayment * 12;
+    
+    // Equity loan calculations
+    const equityIsIOPeriod = assumptions.equityLoanType === 'io' && year <= assumptions.equityIOTermYears && assumptions.initialEquityLoanBalance > 0;
+    const equityLoanIOStatus: 'IO' | 'P&I' = equityIsIOPeriod ? 'IO' : 'P&I';
+    const equityLoanPayment = assumptions.initialEquityLoanBalance > 0 
+      ? (equityIsIOPeriod ? equityIOMonthlyPayment * 12 : equityPIMonthlyPayment * 12)
       : 0;
-    const equityIOMonthlyPayment = assumptions.initialEquityLoanBalance * (assumptions.equityInterestRate / 100 / 12);
     
-    let cumulativeCashFlow = 0;
-    
-    for (let year = 1; year <= 40; year++) {
-      // Rental income with growth and vacancy
-      const grossRentalIncome = annualRent * Math.pow(1 + assumptions.rentalGrowthRate / 100, year - 1);
-      const rentalIncome = grossRentalIncome * (1 - assumptions.vacancyRate / 100);
+    // Update loan balances for next year
+    if (year > 1) {
+      // Main loan balance calculation
+      if (mainIsIOPeriod) {
+        mainLoanBalance = assumptions.initialMainLoanBalance;
+      } else {
+        const monthsFromPIStart = Math.max(0, (year - (assumptions.mainIOTermYears + 1)) * 12);
+        const remainingMonths = assumptions.mainLoanTerm * 12 - (assumptions.mainIOTermYears * 12);
+        if (remainingMonths > 0 && monthsFromPIStart >= 0) {
+          const monthlyRate = assumptions.mainInterestRate / 100 / 12;
+          mainLoanBalance = assumptions.initialMainLoanBalance * 
+            (Math.pow(1 + monthlyRate, remainingMonths) - Math.pow(1 + monthlyRate, monthsFromPIStart)) / 
+            (Math.pow(1 + monthlyRate, remainingMonths) - 1);
+        }
+      }
       
-      // Property value with capital growth
-      const propertyValue = assumptions.initialPropertyValue * Math.pow(1 + assumptions.capitalGrowthRate / 100, year - 1);
-      
-      // Main loan calculations
-      const mainIsIOPeriod = assumptions.mainLoanType === 'io' && year <= assumptions.mainIOTermYears;
-      const mainLoanIOStatus: 'IO' | 'P&I' = mainIsIOPeriod ? 'IO' : 'P&I';
-      const mainLoanPayment = mainIsIOPeriod ? mainIOMonthlyPayment * 12 : mainPIMonthlyPayment * 12;
-      
-      // Equity loan calculations
-      const equityIsIOPeriod = assumptions.equityLoanType === 'io' && year <= assumptions.equityIOTermYears && assumptions.initialEquityLoanBalance > 0;
-      const equityLoanIOStatus: 'IO' | 'P&I' = equityIsIOPeriod ? 'IO' : 'P&I';
-      const equityLoanPayment = assumptions.initialEquityLoanBalance > 0 
-        ? (equityIsIOPeriod ? equityIOMonthlyPayment * 12 : equityPIMonthlyPayment * 12)
-        : 0;
-      
-      // Update loan balances for next year
-      if (year > 1) {
-        // Main loan balance calculation
-        if (mainIsIOPeriod) {
-          mainLoanBalance = assumptions.initialMainLoanBalance;
+      // Equity loan balance calculation
+      if (assumptions.initialEquityLoanBalance > 0) {
+        if (equityIsIOPeriod) {
+          equityLoanBalance = assumptions.initialEquityLoanBalance;
         } else {
-          const monthsFromPIStart = Math.max(0, (year - (assumptions.mainIOTermYears + 1)) * 12);
-          const remainingMonths = assumptions.mainLoanTerm * 12 - (assumptions.mainIOTermYears * 12);
+          const monthsFromPIStart = Math.max(0, (year - (assumptions.equityIOTermYears + 1)) * 12);
+          const remainingMonths = assumptions.equityLoanTerm * 12 - (assumptions.equityIOTermYears * 12);
           if (remainingMonths > 0 && monthsFromPIStart >= 0) {
-            const monthlyRate = assumptions.mainInterestRate / 100 / 12;
-            mainLoanBalance = assumptions.initialMainLoanBalance * 
+            const monthlyRate = assumptions.equityInterestRate / 100 / 12;
+            equityLoanBalance = assumptions.initialEquityLoanBalance * 
               (Math.pow(1 + monthlyRate, remainingMonths) - Math.pow(1 + monthlyRate, monthsFromPIStart)) / 
               (Math.pow(1 + monthlyRate, remainingMonths) - 1);
           }
         }
-        
-        // Equity loan balance calculation
-        if (assumptions.initialEquityLoanBalance > 0) {
-          if (equityIsIOPeriod) {
-            equityLoanBalance = assumptions.initialEquityLoanBalance;
-          } else {
-            const monthsFromPIStart = Math.max(0, (year - (assumptions.equityIOTermYears + 1)) * 12);
-            const remainingMonths = assumptions.equityLoanTerm * 12 - (assumptions.equityIOTermYears * 12);
-            if (remainingMonths > 0 && monthsFromPIStart >= 0) {
-              const monthlyRate = assumptions.equityInterestRate / 100 / 12;
-              equityLoanBalance = assumptions.initialEquityLoanBalance * 
-                (Math.pow(1 + monthlyRate, remainingMonths) - Math.pow(1 + monthlyRate, monthsFromPIStart)) / 
-                (Math.pow(1 + monthlyRate, remainingMonths) - 1);
-            }
-          }
-        }
       }
-      
-      // Interest expense (tax deductible)
-      const mainInterest = mainLoanBalance * (assumptions.mainInterestRate / 100);
-      const equityInterest = equityLoanBalance * (assumptions.equityInterestRate / 100);
-      const totalInterest = mainInterest + equityInterest;
-      
-      // Operating expenses with inflation
-      const inflationMultiplier = Math.pow(1 + assumptions.expenseInflationRate / 100, year - 1);
-      const propertyManagement = rentalIncome * (assumptions.propertyManagementRate / 100);
-      const councilRates = assumptions.councilRates * inflationMultiplier;
-      const insurance = assumptions.insurance * inflationMultiplier;
-      const repairs = assumptions.repairs * inflationMultiplier;
-      const otherExpenses = propertyManagement + councilRates + insurance + repairs;
-      
-      // Depreciation (diminishing over time)
-      const depreciation = Math.max(0, assumptions.depreciationYear1 * Math.pow(0.95, year - 1));
-      
-      // Tax calculations using weighted average rate
-      const taxableIncome = rentalIncome - totalInterest - otherExpenses - depreciation;
-      const weightedTaxRate = calculateWeightedTaxRate();
-      const taxBenefit = taxableIncome < 0 ? Math.abs(taxableIncome) * (weightedTaxRate / 100) : -taxableIncome * (weightedTaxRate / 100);
-      
-      // Cash flow calculations
-      const totalLoanPayments = mainLoanPayment + equityLoanPayment;
-      const afterTaxCashFlow = rentalIncome - otherExpenses - totalLoanPayments + taxBenefit;
-      cumulativeCashFlow += afterTaxCashFlow;
-      
-      // Property equity
-      const propertyEquity = propertyValue - mainLoanBalance - equityLoanBalance;
-      
-      // Total return (cash flow + equity growth)
-      const totalReturn = afterTaxCashFlow + (year > 1 ? propertyValue - assumptions.initialPropertyValue * Math.pow(1 + assumptions.capitalGrowthRate / 100, year - 2) : 0);
-      
-      years.push({
-        year,
-        rentalIncome,
-        propertyValue,
-        mainLoanBalance,
-        equityLoanBalance,
-        totalInterest,
-        mainLoanPayment,
-        equityLoanPayment,
-        mainLoanIOStatus,
-        equityLoanIOStatus,
-        otherExpenses,
-        depreciation,
-        taxableIncome,
-        taxBenefit,
-        afterTaxCashFlow,
-        cumulativeCashFlow,
-        propertyEquity,
-        totalReturn
-      });
     }
     
-    return years;
-  }, [assumptions]);
+    // Interest expense (tax deductible)
+    const mainInterest = mainLoanBalance * (assumptions.mainInterestRate / 100);
+    const equityInterest = equityLoanBalance * (assumptions.equityInterestRate / 100);
+    const totalInterest = mainInterest + equityInterest;
+    
+    // Operating expenses with inflation
+    const inflationMultiplier = Math.pow(1 + assumptions.expenseInflationRate / 100, year - 1);
+    const propertyManagement = rentalIncome * (assumptions.propertyManagementRate / 100);
+    const councilRates = assumptions.councilRates * inflationMultiplier;
+    const insurance = assumptions.insurance * inflationMultiplier;
+    const repairs = assumptions.repairs * inflationMultiplier;
+    const otherExpenses = propertyManagement + councilRates + insurance + repairs;
+    
+    // Depreciation (diminishing over time)
+    const depreciation = Math.max(0, assumptions.depreciationYear1 * Math.pow(0.95, year - 1));
+    
+    // Tax calculations using progressive tax method
+    const taxableIncome = rentalIncome - totalInterest - otherExpenses - depreciation;
+    const taxBenefit = -calculateTotalTaxDifference(taxableIncome);
+    
+    // Cash flow calculations
+    const totalLoanPayments = mainLoanPayment + equityLoanPayment;
+    const afterTaxCashFlow = rentalIncome - otherExpenses - totalLoanPayments + taxBenefit;
+    cumulativeCashFlow += afterTaxCashFlow;
+    
+    // Property equity
+    const propertyEquity = propertyValue - mainLoanBalance - equityLoanBalance;
+    
+    // Total return (cash flow + equity growth)
+    const totalReturn = afterTaxCashFlow + (year > 1 ? propertyValue - assumptions.initialPropertyValue * Math.pow(1 + assumptions.capitalGrowthRate / 100, year - 2) : 0);
+    
+    years.push({
+      year,
+      rentalIncome,
+      propertyValue,
+      mainLoanBalance,
+      equityLoanBalance,
+      totalInterest,
+      mainLoanPayment,
+      equityLoanPayment,
+      mainLoanIOStatus,
+      equityLoanIOStatus,
+      otherExpenses,
+      depreciation,
+      taxableIncome,
+      taxBenefit,
+      afterTaxCashFlow,
+      cumulativeCashFlow,
+      propertyEquity,
+      totalReturn
+    });
+  }
+  
+  // Include construction period at the beginning if applicable
+  if (constructionPeriodProjection) {
+    return [constructionPeriodProjection, ...years];
+  }
+  
+  return years;
+}, [assumptions, propertyData, calculateTotalTaxDifference, calculateHoldingCosts]);
 
   // Filter projections based on selected year range
   const filteredProjections = projections.filter(p => 
@@ -296,7 +358,15 @@ const cashOnCashReturnSummary = propertyData.depositAmount > 0 ? (((currentYearD
 const taxDifferenceSummary = -((currentYearData?.taxBenefit ?? 0));
 const annualRentSummary = currentYearData?.rentalIncome ?? 0;
 const totalExpensesSummary = (currentYearData?.totalInterest ?? 0) + (currentYearData?.otherExpenses ?? 0) + (currentYearData?.depreciation ?? 0);
-const marginalTaxRateSummary = calculateWeightedTaxRate() / 100;
+const marginalTaxRateSummary = propertyData.clients.length > 0 ? 
+  Math.max(...propertyData.clients.map(c => {
+    const income = c.annualIncome + c.otherIncome;
+    if (income <= 18200) return 0;
+    if (income <= 45000) return 0.19;
+    if (income <= 120000) return 0.325;
+    if (income <= 180000) return 0.37;
+    return 0.45;
+  })) : 0.325;
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
@@ -505,7 +575,7 @@ const marginalTaxRateSummary = calculateWeightedTaxRate() / 100;
             </div>
             
             <div className="mt-4 text-sm text-muted-foreground">
-              Tax Rate: {formatPercentage(calculateWeightedTaxRate())} (calculated from client incomes)
+Tax Rate: {formatPercentage(marginalTaxRateSummary * 100)} (highest client marginal rate)
             </div>
           </CardContent>
         </Card>
