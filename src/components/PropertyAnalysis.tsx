@@ -3,7 +3,6 @@ import { PropertyCalculationDetails } from "@/components/PropertyCalculationDeta
 import { PropertySummaryDashboard } from "@/components/PropertySummaryDashboard";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { usePropertyData } from "@/contexts/PropertyDataContext";
@@ -34,54 +33,42 @@ const DesktopLayout = ({
   calculationProps 
 }: DesktopLayoutProps) => {
   return (
-    <ResizablePanelGroup direction="horizontal" className="h-full">
-      {/* Left Panel - Input Form */}
-      <ResizablePanel defaultSize={35} minSize={25} maxSize={45} className="p-6">
-        <div className="h-full overflow-y-auto">
-          <PropertyInputForm
-            propertyData={propertyData}
-            updateField={updateField}
-            clientTaxResults={clientTaxResults}
-            totalTaxableIncome={totalTaxableIncome}
-            marginalTaxRate={marginalTaxRate}
+    <div className="grid grid-cols-12 gap-4 h-full p-4">
+      {/* Left Panel - Input Form (4 columns) */}
+      <div className="col-span-4 h-full overflow-y-auto">
+        <PropertyInputForm
+          propertyData={propertyData}
+          updateField={updateField}
+          clientTaxResults={clientTaxResults}
+          totalTaxableIncome={totalTaxableIncome}
+          marginalTaxRate={marginalTaxRate}
+        />
+      </div>
+      
+      {/* Right Panel - Summary & Calculations (8 columns) */}
+      <div className="col-span-8 flex flex-col gap-4 h-full">
+        {/* Top Section - Summary Dashboard */}
+        <div className="flex-shrink-0 overflow-y-auto" style={{ height: '35%' }}>
+          <PropertySummaryDashboard
+            weeklyAfterTaxCashFlow={calculationProps.weeklyAfterTaxCashFlow}
+            grossYield={calculationProps.grossYield}
+            cashOnCashReturn={calculationProps.cashOnCashReturn}
+            taxDifference={calculationProps.totalTaxWithProperty - calculationProps.totalTaxWithoutProperty}
+            annualRent={calculationProps.annualRent}
+            totalExpenses={calculationProps.totalDeductibleExpenses}
+            marginalTaxRate={calculationProps.marginalTaxRate}
+            totalProjectCost={calculationProps.totalProjectCost}
+            actualCashInvested={calculationProps.actualCashInvested}
+            isConstructionProject={calculationProps.isConstructionProject}
           />
         </div>
-      </ResizablePanel>
-      
-      <ResizableHandle withHandle />
-      
-      {/* Right Panel - Calculations & Summary */}
-      <ResizablePanel defaultSize={65} minSize={55}>
-        <ResizablePanelGroup direction="vertical">
-          {/* Top Panel - Summary Dashboard */}
-          <ResizablePanel defaultSize={30} minSize={20} maxSize={40} className="p-6 pb-3">
-            <div className="h-full overflow-y-auto">
-              <PropertySummaryDashboard
-                weeklyAfterTaxCashFlow={calculationProps.weeklyAfterTaxCashFlow}
-                grossYield={calculationProps.grossYield}
-                cashOnCashReturn={calculationProps.cashOnCashReturn}
-                taxDifference={calculationProps.totalTaxWithProperty - calculationProps.totalTaxWithoutProperty}
-                annualRent={calculationProps.annualRent}
-                totalExpenses={calculationProps.totalDeductibleExpenses}
-                marginalTaxRate={calculationProps.marginalTaxRate}
-                totalProjectCost={calculationProps.totalProjectCost}
-                actualCashInvested={calculationProps.actualCashInvested}
-                isConstructionProject={calculationProps.isConstructionProject}
-              />
-            </div>
-          </ResizablePanel>
-          
-          <ResizableHandle withHandle />
-          
-          {/* Bottom Panel - Detailed Calculations */}
-          <ResizablePanel defaultSize={70} minSize={60} className="p-6 pt-3">
-            <div className="h-full overflow-y-auto">
-              <PropertyCalculationDetails {...calculationProps} />
-            </div>
-          </ResizablePanel>
-        </ResizablePanelGroup>
-      </ResizablePanel>
-    </ResizablePanelGroup>
+        
+        {/* Bottom Section - Detailed Calculations */}
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <PropertyCalculationDetails {...calculationProps} />
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -363,22 +350,23 @@ const PropertyAnalysis = () => {
   const isMobile = useIsMobile();
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-primary/5 to-accent/5 border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Compact Header */}
+      <div className="bg-gradient-to-r from-primary/5 to-accent/5 border-b flex-shrink-0">
+        <div className="max-w-full px-6 py-3">
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-1">
+              <h1 className="text-xl font-bold text-foreground">
                 Property Investment Analysis
               </h1>
-              <p className="text-muted-foreground text-sm sm:text-base">
+              <p className="text-muted-foreground text-sm">
                 Comprehensive analysis tool for Australian residential property investments
               </p>
             </div>
             <Button 
               onClick={() => navigate('/projections')}
-              className="flex items-center gap-2 self-start sm:self-auto"
+              className="flex items-center gap-2"
+              size="sm"
             >
               <TrendingUp className="h-4 w-4" />
               40-Year Projections
@@ -387,7 +375,8 @@ const PropertyAnalysis = () => {
         </div>
       </div>
 
-      <div className="h-[calc(100vh-140px)]">
+      {/* Main Content Area */}
+      <div className="flex-1 min-h-0">
         {isMobile ? (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
             <div className="space-y-6">
