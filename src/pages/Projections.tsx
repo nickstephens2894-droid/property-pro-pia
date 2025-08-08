@@ -160,12 +160,18 @@ const [inputValues, setInputValues] = useState({
     let equityLoanBalance = assumptions.initialEquityLoanBalance;
 
     // Apply interest rate adjustment if specified
-    const adjustmentStartYear = parseInt(inputValues.interestAdjStartYear) || null;
-    const adjustmentValue = parseFloat(inputValues.interestAdjValue) || null;
+    const rawStartYear = parseInt(inputValues.interestAdjStartYear);
+    const adjustmentStartYear = isNaN(rawStartYear) ? null : Math.max(1, Math.min(40, rawStartYear));
+    const rawAdj = parseFloat(inputValues.interestAdjValue);
+    const hasAdj = !isNaN(rawAdj);
+    const adjustmentValue = hasAdj ? rawAdj : null;
     
     const getEffectiveInterestRate = (baseRate: number, year: number) => {
-      if (adjustmentStartYear && adjustmentValue && year >= adjustmentStartYear) {
-        return adjustmentValue; // Override with adjustment value
+      if (adjustmentValue !== null) {
+        const startYear = adjustmentStartYear ?? 1; // default to Year 1 if not provided
+        if (year >= startYear) {
+          return adjustmentValue; // Override with adjustment value
+        }
       }
       return baseRate;
     };
