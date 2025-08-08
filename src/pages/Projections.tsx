@@ -73,6 +73,15 @@ const Projections = () => {
 
   const [yearRange, setYearRange] = useState<[number, number]>([1, 30]);
   const [clientAccordionOpen, setClientAccordionOpen] = useState(false);
+  
+  // Separate state for input values to allow free editing
+  const [inputValues, setInputValues] = useState({
+    yearFrom: '1',
+    yearTo: '30',
+    capitalGrowth: '7',
+    rentalGrowth: '5',
+    interestRate: '6'
+  });
 
   // Calculate weighted average marginal tax rate from clients
   const calculateWeightedTaxRate = () => {
@@ -358,16 +367,15 @@ const Projections = () => {
                 <Input
                   id="yearFrom"
                   type="text"
-                  value={yearRange[0]}
+                  value={inputValues.yearFrom}
                   onChange={(e) => {
-                    // Simple: just update with whatever user types
-                    const value = parseInt(e.target.value) || 1;
-                    setYearRange([value, yearRange[1]]);
+                    setInputValues(prev => ({ ...prev, yearFrom: e.target.value }));
                   }}
                   onBlur={(e) => {
                     const value = Math.max(1, Math.min(40, parseInt(e.target.value) || 1));
                     const to = Math.max(value, yearRange[1]);
                     setYearRange([value, to]);
+                    setInputValues(prev => ({ ...prev, yearFrom: value.toString() }));
                   }}
                   className="h-9"
                 />
@@ -378,16 +386,15 @@ const Projections = () => {
                 <Input
                   id="yearTo"
                   type="text"
-                  value={yearRange[1]}
+                  value={inputValues.yearTo}
                   onChange={(e) => {
-                    // Simple: just update with whatever user types
-                    const value = parseInt(e.target.value) || 1;
-                    setYearRange([yearRange[0], value]);
+                    setInputValues(prev => ({ ...prev, yearTo: e.target.value }));
                   }}
                   onBlur={(e) => {
                     const value = Math.max(1, Math.min(40, parseInt(e.target.value) || 1));
                     const from = Math.min(value, yearRange[0]);
                     setYearRange([from, value]);
+                    setInputValues(prev => ({ ...prev, yearTo: value.toString() }));
                   }}
                   className="h-9"
                 />
@@ -400,15 +407,14 @@ const Projections = () => {
                   <Input
                     id="capitalGrowth"
                     type="text"
-                    value={assumptions.capitalGrowthRate}
+                    value={inputValues.capitalGrowth}
                     onChange={(e) => {
-                      // Simple: just update with whatever user types
-                      const value = parseFloat(e.target.value) || 0;
-                      setAssumptions(prev => ({ ...prev, capitalGrowthRate: value }));
+                      setInputValues(prev => ({ ...prev, capitalGrowth: e.target.value }));
                     }}
                     onBlur={(e) => {
                       const value = Math.max(0, Math.min(15, parseFloat(e.target.value) || 0));
                       setAssumptions(prev => ({ ...prev, capitalGrowthRate: value }));
+                      setInputValues(prev => ({ ...prev, capitalGrowth: value.toString() }));
                     }}
                     className="h-9 pr-8"
                   />
@@ -423,15 +429,14 @@ const Projections = () => {
                   <Input
                     id="rentalGrowth"
                     type="text"
-                    value={assumptions.rentalGrowthRate}
+                    value={inputValues.rentalGrowth}
                     onChange={(e) => {
-                      // Simple: just update with whatever user types
-                      const value = parseFloat(e.target.value) || 0;
-                      setAssumptions(prev => ({ ...prev, rentalGrowthRate: value }));
+                      setInputValues(prev => ({ ...prev, rentalGrowth: e.target.value }));
                     }}
                     onBlur={(e) => {
                       const value = Math.max(0, Math.min(10, parseFloat(e.target.value) || 0));
                       setAssumptions(prev => ({ ...prev, rentalGrowthRate: value }));
+                      setInputValues(prev => ({ ...prev, rentalGrowth: value.toString() }));
                     }}
                     className="h-9 pr-8"
                   />
@@ -446,15 +451,14 @@ const Projections = () => {
                   <Input
                     id="interestRate"
                     type="text"
-                    value={assumptions.mainInterestRate}
+                    value={inputValues.interestRate}
                     onChange={(e) => {
-                      // Simple: just update with whatever user types
-                      const value = parseFloat(e.target.value) || 0;
-                      setAssumptions(prev => ({ ...prev, mainInterestRate: value }));
+                      setInputValues(prev => ({ ...prev, interestRate: e.target.value }));
                     }}
                     onBlur={(e) => {
                       const value = Math.max(0.1, Math.min(12, parseFloat(e.target.value) || 0.1));
                       setAssumptions(prev => ({ ...prev, mainInterestRate: value }));
+                      setInputValues(prev => ({ ...prev, interestRate: value.toString() }));
                     }}
                     className="h-9 pr-8"
                   />
