@@ -358,26 +358,16 @@ const Projections = () => {
                 <Input
                   id="yearFrom"
                   type="text"
-                  value={yearRange[0].toString()}
+                  value={yearRange[0]}
                   onChange={(e) => {
-                    const value = e.target.value;
-                    // Allow any input during typing, including empty
-                    if (value === '') {
-                      setYearRange([1, yearRange[1]]);
-                      return;
-                    }
-                    // Only numbers, but don't validate range during typing
-                    if (/^\d*$/.test(value)) {
-                      const numValue = parseInt(value) || 1;
-                      setYearRange([numValue, yearRange[1]]);
-                    }
+                    // Simple: just update with whatever user types
+                    const value = parseInt(e.target.value) || 1;
+                    setYearRange([value, yearRange[1]]);
                   }}
                   onBlur={(e) => {
-                    // Only validate on blur
                     const value = Math.max(1, Math.min(40, parseInt(e.target.value) || 1));
                     const to = Math.max(value, yearRange[1]);
-                    const span = to - value + 1;
-                    setYearRange(span > 25 ? [value, value + 24] : [value, to]);
+                    setYearRange([value, to]);
                   }}
                   className="h-9"
                 />
@@ -388,26 +378,16 @@ const Projections = () => {
                 <Input
                   id="yearTo"
                   type="text"
-                  value={yearRange[1].toString()}
+                  value={yearRange[1]}
                   onChange={(e) => {
-                    const value = e.target.value;
-                    // Allow any input during typing, including empty
-                    if (value === '') {
-                      setYearRange([yearRange[0], yearRange[0]]);
-                      return;
-                    }
-                    // Only numbers, but don't validate range during typing
-                    if (/^\d*$/.test(value)) {
-                      const numValue = parseInt(value) || 1;
-                      setYearRange([yearRange[0], numValue]);
-                    }
+                    // Simple: just update with whatever user types
+                    const value = parseInt(e.target.value) || 1;
+                    setYearRange([yearRange[0], value]);
                   }}
                   onBlur={(e) => {
-                    // Only validate on blur
                     const value = Math.max(1, Math.min(40, parseInt(e.target.value) || 1));
                     const from = Math.min(value, yearRange[0]);
-                    const span = value - from + 1;
-                    setYearRange(span > 25 ? [value - 24, value] : [from, value]);
+                    setYearRange([from, value]);
                   }}
                   className="h-9"
                 />
@@ -420,22 +400,13 @@ const Projections = () => {
                   <Input
                     id="capitalGrowth"
                     type="text"
-                    value={assumptions.capitalGrowthRate === 0 ? '' : assumptions.capitalGrowthRate.toString()}
+                    value={assumptions.capitalGrowthRate}
                     onChange={(e) => {
-                      const value = e.target.value;
-                      // Allow any input during typing, including empty and partial decimals
-                      if (value === '') {
-                        setAssumptions(prev => ({ ...prev, capitalGrowthRate: 0 }));
-                        return;
-                      }
-                      // Allow numbers and decimal points without validation
-                      if (/^\d*\.?\d*$/.test(value)) {
-                        const numValue = parseFloat(value) || 0;
-                        setAssumptions(prev => ({ ...prev, capitalGrowthRate: numValue }));
-                      }
+                      // Simple: just update with whatever user types
+                      const value = parseFloat(e.target.value) || 0;
+                      setAssumptions(prev => ({ ...prev, capitalGrowthRate: value }));
                     }}
                     onBlur={(e) => {
-                      // Only validate on blur
                       const value = Math.max(0, Math.min(15, parseFloat(e.target.value) || 0));
                       setAssumptions(prev => ({ ...prev, capitalGrowthRate: value }));
                     }}
@@ -452,22 +423,13 @@ const Projections = () => {
                   <Input
                     id="rentalGrowth"
                     type="text"
-                    value={assumptions.rentalGrowthRate === 0 ? '' : assumptions.rentalGrowthRate.toString()}
+                    value={assumptions.rentalGrowthRate}
                     onChange={(e) => {
-                      const value = e.target.value;
-                      // Allow any input during typing, including empty and partial decimals
-                      if (value === '') {
-                        setAssumptions(prev => ({ ...prev, rentalGrowthRate: 0 }));
-                        return;
-                      }
-                      // Allow numbers and decimal points without validation
-                      if (/^\d*\.?\d*$/.test(value)) {
-                        const numValue = parseFloat(value) || 0;
-                        setAssumptions(prev => ({ ...prev, rentalGrowthRate: numValue }));
-                      }
+                      // Simple: just update with whatever user types
+                      const value = parseFloat(e.target.value) || 0;
+                      setAssumptions(prev => ({ ...prev, rentalGrowthRate: value }));
                     }}
                     onBlur={(e) => {
-                      // Only validate on blur
                       const value = Math.max(0, Math.min(10, parseFloat(e.target.value) || 0));
                       setAssumptions(prev => ({ ...prev, rentalGrowthRate: value }));
                     }}
@@ -484,22 +446,13 @@ const Projections = () => {
                   <Input
                     id="interestRate"
                     type="text"
-                    value={assumptions.mainInterestRate === 0 ? '' : assumptions.mainInterestRate.toString()}
+                    value={assumptions.mainInterestRate}
                     onChange={(e) => {
-                      const value = e.target.value;
-                      // Allow any input during typing, including empty and partial decimals
-                      if (value === '') {
-                        setAssumptions(prev => ({ ...prev, mainInterestRate: 0 }));
-                        return;
-                      }
-                      // Allow numbers and decimal points without validation
-                      if (/^\d*\.?\d*$/.test(value)) {
-                        const numValue = parseFloat(value) || 0;
-                        setAssumptions(prev => ({ ...prev, mainInterestRate: numValue }));
-                      }
+                      // Simple: just update with whatever user types
+                      const value = parseFloat(e.target.value) || 0;
+                      setAssumptions(prev => ({ ...prev, mainInterestRate: value }));
                     }}
                     onBlur={(e) => {
-                      // Only validate on blur
                       const value = Math.max(0.1, Math.min(12, parseFloat(e.target.value) || 0.1));
                       setAssumptions(prev => ({ ...prev, mainInterestRate: value }));
                     }}
