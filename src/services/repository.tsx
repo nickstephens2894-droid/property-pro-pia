@@ -9,6 +9,10 @@ export type Investor = {
   annualIncome: number;
   otherIncome: number;
   hasMedicareLevy: boolean;
+  // Optional defaults for scenarios/analysis
+  ownershipPercentage?: number; // default ownership allocation (%)
+  loanSharePercentage?: number; // share of loan responsibility (%)
+  cashContribution?: number; // cash going into deals (AUD)
 };
 
 export type Client = {

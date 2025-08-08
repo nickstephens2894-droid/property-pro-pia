@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,7 @@ export default function Properties() {
     addProperty({ ...form, id: crypto.randomUUID() });
     setForm({ id: "", name: "", type: "House", purchasePrice: 0, weeklyRent: 0, location: "", notes: "" });
   };
-
+  useEffect(() => { document.title = "Properties | Property Analyzer"; }, []);
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">

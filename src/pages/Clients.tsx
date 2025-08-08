@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,10 +8,10 @@ import { useRepo, Client, Investor } from "@/services/repository";
 
 import AppNav from "@/components/AppNav";
 
-const emptyInvestor = (): Investor => ({ id: crypto.randomUUID(), name: "", annualIncome: 0, otherIncome: 0, hasMedicareLevy: true });
+const emptyInvestor = (): Investor => ({ id: crypto.randomUUID(), name: "", annualIncome: 0, otherIncome: 0, hasMedicareLevy: true, ownershipPercentage: 0, loanSharePercentage: 0, cashContribution: 0 });
 
 export default function Clients() {
-  const { clients, addClient, deleteClient } = useRepo();
+  const { clients, addClient, deleteClient, scenarios } = useRepo();
   const [name, setName] = useState("");
   const [investors, setInvestors] = useState<Investor[]>([emptyInvestor()]);
 
@@ -29,7 +29,7 @@ export default function Clients() {
     setName("");
     setInvestors([emptyInvestor()]);
   };
-
+  useEffect(() => { document.title = "Clients | Property Analyzer"; }, []);
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
@@ -58,29 +58,41 @@ export default function Clients() {
               </div>
               <div className="grid gap-4">
                 {investors.map((inv, idx) => (
-                  <Card key={inv.id}>
-                    <CardContent className="pt-6 grid sm:grid-cols-4 gap-4">
-                      <div className="space-y-2">
-                        <Label>Name</Label>
-                        <Input value={inv.name} onChange={(e) => updateInvestor(inv.id, { name: e.target.value })} placeholder={`Investor ${idx + 1}`} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Annual Income (AUD)</Label>
-                        <Input type="number" value={inv.annualIncome} onChange={(e) => updateInvestor(inv.id, { annualIncome: Number(e.target.value || 0) })} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Other Income (AUD)</Label>
-                        <Input type="number" value={inv.otherIncome} onChange={(e) => updateInvestor(inv.id, { otherIncome: Number(e.target.value || 0) })} />
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Switch checked={inv.hasMedicareLevy} onCheckedChange={(v) => updateInvestor(inv.id, { hasMedicareLevy: v })} id={`medicare-${inv.id}`} />
-                        <Label htmlFor={`medicare-${inv.id}`}>Medicare Levy</Label>
-                      </div>
-                      <div className="sm:col-span-4 flex justify-end">
-                        <Button size="sm" variant="destructive" onClick={() => removeInvestor(inv.id)}>Remove</Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                    <Card key={inv.id}>
+                      <CardContent className="pt-6 grid sm:grid-cols-4 gap-4">
+                        <div className="space-y-2">
+                          <Label>Name</Label>
+                          <Input value={inv.name} onChange={(e) => updateInvestor(inv.id, { name: e.target.value })} placeholder={`Investor ${idx + 1}`} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Annual Income (AUD)</Label>
+                          <Input type="number" value={inv.annualIncome} onChange={(e) => updateInvestor(inv.id, { annualIncome: Number(e.target.value || 0) })} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Other Income (AUD)</Label>
+                          <Input type="number" value={inv.otherIncome} onChange={(e) => updateInvestor(inv.id, { otherIncome: Number(e.target.value || 0) })} />
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Switch checked={inv.hasMedicareLevy} onCheckedChange={(v) => updateInvestor(inv.id, { hasMedicareLevy: v })} id={`medicare-${inv.id}`} />
+                          <Label htmlFor={`medicare-${inv.id}`}>Medicare Levy</Label>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Default Ownership %</Label>
+                          <Input type="number" min={0} max={100} value={inv.ownershipPercentage ?? 0} onChange={(e) => updateInvestor(inv.id, { ownershipPercentage: Number(e.target.value || 0) })} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Loan Share %</Label>
+                          <Input type="number" min={0} max={100} value={inv.loanSharePercentage ?? 0} onChange={(e) => updateInvestor(inv.id, { loanSharePercentage: Number(e.target.value || 0) })} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Cash Contribution (AUD)</Label>
+                          <Input type="number" min={0} value={inv.cashContribution ?? 0} onChange={(e) => updateInvestor(inv.id, { cashContribution: Number(e.target.value || 0) })} />
+                        </div>
+                        <div className="sm:col-span-4 flex justify-end">
+                          <Button size="sm" variant="destructive" onClick={() => removeInvestor(inv.id)}>Remove</Button>
+                        </div>
+                      </CardContent>
+                    </Card>
                 ))}
               </div>
             </div>
@@ -100,7 +112,7 @@ export default function Clients() {
               <div key={c.id} className="flex items-center justify-between border rounded-md p-3">
                 <div>
                   <div className="font-medium">{c.name}</div>
-                  <div className="text-sm text-muted-foreground">{c.investors.length} investor(s)</div>
+                  <div className="text-sm text-muted-foreground">{c.investors.length} investor(s) • {scenarios.filter(s => s.clientId === c.id).length} scenario(s)</div>
                 </div>
                 <Button variant="destructive" size="sm" onClick={() => deleteClient(c.id)}>Delete</Button>
               </div>

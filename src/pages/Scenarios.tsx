@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { usePropertyData } from "@/contexts/PropertyDataContext";
 
 
 export default function Scenarios() {
-  const { clients, properties, addScenario, byId } = useRepo();
+  const { clients, properties, scenarios, addScenario, deleteScenario, byId } = useRepo();
   const { setPropertyData, propertyData } = usePropertyData();
   const navigate = useNavigate();
 
@@ -20,6 +20,8 @@ export default function Scenarios() {
 
   const selectedClient = useMemo(() => byId.client(clientId), [byId, clientId]);
   const selectedProperty = useMemo(() => byId.property(propertyId), [byId, propertyId]);
+
+  useEffect(() => { document.title = "Scenarios | Property Analyzer"; }, []);
 
   const canBuild = !!selectedClient && !!selectedProperty;
 
@@ -39,7 +41,39 @@ export default function Scenarios() {
       })),
       ownershipAllocations: selectedClient!.investors.map((i) => ({
         clientId: i.id,
-        ownershipPercentage: Math.floor(100 / selectedClient!.investors.length),
+        ownershipPercentage: i.ownershipPercentage && i.ownershipPercentage > 0
+          ? i.ownershipPercentage
+          : Math.floor(100 / selectedClient!.investors.length),
+      })),
+    }));
+    navigate("/");
+  };
+
+  const loadScenario = (s: { id: string; snapshot?: any; clientId: string; propertyId: string }) => {
+    if (s.snapshot) {
+      setPropertyData((prev: any) => ({ ...prev, ...s.snapshot }));
+      navigate("/");
+      return;
+    }
+    const client = byId.client(s.clientId);
+    const property = byId.property(s.propertyId);
+    if (!client || !property) return;
+    setPropertyData((prev: any) => ({
+      ...prev,
+      purchasePrice: property.purchasePrice,
+      weeklyRent: property.weeklyRent,
+      clients: client.investors.map((i) => ({
+        id: i.id,
+        name: i.name,
+        annualIncome: i.annualIncome,
+        otherIncome: i.otherIncome,
+        hasMedicareLevy: i.hasMedicareLevy,
+      })),
+      ownershipAllocations: client.investors.map((i) => ({
+        clientId: i.id,
+        ownershipPercentage: i.ownershipPercentage && i.ownershipPercentage > 0
+          ? i.ownershipPercentage
+          : Math.floor(100 / client.investors.length),
       })),
     }));
     navigate("/");
@@ -114,7 +148,23 @@ export default function Scenarios() {
             <CardTitle>Saved Scenarios</CardTitle>
           </CardHeader>
           <CardContent>
-            {/* @todo */}
+            {scenarios.length === 0 && <p className="text-sm text-muted-foreground">No scenarios yet.</p>}
+            {scenarios.slice().sort((a,b) => b.createdAt.localeCompare(a.createdAt)).map((s) => {
+              const client = byId.client(s.clientId);
+              const property = byId.property(s.propertyId);
+              return (
+                <div key={s.id} className="flex items-center justify-between border rounded-md p-3 mb-2">
+                  <div>
+                    <div className="font-medium">{s.name}</div>
+                    <div className="text-sm text-muted-foreground">{client?.name ?? 'Unknown Client'} • {property?.name ?? 'Unknown Property'}</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => loadScenario(s)}>Open</Button>
+                    <Button variant="destructive" size="sm" onClick={() => deleteScenario(s.id)}>Delete</Button>
+                  </div>
+                </div>
+              );
+            })}
           </CardContent>
         </Card>
       </div>
