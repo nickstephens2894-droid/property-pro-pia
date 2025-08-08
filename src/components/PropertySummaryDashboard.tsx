@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, DollarSign, Percent, Calculator, AlertCircle, PiggyBank } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Calculator, AlertCircle, PiggyBank } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface SummaryMetric {
@@ -13,7 +13,7 @@ interface SummaryMetric {
 interface PropertySummaryDashboardProps {
   weeklyAfterTaxCashFlow: number;
   grossYield: number;
-  afterTaxYield: number;
+  
   cashOnCashReturn: number;
   taxDifference: number;
   annualRent: number;
@@ -27,7 +27,7 @@ interface PropertySummaryDashboardProps {
 export const PropertySummaryDashboard = ({
   weeklyAfterTaxCashFlow,
   grossYield,
-  afterTaxYield,
+  
   cashOnCashReturn,
   taxDifference,
   annualRent,
@@ -53,13 +53,6 @@ export const PropertySummaryDashboard = ({
       sublabel: "Before expenses",
       type: 'neutral',
       icon: TrendingUp
-    },
-    {
-      label: "After-Tax Yield",
-      value: `${afterTaxYield.toFixed(2)}%`,
-      sublabel: "Real return",
-      type: afterTaxYield >= 0 ? 'positive' : 'negative',
-      icon: Percent
     },
     {
       label: taxDifference <= 0 ? "Tax Savings" : "Additional Tax",
@@ -110,7 +103,7 @@ export const PropertySummaryDashboard = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
-          <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-2 lg:grid-cols-4'}`}>
+          <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-2 lg:grid-cols-3'}`}>
             {heroMetrics.map((metric, index) => {
               const styles = getMetricStyles(metric.type);
               const Icon = metric.icon;

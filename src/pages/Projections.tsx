@@ -283,7 +283,7 @@ const Projections = () => {
   const finalPropertyValue = projections[39]?.propertyValue || 0;
   const finalEquity = projections[39]?.propertyEquity || 0;
   const totalTaxBenefits = projections.reduce((sum, p) => sum + Math.max(0, p.taxBenefit), 0);
-
+  const equityAtYearTo = projections.find(p => p.year === validatedYearRange[1])?.propertyEquity ?? 0;
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
@@ -349,6 +349,16 @@ const Projections = () => {
             <CardContent>
               <div className="text-2xl font-bold">{formatCurrency(totalTaxBenefits)}</div>
               <p className="text-xs text-muted-foreground">Cumulative over 40 years</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">Equity at Year {validatedYearRange[1]}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatCurrency(equityAtYearTo)}</div>
+              <p className="text-xs text-muted-foreground">End of selected range</p>
             </CardContent>
           </Card>
         </div>

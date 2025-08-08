@@ -284,7 +284,7 @@ const PropertyAnalysis = () => {
   // After-tax calculations
   const afterTaxCashFlow = annualCashFlow - totalTaxDifference;
   const weeklyAfterTaxCashFlow = afterTaxCashFlow / 52;
-  const afterTaxYield = (afterTaxCashFlow / totalProjectCost) * 100;
+  
   
   const grossYield = (annualRent / totalProjectCost) * 100;
   const netYield = (annualCashFlow / totalProjectCost) * 100;
@@ -339,7 +339,7 @@ const PropertyAnalysis = () => {
             <PropertySummaryDashboard
               weeklyAfterTaxCashFlow={weeklyAfterTaxCashFlow}
               grossYield={grossYield}
-              afterTaxYield={afterTaxYield}
+              
               cashOnCashReturn={cashOnCashReturn}
               taxDifference={totalTaxDifference}
               annualRent={annualRent}
