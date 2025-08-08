@@ -170,26 +170,30 @@ const [inputValues, setInputValues] = useState({
       return baseRate;
     };
 
-    // Calculate loan payments for both loans
-    const calculateLoanPayment = (balance: number, rate: number, term: number) => {
-      const monthlyRate = rate / 100 / 12;
-      const totalMonths = term * 12;
-      return balance * (monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) / (Math.pow(1 + monthlyRate, totalMonths) - 1);
+    // Track remaining months for dynamic rate adjustments
+    const calculateMonthlyPayment = (balance: number, monthlyRate: number, remainingMonths: number) => {
+      if (remainingMonths <= 0) return 0;
+      if (monthlyRate === 0) return balance / remainingMonths;
+      return balance * (monthlyRate * Math.pow(1 + monthlyRate, remainingMonths)) / (Math.pow(1 + monthlyRate, remainingMonths) - 1);
     };
-    const mainPIMonthlyPayment = calculateLoanPayment(assumptions.initialMainLoanBalance, assumptions.mainInterestRate, assumptions.mainLoanTerm);
-    const mainIOMonthlyPayment = assumptions.initialMainLoanBalance * (assumptions.mainInterestRate / 100 / 12);
-    const equityPIMonthlyPayment = assumptions.initialEquityLoanBalance > 0 ? calculateLoanPayment(assumptions.initialEquityLoanBalance, assumptions.equityInterestRate, assumptions.equityLoanTerm) : 0;
-    const equityIOMonthlyPayment = assumptions.initialEquityLoanBalance * (assumptions.equityInterestRate / 100 / 12);
+    const mainTotalMonths = assumptions.mainLoanTerm * 12;
+    const mainIOMonths = assumptions.mainLoanType === 'io' ? assumptions.mainIOTermYears * 12 : 0;
+    let mainRemainingMonths = Math.max(0, mainTotalMonths - mainIOMonths);
+    const equityTotalMonths = assumptions.equityLoanTerm * 12;
+    const equityIOMonths = assumptions.equityLoanType === 'io' ? assumptions.equityIOTermYears * 12 : 0;
+    let equityRemainingMonths = Math.max(0, equityTotalMonths - equityIOMonths);
     let cumulativeCashFlow = 0;
 
     // Construction period calculation (if applicable)
     const holdingCosts = calculateHoldingCosts();
     let constructionPeriodProjection = null;
     if (propertyData.isConstructionProject && propertyData.constructionPeriod > 0) {
-      // Calculate construction period loan payments
+      // Calculate construction period loan payments (assume IO during construction at current base rates)
       const constructionMonths = propertyData.constructionPeriod;
-      const constructionMainPayment = mainIOMonthlyPayment * constructionMonths; // Assume IO during construction
-      const constructionEquityPayment = equityIOMonthlyPayment * constructionMonths;
+      const constructionMainMonthly = assumptions.initialMainLoanBalance * (assumptions.mainInterestRate / 100 / 12);
+      const constructionEquityMonthly = assumptions.initialEquityLoanBalance * (assumptions.equityInterestRate / 100 / 12);
+      const constructionMainPayment = constructionMainMonthly * constructionMonths;
+      const constructionEquityPayment = constructionEquityMonthly * constructionMonths;
       const totalConstructionPayments = constructionMainPayment + constructionEquityPayment;
 
       // Tax benefit from holding costs (interest only is deductible)
@@ -233,81 +237,66 @@ const [inputValues, setInputValues] = useState({
       // Property value with capital growth
       const propertyValue = assumptions.initialPropertyValue * Math.pow(1 + assumptions.capitalGrowthRate / 100, year - 1);
 
-      // Main loan calculations
+      // Main and equity loan calculations with dynamic interest adjustment
       const mainIsIOPeriod = assumptions.mainLoanType === 'io' && year <= assumptions.mainIOTermYears;
-      const mainLoanIOStatus: 'IO' | 'P&I' = mainIsIOPeriod ? 'IO' : 'P&I';
-      const mainLoanPayment = mainIsIOPeriod ? mainIOMonthlyPayment * 12 : mainPIMonthlyPayment * 12;
-
-      // Equity loan calculations
       const equityIsIOPeriod = assumptions.equityLoanType === 'io' && year <= assumptions.equityIOTermYears && assumptions.initialEquityLoanBalance > 0;
+      const mainLoanIOStatus: 'IO' | 'P&I' = mainIsIOPeriod ? 'IO' : 'P&I';
       const equityLoanIOStatus: 'IO' | 'P&I' = equityIsIOPeriod ? 'IO' : 'P&I';
-      const equityLoanPayment = assumptions.initialEquityLoanBalance > 0 ? equityIsIOPeriod ? equityIOMonthlyPayment * 12 : equityPIMonthlyPayment * 12 : 0;
 
-      // Update loan balances for current year (before calculating interest)
-      // Main loan balance calculation
-      if (mainIsIOPeriod) {
-        // During IO period, balance stays the same
-        mainLoanBalance = assumptions.initialMainLoanBalance;
-      } else {
-        // During P&I period, calculate amortized balance
-        if (assumptions.mainLoanType === 'pi') {
-          // P&I from start - calculate balance after (year-1) years of payments
-          const monthsElapsed = (year - 1) * 12;
-          const totalMonths = assumptions.mainLoanTerm * 12;
-          const monthlyRate = assumptions.mainInterestRate / 100 / 12;
-          if (monthsElapsed >= totalMonths) {
-            mainLoanBalance = 0;
-          } else {
-            // Standard amortization formula: remaining balance after n payments
-            mainLoanBalance = assumptions.initialMainLoanBalance * (Math.pow(1 + monthlyRate, totalMonths) - Math.pow(1 + monthlyRate, monthsElapsed)) / (Math.pow(1 + monthlyRate, totalMonths) - 1);
-          }
-        } else {
-          // IO first, then P&I - calculate balance after IO period ended
-          const monthsFromPIStart = Math.max(0, (year - (assumptions.mainIOTermYears + 1)) * 12);
-          const remainingMonths = assumptions.mainLoanTerm * 12 - assumptions.mainIOTermYears * 12;
-          if (remainingMonths > 0 && monthsFromPIStart >= 0) {
-            const monthlyRate = assumptions.mainInterestRate / 100 / 12;
-            mainLoanBalance = assumptions.initialMainLoanBalance * (Math.pow(1 + monthlyRate, remainingMonths) - Math.pow(1 + monthlyRate, monthsFromPIStart)) / (Math.pow(1 + monthlyRate, remainingMonths) - 1);
-          }
-        }
-      }
-
-      // Equity loan balance calculation  
-      if (assumptions.initialEquityLoanBalance > 0) {
-        if (equityIsIOPeriod) {
-          // During IO period, balance stays the same
-          equityLoanBalance = assumptions.initialEquityLoanBalance;
-        } else {
-          // During P&I period, calculate amortized balance
-          if (assumptions.equityLoanType === 'pi') {
-            // P&I from start - calculate balance after (year-1) years of payments
-            const monthsElapsed = (year - 1) * 12;
-            const totalMonths = assumptions.equityLoanTerm * 12;
-            const monthlyRate = assumptions.equityInterestRate / 100 / 12;
-            if (monthsElapsed >= totalMonths) {
-              equityLoanBalance = 0;
-            } else {
-              // Standard amortization formula: remaining balance after n payments
-              equityLoanBalance = assumptions.initialEquityLoanBalance * (Math.pow(1 + monthlyRate, totalMonths) - Math.pow(1 + monthlyRate, monthsElapsed)) / (Math.pow(1 + monthlyRate, totalMonths) - 1);
-            }
-          } else {
-            // IO first, then P&I - calculate balance after IO period ended
-            const monthsFromPIStart = Math.max(0, (year - (assumptions.equityIOTermYears + 1)) * 12);
-            const remainingMonths = assumptions.equityLoanTerm * 12 - assumptions.equityIOTermYears * 12;
-            if (remainingMonths > 0 && monthsFromPIStart >= 0) {
-              const monthlyRate = assumptions.equityInterestRate / 100 / 12;
-              equityLoanBalance = assumptions.initialEquityLoanBalance * (Math.pow(1 + monthlyRate, remainingMonths) - Math.pow(1 + monthlyRate, monthsFromPIStart)) / (Math.pow(1 + monthlyRate, remainingMonths) - 1);
-            }
-          }
-        }
-      }
-
-      // Interest expense (tax deductible) - calculated on current year's balance with effective rates
+      // Effective rates for this year
       const effectiveMainRate = getEffectiveInterestRate(assumptions.mainInterestRate, year);
       const effectiveEquityRate = getEffectiveInterestRate(assumptions.equityInterestRate, year);
-      const mainInterest = mainLoanBalance * (effectiveMainRate / 100);
-      const equityInterest = equityLoanBalance * (effectiveEquityRate / 100);
-      const totalInterest = mainInterest + equityInterest;
+      const mainMonthlyRate = effectiveMainRate / 100 / 12;
+      const equityMonthlyRate = effectiveEquityRate / 100 / 12;
+
+      let mainLoanPayment = 0;
+      let equityLoanPayment = 0;
+      let mainInterestYear = 0;
+      let equityInterestYear = 0;
+
+      // Main loan
+      if (mainIsIOPeriod) {
+        const months = 12;
+        const monthly = mainLoanBalance * mainMonthlyRate;
+        mainLoanPayment = monthly * months;
+        mainInterestYear = mainLoanPayment; // IO payments are all interest
+      } else if (mainRemainingMonths > 0 && mainLoanBalance > 0) {
+        const months = Math.min(12, mainRemainingMonths);
+        const monthlyPayment = calculateMonthlyPayment(mainLoanBalance, mainMonthlyRate, mainRemainingMonths);
+        for (let m = 0; m < months; m++) {
+          const interest = mainLoanBalance * mainMonthlyRate;
+          const principal = Math.min(monthlyPayment - interest, mainLoanBalance);
+          mainLoanBalance = Math.max(0, mainLoanBalance - principal);
+          mainInterestYear += interest;
+          mainLoanPayment += interest + principal;
+          mainRemainingMonths -= 1;
+          if (mainLoanBalance <= 0) break;
+        }
+      }
+
+      // Equity loan
+      if (assumptions.initialEquityLoanBalance > 0) {
+        if (equityIsIOPeriod) {
+          const months = 12;
+          const monthly = equityLoanBalance * equityMonthlyRate;
+          equityLoanPayment = monthly * months;
+          equityInterestYear = equityLoanPayment;
+        } else if (equityRemainingMonths > 0 && equityLoanBalance > 0) {
+          const months = Math.min(12, equityRemainingMonths);
+          const monthlyPayment = calculateMonthlyPayment(equityLoanBalance, equityMonthlyRate, equityRemainingMonths);
+          for (let m = 0; m < months; m++) {
+            const interest = equityLoanBalance * equityMonthlyRate;
+            const principal = Math.min(monthlyPayment - interest, equityLoanBalance);
+            equityLoanBalance = Math.max(0, equityLoanBalance - principal);
+            equityInterestYear += interest;
+            equityLoanPayment += interest + principal;
+            equityRemainingMonths -= 1;
+            if (equityLoanBalance <= 0) break;
+          }
+        }
+      }
+
+      const totalInterest = mainInterestYear + equityInterestYear;
 
       // Operating expenses with inflation
       const inflationMultiplier = Math.pow(1 + assumptions.expenseInflationRate / 100, year - 1);
