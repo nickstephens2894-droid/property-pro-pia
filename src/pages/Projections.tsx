@@ -510,22 +510,66 @@ const Projections = () => {
                 <div className="space-y-6">
                   {/* Tax Summary */}
                   <div className="bg-muted/30 rounded-lg p-4">
-                    <h4 className="font-medium mb-2">Current Tax Calculation</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Weighted Tax Rate:</span>
-                        <div className="font-semibold">{formatPercentage(calculateWeightedTaxRate())}</div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Total Ownership:</span>
-                        <div className="font-semibold">
-                          {propertyData.ownershipAllocations.reduce((sum, o) => sum + o.ownershipPercentage, 0)}%
+                    <h4 className="font-medium mb-4">Current Tax Breakdown</h4>
+                    
+                    {/* Individual Investor Tax Breakdown */}
+                    <div className="space-y-3 mb-4">
+                      {propertyData.clients.map((client, index) => {
+                        const allocation = propertyData.ownershipAllocations.find(o => o.clientId === client.id);
+                        const ownershipPercentage = allocation?.ownershipPercentage || 0;
+                        const individualTaxRate = (() => {
+                          const income = client.annualIncome + client.otherIncome;
+                          let rate = 0;
+                          if (income <= 18200) rate = 0;
+                          else if (income <= 45000) rate = 19;
+                          else if (income <= 120000) rate = 32.5;
+                          else if (income <= 180000) rate = 37;
+                          else rate = 45;
+                          if (client.hasMedicareLevy && income > 24276) rate += 2;
+                          return rate;
+                        })();
+                        
+                        // Calculate this client's share of first year tax benefit
+                        const firstYearTaxBenefit = projections[0]?.taxBenefit || 0;
+                        const clientTaxBenefit = firstYearTaxBenefit * (ownershipPercentage / 100);
+                        
+                        return (
+                          <div key={client.id} className="bg-background/50 rounded-lg p-3">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="font-medium text-sm">{client.name}</span>
+                              <span className="text-xs text-muted-foreground">{ownershipPercentage}% ownership</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 text-xs">
+                              <div>
+                                <span className="text-muted-foreground">Tax Rate:</span>
+                                <div className="font-semibold">{formatPercentage(individualTaxRate)}</div>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Annual Tax Benefit:</span>
+                                <div className={`font-semibold ${clientTaxBenefit > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                  {formatCurrency(clientTaxBenefit)}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    
+                    {/* Total Summary */}
+                    <div className="border-t pt-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Total Ownership:</span>
+                          <div className="font-semibold">
+                            {propertyData.ownershipAllocations.reduce((sum, o) => sum + o.ownershipPercentage, 0)}%
+                          </div>
                         </div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Combined Income:</span>
-                        <div className="font-semibold">
-                          {formatCurrency(propertyData.clients.reduce((sum, c) => sum + c.annualIncome + c.otherIncome, 0))}
+                        <div>
+                          <span className="text-muted-foreground">Total Annual Tax Benefit:</span>
+                          <div className={`font-semibold ${(projections[0]?.taxBenefit || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatCurrency(projections[0]?.taxBenefit || 0)}
+                          </div>
                         </div>
                       </div>
                     </div>

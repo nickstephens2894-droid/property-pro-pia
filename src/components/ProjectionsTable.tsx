@@ -275,6 +275,12 @@ const MobileProjectionsView = ({
                 {formatCurrency(currentProjection.afterTaxCashFlow)}
               </span>
             </div>
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-muted-foreground">Weekly</span>
+              <span className={`text-xs font-mono ${currentProjection.afterTaxCashFlow >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+                {formatCurrency(currentProjection.afterTaxCashFlow / 52)}
+              </span>
+            </div>
           </CardContent>
         </Card>
       </div>
