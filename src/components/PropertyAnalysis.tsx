@@ -1,7 +1,9 @@
 import { PropertyInputForm } from "@/components/PropertyInputForm";
 import { PropertyCalculationDetails } from "@/components/PropertyCalculationDetails";
+import { PropertySummaryDashboard } from "@/components/PropertySummaryDashboard";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { usePropertyData } from "@/contexts/PropertyDataContext";
@@ -13,6 +15,75 @@ interface Client {
   otherIncome: number;
   hasMedicareLevy: boolean;
 }
+
+interface DesktopLayoutProps {
+  propertyData: any;
+  updateField: (field: any, value: any) => void;
+  clientTaxResults: any[];
+  totalTaxableIncome: number;
+  marginalTaxRate: number;
+  calculationProps: any;
+}
+
+const DesktopLayout = ({ 
+  propertyData, 
+  updateField, 
+  clientTaxResults, 
+  totalTaxableIncome, 
+  marginalTaxRate, 
+  calculationProps 
+}: DesktopLayoutProps) => {
+  return (
+    <ResizablePanelGroup direction="horizontal" className="h-full">
+      {/* Left Panel - Input Form */}
+      <ResizablePanel defaultSize={35} minSize={25} maxSize={45} className="p-6">
+        <div className="h-full overflow-y-auto">
+          <PropertyInputForm
+            propertyData={propertyData}
+            updateField={updateField}
+            clientTaxResults={clientTaxResults}
+            totalTaxableIncome={totalTaxableIncome}
+            marginalTaxRate={marginalTaxRate}
+          />
+        </div>
+      </ResizablePanel>
+      
+      <ResizableHandle withHandle />
+      
+      {/* Right Panel - Calculations & Summary */}
+      <ResizablePanel defaultSize={65} minSize={55}>
+        <ResizablePanelGroup direction="vertical">
+          {/* Top Panel - Summary Dashboard */}
+          <ResizablePanel defaultSize={30} minSize={20} maxSize={40} className="p-6 pb-3">
+            <div className="h-full overflow-y-auto">
+              <PropertySummaryDashboard
+                weeklyAfterTaxCashFlow={calculationProps.weeklyAfterTaxCashFlow}
+                grossYield={calculationProps.grossYield}
+                cashOnCashReturn={calculationProps.cashOnCashReturn}
+                taxDifference={calculationProps.totalTaxWithProperty - calculationProps.totalTaxWithoutProperty}
+                annualRent={calculationProps.annualRent}
+                totalExpenses={calculationProps.totalDeductibleExpenses}
+                marginalTaxRate={calculationProps.marginalTaxRate}
+                totalProjectCost={calculationProps.totalProjectCost}
+                actualCashInvested={calculationProps.actualCashInvested}
+                isConstructionProject={calculationProps.isConstructionProject}
+              />
+            </div>
+          </ResizablePanel>
+          
+          <ResizableHandle withHandle />
+          
+          {/* Bottom Panel - Detailed Calculations */}
+          <ResizablePanel defaultSize={70} minSize={60} className="p-6 pt-3">
+            <div className="h-full overflow-y-auto">
+              <PropertyCalculationDetails {...calculationProps} />
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </ResizablePanel>
+    </ResizablePanelGroup>
+  );
+};
 
 const PropertyAnalysis = () => {
   const navigate = useNavigate();
@@ -284,7 +355,6 @@ const PropertyAnalysis = () => {
   const afterTaxCashFlow = annualCashFlow - totalTaxDifference;
   const weeklyAfterTaxCashFlow = afterTaxCashFlow / 52;
   
-  
   const grossYield = (annualRent / totalProjectCost) * 100;
   const netYield = (annualCashFlow / totalProjectCost) * 100;
   const cashOnCashReturn = actualCashInvested > 0 ? (annualCashFlow / actualCashInvested) * 100 : 0;
@@ -296,13 +366,13 @@ const PropertyAnalysis = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="bg-gradient-to-r from-primary/5 to-accent/5 border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-2">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-1">
                 Property Investment Analysis
               </h1>
-              <p className="text-muted-foreground text-base sm:text-lg">
+              <p className="text-muted-foreground text-sm sm:text-base">
                 Comprehensive analysis tool for Australian residential property investments
               </p>
             </div>
@@ -317,62 +387,99 @@ const PropertyAnalysis = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'lg:grid-cols-3'}`}>
-          
-          {/* Input Form - Takes 1 column on desktop, appears first */}
-          <div className={isMobile ? 'order-1' : 'lg:col-span-1'}>
-            <PropertyInputForm
-              propertyData={propertyData}
-              updateField={updateField}
-              clientTaxResults={clientTaxResults}
-              totalTaxableIncome={totalTaxableIncome}
-              marginalTaxRate={marginalTaxRate}
-            />
+      <div className="h-[calc(100vh-140px)]">
+        {isMobile ? (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+            <div className="space-y-6">
+              <PropertyInputForm
+                propertyData={propertyData}
+                updateField={updateField}
+                clientTaxResults={clientTaxResults}
+                totalTaxableIncome={totalTaxableIncome}
+                marginalTaxRate={marginalTaxRate}
+              />
+              <PropertyCalculationDetails
+                monthlyRepayment={totalWeeklyLoanPayments * 52 / 12}
+                annualRepayment={totalAnnualLoanPayments}
+                annualRent={annualRent}
+                propertyManagementCost={annualPropertyManagement}
+                councilRates={propertyData.councilRates}
+                insurance={propertyData.insurance}
+                repairs={propertyData.repairs}
+                totalDeductibleExpenses={totalDeductibleExpenses}
+                depreciation={{
+                  ...depreciation,
+                  capitalWorksAvailable: propertyData.constructionYear >= 1987,
+                  plantEquipmentRestricted: !propertyData.isNewProperty
+                }}
+                clientTaxResults={clientTaxResults}
+                totalTaxWithProperty={totalTaxWithProperty}
+                totalTaxWithoutProperty={totalTaxWithoutProperty}
+                marginalTaxRate={marginalTaxRate}
+                purchasePrice={propertyData.purchasePrice}
+                constructionYear={propertyData.constructionYear}
+                depreciationMethod={propertyData.depreciationMethod}
+                isConstructionProject={propertyData.isConstructionProject}
+                totalProjectCost={totalProjectCost}
+                holdingCosts={holdingCosts}
+                funding={funding}
+                outOfPocketHoldingCosts={outOfPocketHoldingCosts}
+                capitalizedHoldingCosts={capitalizedHoldingCosts}
+                actualCashInvested={actualCashInvested}
+                constructionPeriod={propertyData.constructionPeriod}
+                holdingCostFunding={propertyData.holdingCostFunding}
+                mainLoanPayments={mainLoanPayments}
+                equityLoanPayments={equityLoanPayments}
+                totalAnnualInterest={totalAnnualInterest}
+              />
+            </div>
           </div>
-
-          {/* Summary & Details - Takes 2 columns on desktop, appears second */}
-          <div className={`space-y-6 ${isMobile ? 'order-2' : 'lg:col-span-2'}`}>
-            
-            {/* Calculation Details */}
-            <PropertyCalculationDetails
-              monthlyRepayment={totalWeeklyLoanPayments * 52 / 12}
-              annualRepayment={totalAnnualLoanPayments}
-              annualRent={annualRent}
-              propertyManagementCost={annualPropertyManagement}
-              councilRates={propertyData.councilRates}
-              insurance={propertyData.insurance}
-              repairs={propertyData.repairs}
-              totalDeductibleExpenses={totalDeductibleExpenses}
-              depreciation={{
+        ) : (
+          <DesktopLayout
+            propertyData={propertyData}
+            updateField={updateField}
+            clientTaxResults={clientTaxResults}
+            totalTaxableIncome={totalTaxableIncome}
+            marginalTaxRate={marginalTaxRate}
+            calculationProps={{
+              monthlyRepayment: totalWeeklyLoanPayments * 52 / 12,
+              annualRepayment: totalAnnualLoanPayments,
+              annualRent,
+              propertyManagementCost: annualPropertyManagement,
+              councilRates: propertyData.councilRates,
+              insurance: propertyData.insurance,
+              repairs: propertyData.repairs,
+              totalDeductibleExpenses,
+              depreciation: {
                 ...depreciation,
                 capitalWorksAvailable: propertyData.constructionYear >= 1987,
                 plantEquipmentRestricted: !propertyData.isNewProperty
-              }}
-              clientTaxResults={clientTaxResults}
-              totalTaxWithProperty={totalTaxWithProperty}
-              totalTaxWithoutProperty={totalTaxWithoutProperty}
-              marginalTaxRate={marginalTaxRate}
-              purchasePrice={propertyData.purchasePrice}
-              constructionYear={propertyData.constructionYear}
-              depreciationMethod={propertyData.depreciationMethod}
-              // Enhanced construction details
-              isConstructionProject={propertyData.isConstructionProject}
-              totalProjectCost={totalProjectCost}
-              holdingCosts={holdingCosts}
-              funding={funding}
-              outOfPocketHoldingCosts={outOfPocketHoldingCosts}
-              capitalizedHoldingCosts={capitalizedHoldingCosts}
-              actualCashInvested={actualCashInvested}
-              constructionPeriod={propertyData.constructionPeriod}
-              holdingCostFunding={propertyData.holdingCostFunding}
-              // Enhanced loan payment details
-              mainLoanPayments={mainLoanPayments}
-              equityLoanPayments={equityLoanPayments}
-              totalAnnualInterest={totalAnnualInterest}
-            />
-          </div>
-        </div>
+              },
+              clientTaxResults,
+              totalTaxWithProperty,
+              totalTaxWithoutProperty,
+              marginalTaxRate,
+              purchasePrice: propertyData.purchasePrice,
+              constructionYear: propertyData.constructionYear,
+              depreciationMethod: propertyData.depreciationMethod,
+              isConstructionProject: propertyData.isConstructionProject,
+              totalProjectCost,
+              holdingCosts,
+              funding,
+              outOfPocketHoldingCosts,
+              capitalizedHoldingCosts,
+              actualCashInvested,
+              constructionPeriod: propertyData.constructionPeriod,
+              holdingCostFunding: propertyData.holdingCostFunding,
+              mainLoanPayments,
+              equityLoanPayments,
+              totalAnnualInterest,
+              weeklyAfterTaxCashFlow,
+              grossYield,
+              cashOnCashReturn
+            }}
+          />
+        )}
       </div>
     </div>
   );
