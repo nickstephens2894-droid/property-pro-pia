@@ -237,11 +237,30 @@ const Projections = () => {
         mainLoanBalance = assumptions.initialMainLoanBalance;
       } else {
         // During P&I period, calculate amortized balance
-        const monthsFromPIStart = Math.max(0, (year - (assumptions.mainIOTermYears + 1)) * 12);
-        const remainingMonths = assumptions.mainLoanTerm * 12 - assumptions.mainIOTermYears * 12;
-        if (remainingMonths > 0 && monthsFromPIStart >= 0) {
+        if (assumptions.mainLoanType === 'pi') {
+          // P&I from start - calculate balance after (year-1) years of payments
+          const monthsElapsed = (year - 1) * 12;
+          const totalMonths = assumptions.mainLoanTerm * 12;
           const monthlyRate = assumptions.mainInterestRate / 100 / 12;
-          mainLoanBalance = assumptions.initialMainLoanBalance * (Math.pow(1 + monthlyRate, remainingMonths) - Math.pow(1 + monthlyRate, monthsFromPIStart)) / (Math.pow(1 + monthlyRate, remainingMonths) - 1);
+          
+          if (monthsElapsed >= totalMonths) {
+            mainLoanBalance = 0;
+          } else {
+            // Standard amortization formula: remaining balance after n payments
+            mainLoanBalance = assumptions.initialMainLoanBalance * 
+              (Math.pow(1 + monthlyRate, totalMonths) - Math.pow(1 + monthlyRate, monthsElapsed)) /
+              (Math.pow(1 + monthlyRate, totalMonths) - 1);
+          }
+        } else {
+          // IO first, then P&I - calculate balance after IO period ended
+          const monthsFromPIStart = Math.max(0, (year - (assumptions.mainIOTermYears + 1)) * 12);
+          const remainingMonths = assumptions.mainLoanTerm * 12 - assumptions.mainIOTermYears * 12;
+          if (remainingMonths > 0 && monthsFromPIStart >= 0) {
+            const monthlyRate = assumptions.mainInterestRate / 100 / 12;
+            mainLoanBalance = assumptions.initialMainLoanBalance * 
+              (Math.pow(1 + monthlyRate, remainingMonths) - Math.pow(1 + monthlyRate, monthsFromPIStart)) / 
+              (Math.pow(1 + monthlyRate, remainingMonths) - 1);
+          }
         }
       }
 
@@ -252,11 +271,30 @@ const Projections = () => {
           equityLoanBalance = assumptions.initialEquityLoanBalance;
         } else {
           // During P&I period, calculate amortized balance
-          const monthsFromPIStart = Math.max(0, (year - (assumptions.equityIOTermYears + 1)) * 12);
-          const remainingMonths = assumptions.equityLoanTerm * 12 - assumptions.equityIOTermYears * 12;
-          if (remainingMonths > 0 && monthsFromPIStart >= 0) {
+          if (assumptions.equityLoanType === 'pi') {
+            // P&I from start - calculate balance after (year-1) years of payments
+            const monthsElapsed = (year - 1) * 12;
+            const totalMonths = assumptions.equityLoanTerm * 12;
             const monthlyRate = assumptions.equityInterestRate / 100 / 12;
-            equityLoanBalance = assumptions.initialEquityLoanBalance * (Math.pow(1 + monthlyRate, remainingMonths) - Math.pow(1 + monthlyRate, monthsFromPIStart)) / (Math.pow(1 + monthlyRate, remainingMonths) - 1);
+            
+            if (monthsElapsed >= totalMonths) {
+              equityLoanBalance = 0;
+            } else {
+              // Standard amortization formula: remaining balance after n payments
+              equityLoanBalance = assumptions.initialEquityLoanBalance * 
+                (Math.pow(1 + monthlyRate, totalMonths) - Math.pow(1 + monthlyRate, monthsElapsed)) /
+                (Math.pow(1 + monthlyRate, totalMonths) - 1);
+            }
+          } else {
+            // IO first, then P&I - calculate balance after IO period ended
+            const monthsFromPIStart = Math.max(0, (year - (assumptions.equityIOTermYears + 1)) * 12);
+            const remainingMonths = assumptions.equityLoanTerm * 12 - assumptions.equityIOTermYears * 12;
+            if (remainingMonths > 0 && monthsFromPIStart >= 0) {
+              const monthlyRate = assumptions.equityInterestRate / 100 / 12;
+              equityLoanBalance = assumptions.initialEquityLoanBalance * 
+                (Math.pow(1 + monthlyRate, remainingMonths) - Math.pow(1 + monthlyRate, monthsFromPIStart)) / 
+                (Math.pow(1 + monthlyRate, remainingMonths) - 1);
+            }
           }
         }
       }
