@@ -74,7 +74,7 @@ const Projections = () => {
   const [yearRange, setYearRange] = useState<[number, number]>([1, 30]);
   const [clientAccordionOpen, setClientAccordionOpen] = useState(false);
   
-  // Separate state for input values to allow free editing
+  // Separate state for input values to allow free editing - initialize once
   const [inputValues, setInputValues] = useState({
     yearFrom: yearRange[0].toString(),
     yearTo: yearRange[1].toString(),
@@ -82,17 +82,6 @@ const Projections = () => {
     rentalGrowth: assumptions.rentalGrowthRate.toString(),
     interestRate: assumptions.mainInterestRate.toString()
   });
-
-  // Update input values when the actual values change
-  useEffect(() => {
-    setInputValues({
-      yearFrom: yearRange[0].toString(),
-      yearTo: yearRange[1].toString(),
-      capitalGrowth: assumptions.capitalGrowthRate.toString(),
-      rentalGrowth: assumptions.rentalGrowthRate.toString(),
-      interestRate: assumptions.mainInterestRate.toString()
-    });
-  }, [yearRange, assumptions.capitalGrowthRate, assumptions.rentalGrowthRate, assumptions.mainInterestRate]);
 
   // Calculate weighted average marginal tax rate from clients
   const calculateWeightedTaxRate = () => {
