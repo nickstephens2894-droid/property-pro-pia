@@ -10,7 +10,6 @@ import { usePropertyData } from "@/contexts/PropertyDataContext";
 import ProjectionsTable from "@/components/ProjectionsTable";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PropertySummaryDashboard } from "@/components/PropertySummaryDashboard";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 interface YearProjection {
   year: number;
   rentalIncome: number;
@@ -85,7 +84,6 @@ const [inputValues, setInputValues] = useState({
     capitalGrowth: assumptions.capitalGrowthRate.toString(),
     rentalGrowth: assumptions.rentalGrowthRate.toString(),
     interestRate: assumptions.mainInterestRate.toString(),
-    interestAdjMode: 'absolute' as 'absolute' | 'delta',
     interestAdjValue: '',
     interestAdjStartYear: ''
   });
@@ -547,22 +545,18 @@ const [inputValues, setInputValues] = useState({
               <div className="space-y-2 col-span-2 lg:col-span-2">
                 <Label htmlFor="interestAdj" className="text-sm font-medium">Interest Rate Adjustment</Label>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                  <ToggleGroup type="single" value={inputValues.interestAdjMode} onValueChange={(v) => v && setInputValues(prev => ({ ...prev, interestAdjMode: v as 'absolute' | 'delta' }))}>
-                    <ToggleGroupItem value="absolute">Absolute (%)</ToggleGroupItem>
-                    <ToggleGroupItem value="delta">Delta (bps)</ToggleGroupItem>
-                  </ToggleGroup>
                   <div className="relative flex-1">
                     <Input 
                       id="interestAdj" 
                       type="text" 
-                      placeholder={inputValues.interestAdjMode === 'delta' ? 'e.g. 50' : 'e.g. 6.5'}
+                      placeholder="e.g. 6.5"
                       value={inputValues.interestAdjValue} 
                       onChange={e => {
                         setInputValues(prev => ({ ...prev, interestAdjValue: e.target.value }));
                       }} 
                       className="h-9 pr-12" 
                     />
-                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">{inputValues.interestAdjMode === 'delta' ? 'bps' : '%'}</span>
+                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">%</span>
                   </div>
                   <div className="relative w-36">
                     <Input id="interestAdjStartYear" placeholder="Start Year" type="text" value={inputValues.interestAdjStartYear} onChange={e => {
@@ -576,7 +570,7 @@ const [inputValues, setInputValues] = useState({
                   </div>
                   <Button variant="outline" size="sm" onClick={() => setInputValues(prev => ({ ...prev, interestAdjValue: '', interestAdjStartYear: '' }))}>Clear</Button>
                 </div>
-                <p className="text-xs text-muted-foreground">Choose Absolute to override base rates, or Delta to adjust by basis points. Clear to revert to Funding & Finance rates.</p>
+                <p className="text-xs text-muted-foreground">Override base rates from Funding & Finance section. Clear to revert to original rates.</p>
               </div>
             </div>
             
