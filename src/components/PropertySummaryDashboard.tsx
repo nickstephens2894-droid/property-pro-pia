@@ -42,19 +42,19 @@ export const PropertySummaryDashboard = ({
   
   const heroMetrics: SummaryMetric[] = [{
     label: "Weekly Cashflow Year 1",
-    value: `$${safeWeeklyCashflow.toFixed(2)}`,
+    value: `$${Math.round(safeWeeklyCashflow).toLocaleString()}`,
     sublabel: "After-tax weekly",
     type: safeWeeklyCashflow >= 0 ? 'positive' : 'negative',
     icon: DollarSign
   }, {
     label: "Tax Savings Year 1",
-    value: `$${Math.abs(safeTaxSavingsYear1).toLocaleString()}`,
+    value: `$${Math.round(Math.abs(safeTaxSavingsYear1)).toLocaleString()}`,
     sublabel: "Annual benefit",
     type: safeTaxSavingsYear1 >= 0 ? 'positive' : 'warning',
     icon: Calculator
   }, {
     label: `Tax Savings Total (Year ${safeYearTo})`,
-    value: `$${Math.abs(safeTaxSavingsTotal).toLocaleString()}`,
+    value: `$${Math.round(Math.abs(safeTaxSavingsTotal)).toLocaleString()}`,
     sublabel: `Cumulative to year ${safeYearTo}`,
     type: safeTaxSavingsTotal >= 0 ? 'positive' : 'warning',
     icon: PiggyBank
@@ -143,7 +143,7 @@ export const PropertySummaryDashboard = ({
                 <CardContent className="pt-6">
                   <div className="text-center space-y-3">
                     <div className="text-3xl font-bold text-primary">
-                      ${safeNetEquity.toLocaleString()}
+                      ${Math.round(safeNetEquity).toLocaleString()}
                     </div>
                     <div className="text-sm text-muted-foreground font-medium">
                       Net Equity at End of Year {safeYearTo}
@@ -160,7 +160,7 @@ export const PropertySummaryDashboard = ({
                 <CardContent className="pt-6">
                   <div className="text-center space-y-3">
                     <div className={`text-3xl font-bold ${safeROI >= 0 ? 'text-success' : 'text-destructive'}`}>
-                      {safeROI.toFixed(1)}%
+                      {Math.round(safeROI)}%
                     </div>
                     <div className="text-sm text-muted-foreground font-medium">
                       ROI at End of Year {safeYearTo}
