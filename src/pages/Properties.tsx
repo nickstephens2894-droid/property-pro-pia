@@ -9,7 +9,7 @@ import { useRepo, Property } from "@/services/repository";
 import AppNav from "@/components/AppNav";
 
 export default function Properties() {
-  const { properties, addProperty, deleteProperty } = useRepo();
+  const { properties, addProperty, deleteProperty, clients } = useRepo();
   const [form, setForm] = useState<Property>({
     id: "",
     name: "",
@@ -18,13 +18,15 @@ export default function Properties() {
     weeklyRent: 0,
     location: "",
     notes: "",
+    clientId: undefined,
   });
 
   const update = (patch: Partial<Property>) => setForm((p) => ({ ...p, ...patch }));
   const save = () => {
     if (!form.name.trim()) return;
-    addProperty({ ...form, id: crypto.randomUUID() });
-    setForm({ id: "", name: "", type: "House", purchasePrice: 0, weeklyRent: 0, location: "", notes: "" });
+    const newProp = { ...form, id: crypto.randomUUID() };
+    addProperty(newProp);
+    setForm({ id: "", name: "", type: "House", purchasePrice: 0, weeklyRent: 0, location: "", notes: "", clientId: undefined });
   };
   useEffect(() => { document.title = "Properties | Property Analyzer"; }, []);
   return (
@@ -62,6 +64,17 @@ export default function Properties() {
               </Select>
             </div>
             <div className="space-y-2">
+              <Label>Client</Label>
+              <Select value={form.clientId ?? ""} onValueChange={(v) => update({ clientId: v })}>
+                <SelectTrigger><SelectValue placeholder="Assign to client" /></SelectTrigger>
+                <SelectContent>
+                  {clients.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
               <Label>Purchase Price (AUD)</Label>
               <Input type="number" value={form.purchasePrice} onChange={(e) => update({ purchasePrice: Number(e.target.value || 0) })} />
             </div>
@@ -78,7 +91,7 @@ export default function Properties() {
               <Input value={form.notes} onChange={(e) => update({ notes: e.target.value })} placeholder="Optional notes" />
             </div>
             <div className="sm:col-span-2 flex justify-end">
-              <Button onClick={save}>Save Property</Button>
+              <Button onClick={save} disabled={!form.clientId}>Save Property</Button>
             </div>
           </CardContent>
         </Card>
