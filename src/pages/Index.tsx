@@ -2,20 +2,11 @@ import { useEffect, useState } from "react";
 import PropertyAnalysis from "@/components/PropertyAnalysis";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+
 
 const Index = () => {
-  const [authed, setAuthed] = useState(false);
+  const [authed] = useState(true);
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setAuthed(!!session?.user);
-    });
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setAuthed(!!session?.user);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
 
   useEffect(() => {
     // SEO
