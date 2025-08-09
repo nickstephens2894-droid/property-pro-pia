@@ -14,16 +14,248 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      clients: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          owner_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          owner_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          owner_user_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      investors: {
+        Row: {
+          annual_income: number
+          cash_contribution: number | null
+          client_id: string
+          created_at: string
+          has_medicare_levy: boolean
+          id: string
+          loan_share_percentage: number | null
+          name: string
+          other_income: number
+          ownership_percentage: number | null
+          updated_at: string
+        }
+        Insert: {
+          annual_income?: number
+          cash_contribution?: number | null
+          client_id: string
+          created_at?: string
+          has_medicare_levy?: boolean
+          id?: string
+          loan_share_percentage?: number | null
+          name: string
+          other_income?: number
+          ownership_percentage?: number | null
+          updated_at?: string
+        }
+        Update: {
+          annual_income?: number
+          cash_contribution?: number | null
+          client_id?: string
+          created_at?: string
+          has_medicare_levy?: boolean
+          id?: string
+          loan_share_percentage?: number | null
+          name?: string
+          other_income?: number
+          ownership_percentage?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investors_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      properties: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          location: string | null
+          name: string
+          notes: string | null
+          purchase_price: number
+          status: Database["public"]["Enums"]["property_status"]
+          type: string
+          updated_at: string
+          weekly_rent: number
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          location?: string | null
+          name: string
+          notes?: string | null
+          purchase_price?: number
+          status?: Database["public"]["Enums"]["property_status"]
+          type: string
+          updated_at?: string
+          weekly_rent?: number
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          location?: string | null
+          name?: string
+          notes?: string | null
+          purchase_price?: number
+          status?: Database["public"]["Enums"]["property_status"]
+          type?: string
+          updated_at?: string
+          weekly_rent?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "properties_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scenario_properties: {
+        Row: {
+          created_at: string
+          id: string
+          is_primary: boolean
+          property_id: string
+          scenario_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          property_id: string
+          scenario_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          property_id?: string
+          scenario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scenario_properties_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scenario_properties_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scenarios: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          is_core: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          is_core?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          is_core?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scenarios_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_owner_client: {
+        Args: { _client_id: string }
+        Returns: boolean
+      }
+      is_owner_scenario: {
+        Args: { _scenario_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      property_status: "current" | "new"
+      user_role: "individual" | "advisor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +382,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      property_status: ["current", "new"],
+      user_role: ["individual", "advisor"],
+    },
   },
 } as const

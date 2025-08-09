@@ -10,6 +10,7 @@ import NotFound from "./pages/NotFound";
 import Clients from "./pages/Clients";
 import Properties from "./pages/Properties";
 import Scenarios from "./pages/Scenarios";
+import Auth from "./pages/Auth";
 import { RepoProvider } from "./services/repository";
 import SeedDemo from "./components/SeedDemo";
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
               <Route path="/projections" element={<Projections />} />
               <Route path="/clients" element={<Clients />} />
               <Route path="/properties" element={<Properties />} />
+              <Route path="/auth" element={<Auth />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
