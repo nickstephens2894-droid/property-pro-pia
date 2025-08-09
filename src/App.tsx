@@ -11,11 +11,12 @@ import Clients from "./pages/Clients";
 import Properties from "./pages/Properties";
 import Scenarios from "./pages/Scenarios";
 import { RepoProvider } from "./services/repository";
-
+import SeedDemo from "./components/SeedDemo";
 const queryClient = new QueryClient();
 
 const App = () => (
   <RepoProvider>
+    <SeedDemo />
     <QueryClientProvider client={queryClient}>
       <PropertyDataProvider>
         <TooltipProvider>
@@ -27,7 +28,6 @@ const App = () => (
               <Route path="/projections" element={<Projections />} />
               <Route path="/clients" element={<Clients />} />
               <Route path="/properties" element={<Properties />} />
-              <Route path="/scenarios" element={<Scenarios />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
