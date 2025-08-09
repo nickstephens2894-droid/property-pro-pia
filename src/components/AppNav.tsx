@@ -2,7 +2,7 @@ import * as React from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Home, BarChart3, Building2 } from "lucide-react";
+import { Home, BarChart3 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 export default function AppNav({ className = "" }: { className?: string }) {
   const navigate = useNavigate();
@@ -11,7 +11,6 @@ export default function AppNav({ className = "" }: { className?: string }) {
   const items = [
     { to: "/", label: "Analysis", icon: Home },
     { to: "/projections", label: "Projections", icon: BarChart3 },
-    { to: "/properties", label: "Properties", icon: Building2 },
   ] as const;
 
   const link = (to: string, label: string) => (
@@ -41,7 +40,7 @@ export default function AppNav({ className = "" }: { className?: string }) {
             className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pb-[env(safe-area-inset-bottom)]"
             aria-label="Bottom navigation"
           >
-            <ul className="grid grid-cols-3">
+            <ul className="grid grid-cols-2">
               {items.map(({ to, label, icon: Icon }) => {
                 const active = pathname === to;
                 return (
