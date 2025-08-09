@@ -132,12 +132,20 @@ const Auth = () => {
     if (!newPassword) return toast.error("Enter a new password");
     if (newPassword !== confirmPassword) return toast.error("Passwords do not match");
     setLoading(true);
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    setLoading(false);
-    if (error) toast.error(error.message || "Unable to update password");
-    else {
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) {
+        toast.error(error.message || "Unable to update password");
+        return;
+      }
       toast.success("Password updated");
+      setIsRecovery(false);
+      setMode("signin");
       navigate("/", { replace: true });
+    } catch (e: any) {
+      toast.error(e?.message || "Unable to update password");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -227,9 +235,8 @@ const Auth = () => {
               <>
                 <div className="space-y-2">
                   <Label htmlFor="newPassword">New password</Label>
-                  <Input
+                  <PasswordInput
                     id="newPassword"
-                    type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     required
@@ -239,9 +246,8 @@ const Auth = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Confirm new password</Label>
-                  <Input
+                  <PasswordInput
                     id="confirmPassword"
-                    type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
