@@ -16,6 +16,7 @@ const Auth = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isRecovery, setIsRecovery] = useState(false);
 
   useEffect(() => {
     // SEO tags
@@ -41,34 +42,42 @@ const Auth = () => {
   useEffect(() => {
     // Listen for auth changes and redirect when logged in
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY") {
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      const isRecoveryUrl = isRecovery || hashParams.get("type") === "recovery";
+      if (event === "PASSWORD_RECOVERY" || isRecoveryUrl) {
         setMode("reset");
-        return;
+        return; // Don't redirect while in recovery
       }
-      if (session?.user) {
+      if (session?.user && !isRecoveryUrl && mode !== "reset") {
         navigate("/", { replace: true });
       }
     });
 
     // Also fetch existing session on mount
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) navigate("/", { replace: true });
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      const isRecoveryUrl = isRecovery || hashParams.get("type") === "recovery";
+      if (session?.user && !isRecoveryUrl && mode !== "reset") navigate("/", { replace: true });
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, mode, isRecovery]);
 
-  // Handle URL-based auth flows and surface errors
+  // Handle URL/hash auth flows and surface errors
   useEffect(() => {
     const url = new URL(window.location.href);
-    const type = url.searchParams.get("type");
-    if (type === "recovery") {
+    const searchType = url.searchParams.get("type");
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const hashType = hashParams.get("type");
+    const recovery = (searchType || hashType) === "recovery";
+    if (recovery) {
       setMode("reset");
+      setIsRecovery(true);
     }
-    const error = url.searchParams.get("error") || url.searchParams.get("error_code");
-    const description = url.searchParams.get("error_description");
+    const error = url.searchParams.get("error") || hashParams.get("error") || url.searchParams.get("error_code") || hashParams.get("error_code");
+    const description = url.searchParams.get("error_description") || hashParams.get("error_description");
     if (error || description) {
       toast.error(description || "Authentication error");
     }
@@ -109,7 +118,7 @@ const Auth = () => {
     }
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth`,
+      redirectTo: `${window.location.origin}/auth?type=recovery`,
     });
     setLoading(false);
     if (error) toast.error(error.message || "Unable to send reset email");
