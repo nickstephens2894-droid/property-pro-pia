@@ -60,6 +60,20 @@ const Auth = () => {
     };
   }, [navigate]);
 
+  // Handle URL-based auth flows and surface errors
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const type = url.searchParams.get("type");
+    if (type === "recovery") {
+      setMode("reset");
+    }
+    const error = url.searchParams.get("error") || url.searchParams.get("error_code");
+    const description = url.searchParams.get("error_description");
+    if (error || description) {
+      toast.error(description || "Authentication error");
+    }
+  }, []);
+
   const signIn = async () => {
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -121,12 +135,15 @@ const Auth = () => {
   const resendConfirmation = async () => {
     if (!email) return toast.error("Enter your email to resend confirmation");
     setLoading(true);
-    const { error } = await supabase.auth.resend({ type: "signup", email });
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/` },
+    });
     setLoading(false);
     if (error) toast.error(error.message || "Unable to resend confirmation");
     else toast.success("Confirmation email sent");
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (mode === "signin") await signIn();
