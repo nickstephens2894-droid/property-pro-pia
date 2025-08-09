@@ -6,6 +6,8 @@ import { PresetSelector } from "@/components/PresetSelector";
 import { useIsMobile } from "@/hooks/use-mobile";
 import AppNav from "@/components/AppNav";
 import { usePropertyData } from "@/contexts/PropertyDataContext";
+import { Button } from "@/components/ui/button";
+import { downloadInputsCsv } from "@/utils/csvExport";
 
 interface Client {
   id: string;
@@ -368,6 +370,14 @@ const PropertyAnalysis = () => {
             </div>
             <div className="flex items-center gap-2">
               <AppNav />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => downloadInputsCsv(propertyData)}
+                aria-label="Export inputs CSV"
+              >
+                Export inputs CSV
+              </Button>
             </div>
           </div>
         </div>
