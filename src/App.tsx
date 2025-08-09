@@ -13,6 +13,7 @@ import Scenarios from "./pages/Scenarios";
 import Auth from "./pages/Auth";
 import { RepoProvider } from "./services/repository";
 import SeedDemo from "./components/SeedDemo";
+import RequireAuth from "./components/RequireAuth";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -26,10 +27,11 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/projections" element={<Projections />} />
-              <Route path="/clients" element={<Clients />} />
-              <Route path="/properties" element={<Properties />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/projections" element={<RequireAuth><Projections /></RequireAuth>} />
+              <Route path="/clients" element={<RequireAuth><Clients /></RequireAuth>} />
+              <Route path="/properties" element={<RequireAuth><Properties /></RequireAuth>} />
+              <Route path="/scenarios" element={<RequireAuth><Scenarios /></RequireAuth>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
