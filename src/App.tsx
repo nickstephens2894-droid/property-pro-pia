@@ -11,6 +11,7 @@ import Clients from "./pages/Clients";
 import Properties from "./pages/Properties";
 import Scenarios from "./pages/Scenarios";
 import Auth from "./pages/Auth";
+import SpecPage from "./pages/SpecPage";
 import { RepoProvider } from "./services/repository";
 import SeedDemo from "./components/SeedDemo";
 import RequireAuth from "./components/RequireAuth";
@@ -32,6 +33,7 @@ const App = () => (
               <Route path="/clients" element={<RequireAuth><Clients /></RequireAuth>} />
               <Route path="/properties" element={<RequireAuth><Properties /></RequireAuth>} />
               <Route path="/scenarios" element={<RequireAuth><Scenarios /></RequireAuth>} />
+              <Route path="/spec" element={<SpecPage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
