@@ -379,7 +379,24 @@ const MobileProjectionsView = ({
                     </span>
                     <span className="font-mono text-sm">{formatCurrency(currentProjection.otherExpenses)}</span>
                   </div>
-                  
+                  <div className="mt-2 space-y-1 pl-6 text-xs text-muted-foreground">
+                    <div className="flex items-center justify-between">
+                      <span>Property management ({assumptions.propertyManagementRate}%)</span>
+                      <span className="font-mono">{formatCurrency(currentProjection.rentalIncome * (assumptions.propertyManagementRate / 100))}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Council rates</span>
+                      <span className="font-mono">{formatCurrency(assumptions.councilRates * Math.pow(1 + assumptions.expenseInflationRate / 100, currentProjection.year - 1))}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Insurance</span>
+                      <span className="font-mono">{formatCurrency(assumptions.insurance * Math.pow(1 + assumptions.expenseInflationRate / 100, currentProjection.year - 1))}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Repairs & maintenance</span>
+                      <span className="font-mono">{formatCurrency(assumptions.repairs * Math.pow(1 + assumptions.expenseInflationRate / 100, currentProjection.year - 1))}</span>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </CollapsibleContent>
