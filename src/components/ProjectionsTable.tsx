@@ -254,7 +254,7 @@ const MobileProjectionsView = ({
                   </div>
                   <div className="flex items-center gap-2">
                     {showLoanDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                    <Badge variant="outline">{formatCurrency(currentProjection.mainLoanBalance + currentProjection.equityLoanBalance)}</Badge>
+                    <span className="font-bold">{formatCurrency(currentProjection.mainLoanBalance + currentProjection.equityLoanBalance)}</span>
                   </div>
                 </div>
               </CardContent>
@@ -354,7 +354,7 @@ const MobileProjectionsView = ({
                     <span className="text-sm font-medium">Expenses</span>
                     {showExpensesDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </div>
-                  <Badge variant="outline">{formatCurrency(expensesTotal)}</Badge>
+                  <span className="font-bold text-destructive">-{formatCurrency(Math.abs(expensesTotal))}</span>
                 </div>
               </CardContent>
             </CollapsibleTrigger>
@@ -396,7 +396,7 @@ const MobileProjectionsView = ({
                     <span className="text-sm font-medium">Income</span>
                     {showIncomeDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </div>
-                  <Badge variant="secondary">{formatCurrency(incomeTotal)}</Badge>
+                  <span className="font-bold text-primary">+{formatCurrency(Math.abs(incomeTotal))}</span>
                 </div>
               </CardContent>
             </CollapsibleTrigger>
@@ -429,7 +429,7 @@ const MobileProjectionsView = ({
                   </div>
                   <div className="flex items-center gap-2">
                     {showTaxDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                    <Badge variant="secondary">{formatCurrency(nonCashTotal)}</Badge>
+                    <span className={`font-bold ${nonCashTotal >= 0 ? 'text-primary' : 'text-destructive'}`}>{nonCashTotal >= 0 ? '+' : '-'}{formatCurrency(Math.abs(nonCashTotal))}</span>
                   </div>
                 </div>
               </CardContent>
@@ -474,9 +474,7 @@ const MobileProjectionsView = ({
                     <span className="text-sm font-medium">Cash flow</span>
                     {showCashFlowDetailsMobile ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </div>
-                  <Badge variant="secondary" className={weeklyCashflow >= 0 ? 'text-primary' : 'text-destructive'}>
-                    {formatCurrency(weeklyCashflow)}
-                  </Badge>
+                  <span className={`font-bold ${weeklyCashflow >= 0 ? 'text-primary' : 'text-destructive'}`}>{weeklyCashflow >= 0 ? '+' : '-'}{formatCurrency(Math.abs(weeklyCashflow))}</span>
                 </div>
               </CardContent>
             </CollapsibleTrigger>
