@@ -141,6 +141,23 @@ const MobileProjectionsView = ({
   const [showEquityDetails, setShowEquityDetails] = useState(true);
   const [showTaxDetails, setShowTaxDetails] = useState(false);
   
+  const expandAll = () => {
+    setShowValueDetails(true);
+    setShowEquityDetails(true);
+    setShowLoanDetails(true);
+    setShowExpensesDetails(true);
+    setShowIncomeDetails(true);
+    setShowTaxDetails(true);
+  };
+  const collapseAll = () => {
+    setShowValueDetails(false);
+    setShowEquityDetails(false);
+    setShowLoanDetails(false);
+    setShowExpensesDetails(false);
+    setShowIncomeDetails(false);
+    setShowTaxDetails(false);
+  };
+  
   const prevValue = currentYearIndex > 0 ? projections[currentYearIndex - 1].propertyValue : currentProjection.propertyValue;
   const yoyChange = prevValue > 0 ? ((currentProjection.propertyValue - prevValue) / prevValue) * 100 : 0;
   return (
@@ -176,6 +193,11 @@ const MobileProjectionsView = ({
           </div>
         </CardHeader>
       </Card>
+
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" size="sm" onClick={expandAll}>Expand all</Button>
+        <Button variant="ghost" size="sm" onClick={collapseAll}>Collapse all</Button>
+      </div>
 
       {/* Mobile Metrics Grid */}
       <div className="grid grid-cols-1 gap-4">
