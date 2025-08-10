@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, ArrowUpRight, ArrowD
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { resolve } from "@/utils/overrides";
 
 interface YearProjection {
   year: number;
@@ -381,8 +382,8 @@ const MobileProjectionsView = ({
                   </div>
                   <div className="mt-2 space-y-1 pl-6 text-xs text-muted-foreground">
                     <div className="flex items-center justify-between">
-                      <span>Property management ({assumptions.propertyManagementRate}%)</span>
-                      <span className="font-mono">{formatCurrency(currentProjection.rentalIncome * (assumptions.propertyManagementRate / 100))}</span>
+                      <span>Property management ({formatPercentage(resolve<number>(assumptions.propertyManagementRate) ?? 0)})</span>
+                      <span className="font-mono">{formatCurrency(currentProjection.rentalIncome * ((resolve<number>(assumptions.propertyManagementRate) ?? 0) / 100))}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span>Council rates</span>
@@ -768,7 +769,7 @@ const DesktopProjectionsTable = ({
     </td>
     {projections.map((projection: YearProjection) => (
       <td key={projection.year} className="text-center font-mono text-xs p-3">
-        {formatCurrency(projection.rentalIncome * (assumptions.propertyManagementRate / 100))}
+        {formatCurrency(projection.rentalIncome * ((resolve<number>(assumptions.propertyManagementRate) ?? 0) / 100))}
       </td>
     ))}
   </tr>
