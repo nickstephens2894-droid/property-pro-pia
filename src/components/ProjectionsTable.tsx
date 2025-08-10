@@ -134,9 +134,12 @@ const MobileProjectionsView = ({
   const equityRatio = currentProjection.propertyValue > 0 ? Math.max(0, Math.min(100, (currentProjection.propertyEquity / currentProjection.propertyValue) * 100)) : 0;
   const lvrRatio = Math.max(0, Math.min(100, 100 - equityRatio));
   
-  // Expand/collapse state for Income and Expenses
+  // Expand/collapse state for sections
   const [showIncomeDetails, setShowIncomeDetails] = useState(true);
   const [showExpensesDetails, setShowExpensesDetails] = useState(false);
+  const [showValueDetails, setShowValueDetails] = useState(true);
+  const [showEquityDetails, setShowEquityDetails] = useState(true);
+  const [showTaxDetails, setShowTaxDetails] = useState(false);
   
   const prevValue = currentYearIndex > 0 ? projections[currentYearIndex - 1].propertyValue : currentProjection.propertyValue;
   const yoyChange = prevValue > 0 ? ((currentProjection.propertyValue - prevValue) / prevValue) * 100 : 0;
@@ -178,145 +181,166 @@ const MobileProjectionsView = ({
       <div className="grid grid-cols-1 gap-4">
         {/* Property Value */}
         <Card>
-          <CardContent className="pt-4">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium flex items-center gap-2">
-                <Home className="h-4 w-4 text-muted-foreground" />
-                Property Value
-              </span>
-              <span className="font-bold">{formatCurrency(currentProjection.propertyValue)}</span>
-            </div>
-            <div className="mt-2 flex items-center justify-between">
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                {yoyChange >= 0 ? (
-                  <ArrowUpRight className="h-4 w-4 text-primary" />
-                ) : (
-                  <ArrowDownRight className="h-4 w-4 text-destructive" />
-                )}
-                <span>YoY {Math.abs(yoyChange).toFixed(1)}%</span>
-              </div>
-            </div>
-          </CardContent>
+          <Collapsible open={showValueDetails} onOpenChange={setShowValueDetails}>
+            <CollapsibleTrigger asChild>
+              <CardContent className="pt-4 cursor-pointer">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium flex items-center gap-2">
+                    <Home className="h-4 w-4 text-muted-foreground" />
+                    Property Value
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {showValueDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    <span className="font-bold">{formatCurrency(currentProjection.propertyValue)}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="pt-0">
+                <div className="mt-2 flex items-center justify-between">
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    {yoyChange >= 0 ? (
+                      <ArrowUpRight className="h-4 w-4 text-primary" />
+                    ) : (
+                      <ArrowDownRight className="h-4 w-4 text-destructive" />
+                    )}
+                    <span>YoY {Math.abs(yoyChange).toFixed(1)}%</span>
+                  </div>
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
         </Card>
 
         {/* Equity (moved under Property Value) */}
         <Card>
-          <CardContent className="pt-4">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                Equity
-              </span>
-              <span className={`font-bold ${currentProjection.propertyEquity < 0 ? 'text-destructive' : 'text-foreground'}`}>
-                {formatCurrency(currentProjection.propertyEquity)}
-              </span>
-            </div>
-            <div className="mt-2">
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Equity ratio</span>
-                <span>{Math.round(equityRatio)}%</span>
-              </div>
-              <Progress value={Math.round(equityRatio)} className="mt-1" />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Loan Balances */}
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium flex items-center gap-2">
-                <Landmark className="h-4 w-4 text-muted-foreground" />
-                Loans
-              </span>
-              <Badge variant="outline">{formatCurrency(currentProjection.mainLoanBalance + currentProjection.equityLoanBalance)}</Badge>
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Main Loan Balance</span>
-                <span className="font-bold">{formatCurrency(currentProjection.mainLoanBalance)}</span>
-              </div>
-              {assumptions.initialEquityLoanBalance > 0 && (
+          <Collapsible open={showEquityDetails} onOpenChange={setShowEquityDetails}>
+            <CollapsibleTrigger asChild>
+              <CardContent className="pt-4 cursor-pointer">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Equity Loan Balance</span>
-                  <span className="font-bold">{formatCurrency(currentProjection.equityLoanBalance)}</span>
+                  <span className="text-sm font-medium flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                    Equity
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {showEquityDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    <span className={`font-bold ${currentProjection.propertyEquity < 0 ? 'text-destructive' : 'text-foreground'}`}>
+                      {formatCurrency(currentProjection.propertyEquity)}
+                    </span>
+                  </div>
                 </div>
-              )}
-            </div>
-            <div className="mt-3">
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>LVR</span>
-                <span>{Math.round(lvrRatio)}%</span>
-              </div>
-              <Progress value={Math.round(lvrRatio)} className="mt-1" />
-            </div>
-          </CardContent>
+              </CardContent>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="pt-0">
+                <div className="mt-2">
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Equity ratio</span>
+                    <span>{Math.round(equityRatio)}%</span>
+                  </div>
+                  <Progress value={Math.round(equityRatio)} className="mt-1" />
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
         </Card>
 
-        {/* Mortgage Repayments - Expandable */}
+        {/* Loans + Annual Repayments - Combined Expandable */}
         <Card>
           <Collapsible open={showLoanDetails} onOpenChange={setShowLoanDetails}>
             <CollapsibleTrigger asChild>
               <CardContent className="pt-4 cursor-pointer">
-                <div className="flex justify-between items-center">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <CreditCard className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Annual Mortgage Repayments</span>
-                    {showLoanDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    <Landmark className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Loans</span>
                   </div>
-                  <span className="font-bold">
-                    {formatCurrency(currentProjection.mainLoanPayment + currentProjection.equityLoanPayment)}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {showLoanDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    <Badge variant="outline">{formatCurrency(currentProjection.mainLoanBalance + currentProjection.equityLoanBalance)}</Badge>
+                  </div>
                 </div>
               </CardContent>
             </CollapsibleTrigger>
             <CollapsibleContent>
               <CardContent className="pt-0 space-y-3">
-                {/* Main Loan Details */}
-                <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-3">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium">Main Loan ({assumptions.mainLoanType.toUpperCase()})</span>
-                    <Badge variant={currentProjection.mainLoanIOStatus === 'IO' ? 'secondary' : 'default'}>
-                      {currentProjection.mainLoanIOStatus}
-                    </Badge>
-                  </div>
+                <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-muted-foreground">
-                      {formatCurrency(assumptions.initialMainLoanBalance)} @ {formatPercentage(assumptions.mainInterestRate)}
-                    </span>
-                    <span className="font-bold">{formatCurrency(currentProjection.mainLoanPayment)}</span>
+                    <span className="text-sm font-medium">Main Loan Balance</span>
+                    <span className="font-bold">{formatCurrency(currentProjection.mainLoanBalance)}</span>
                   </div>
-                  {currentProjection.mainLoanIOStatus === 'P\u0026I' && (
-                    <div className="flex justify-between items-center mt-1">
-                      <span className="text-xs text-muted-foreground">Interest component</span>
-                      <span className="font-mono text-xs">{formatCurrency(currentProjection.mainInterestYear)}</span>
+                  {assumptions.initialEquityLoanBalance > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Equity Loan Balance</span>
+                      <span className="font-bold">{formatCurrency(currentProjection.equityLoanBalance)}</span>
                     </div>
                   )}
                 </div>
-                
-                {/* Equity Loan Details */}
-                {assumptions.initialEquityLoanBalance > 0 && (
-                  <div className="bg-green-50 dark:bg-green-950/20 rounded-lg p-3">
+                <div className="mt-3">
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>LVR</span>
+                    <span>{Math.round(lvrRatio)}%</span>
+                  </div>
+                  <Progress value={Math.round(lvrRatio)} className="mt-1" />
+                </div>
+
+                {/* Annual Repayments */}
+                <div className="pt-3 border-t">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">Annual repayments</span>
+                    </div>
+                    <span className="font-bold">{formatCurrency(repaymentsTotal)}</span>
+                  </div>
+
+                  {/* Main Loan Details */}
+                  <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-3 mt-2">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium">Equity Loan ({assumptions.equityLoanType.toUpperCase()})</span>
-                      <Badge variant={currentProjection.equityLoanIOStatus === 'IO' ? 'secondary' : 'default'}>
-                        {currentProjection.equityLoanIOStatus}
+                      <span className="text-sm font-medium">Main Loan ({assumptions.mainLoanType.toUpperCase()})</span>
+                      <Badge variant={currentProjection.mainLoanIOStatus === 'IO' ? 'secondary' : 'default'}>
+                        {currentProjection.mainLoanIOStatus}
                       </Badge>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-muted-foreground">
-                        {formatCurrency(assumptions.initialEquityLoanBalance)} @ {formatPercentage(assumptions.equityInterestRate)}
+                        {formatCurrency(assumptions.initialMainLoanBalance)} @ {formatPercentage(assumptions.mainInterestRate)}
                       </span>
-                      <span className="font-bold">{formatCurrency(currentProjection.equityLoanPayment)}</span>
+                      <span className="font-bold">{formatCurrency(currentProjection.mainLoanPayment)}</span>
                     </div>
-                    {currentProjection.equityLoanIOStatus === 'P\u0026I' && (
+                    {currentProjection.mainLoanIOStatus === 'P\u0026I' && (
                       <div className="flex justify-between items-center mt-1">
                         <span className="text-xs text-muted-foreground">Interest component</span>
-                        <span className="font-mono text-xs">{formatCurrency(currentProjection.equityInterestYear)}</span>
+                        <span className="font-mono text-xs">{formatCurrency(currentProjection.mainInterestYear)}</span>
                       </div>
                     )}
                   </div>
-                )}
+
+                  {/* Equity Loan Details */}
+                  {assumptions.initialEquityLoanBalance > 0 && (
+                    <div className="bg-green-50 dark:bg-green-950/20 rounded-lg p-3 mt-2">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium">Equity Loan ({assumptions.equityLoanType.toUpperCase()})</span>
+                        <Badge variant={currentProjection.equityLoanIOStatus === 'IO' ? 'secondary' : 'default'}>
+                          {currentProjection.equityLoanIOStatus}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-muted-foreground">
+                          {formatCurrency(assumptions.initialEquityLoanBalance)} @ {formatPercentage(assumptions.equityInterestRate)}
+                        </span>
+                        <span className="font-bold">{formatCurrency(currentProjection.equityLoanPayment)}</span>
+                      </div>
+                      {currentProjection.equityLoanIOStatus === 'P\u0026I' && (
+                        <div className="flex justify-between items-center mt-1">
+                          <span className="text-xs text-muted-foreground">Interest component</span>
+                          <span className="font-mono text-xs">{formatCurrency(currentProjection.equityInterestYear)}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </CollapsibleContent>
           </Collapsible>
@@ -397,43 +421,50 @@ const MobileProjectionsView = ({
           </Collapsible>
         </Card>
 
+        {/* Tax benefits - Expandable */}
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Layers className="h-4 w-4 text-muted-foreground" />
-              Depreciation (Non-cash)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-medium">Non-cash total</span>
-              <Badge variant="secondary">{formatCurrency(nonCashTotal)}</Badge>
-            </div>
-            <div className="space-y-2">
-              <div>
+          <Collapsible open={showTaxDetails} onOpenChange={setShowTaxDetails}>
+            <CollapsibleTrigger asChild>
+              <CardContent className="pt-4 cursor-pointer">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm flex items-center gap-2">
-                    <Layers className="h-4 w-4 text-muted-foreground" />
-                    Depreciation
-                  </span>
-                  <span className="font-mono text-sm">{formatCurrency(currentProjection.depreciation)}</span>
+                  <div className="flex items-center gap-2">
+                    <PiggyBank className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Tax benefits</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {showTaxDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    <Badge variant="secondary">{formatCurrency(nonCashTotal)}</Badge>
+                  </div>
                 </div>
-                <Progress value={Math.round(depreciationPct)} className="mt-1" />
-              </div>
-              {currentProjection.taxBenefit > 0 && (
+              </CardContent>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="pt-0 space-y-2">
                 <div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm flex items-center gap-2">
-                      <PiggyBank className="h-4 w-4 text-muted-foreground" />
-                      Tax benefit
+                      <Layers className="h-4 w-4 text-muted-foreground" />
+                      Depreciation
                     </span>
-                    <span className="font-mono text-sm">{formatCurrency(currentProjection.taxBenefit)}</span>
+                    <span className="font-mono text-sm">{formatCurrency(currentProjection.depreciation)}</span>
                   </div>
-                  <Progress value={Math.round(taxBenefitNonCashPct)} className="mt-1" />
+                  <Progress value={Math.round(depreciationPct)} className="mt-1" />
                 </div>
-              )}
-            </div>
-          </CardContent>
+                {currentProjection.taxBenefit > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm flex items-center gap-2">
+                        <PiggyBank className="h-4 w-4 text-muted-foreground" />
+                        Tax benefit
+                      </span>
+                      <span className="font-mono text-sm">{formatCurrency(currentProjection.taxBenefit)}</span>
+                    </div>
+                    <Progress value={Math.round(taxBenefitNonCashPct)} className="mt-1" />
+                  </div>
+                )}
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
         </Card>
 
         {/* Cash Flow */}
