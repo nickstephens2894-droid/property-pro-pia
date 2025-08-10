@@ -95,27 +95,6 @@ return (
 );
 };
 
-// Tiny inline sparkline for trend visualization
-const TinySparkline = ({ data }: { data: number[] }) => {
-  if (!data || data.length < 2) return null;
-  const width = 120;
-  const height = 28;
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const range = max - min || 1;
-  const points = data
-    .map((v, i) => {
-      const x = (i / (data.length - 1)) * width;
-      const y = height - ((v - min) / range) * height;
-      return `${x},${y}`;
-    })
-    .join(" ");
-  return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-7 text-primary">
-      <polyline fill="none" stroke="currentColor" strokeWidth="2" points={points} />
-    </svg>
-  );
-};
 
 const MobileProjectionsView = ({ 
   projections, 
@@ -154,7 +133,7 @@ const MobileProjectionsView = ({
   const weeklyCashflow = currentProjection.afterTaxCashFlow / 52;
   const equityRatio = currentProjection.propertyValue > 0 ? Math.max(0, Math.min(100, (currentProjection.propertyEquity / currentProjection.propertyValue) * 100)) : 0;
   const lvrRatio = Math.max(0, Math.min(100, 100 - equityRatio));
-  const valueSeries = projections.filter((p: any) => p.year > 0).slice(0, currentYearIndex + 1).map((p: any) => p.propertyValue);
+  
   const prevValue = currentYearIndex > 0 ? projections[currentYearIndex - 1].propertyValue : currentProjection.propertyValue;
   const yoyChange = prevValue > 0 ? ((currentProjection.propertyValue - prevValue) / prevValue) * 100 : 0;
   return (
@@ -213,11 +192,6 @@ const MobileProjectionsView = ({
                 <span>YoY {Math.abs(yoyChange).toFixed(1)}%</span>
               </div>
             </div>
-            {valueSeries.length > 1 && (
-              <div className="mt-2">
-                <TinySparkline data={valueSeries} />
-              </div>
-            )}
           </CardContent>
         </Card>
 
