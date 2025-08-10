@@ -134,8 +134,14 @@ const MobileProjectionsView = ({
   const taxBenefitNonCashPct = nonCashTotal ? (Math.max(0, currentProjection.taxBenefit) / nonCashTotal) * 100 : 0;
   const taxTotal = currentProjection.taxBenefit;
   const weeklyCashflow = currentProjection.afterTaxCashFlow / 52;
-  const equityRatio = currentProjection.propertyValue > 0 ? Math.max(0, Math.min(100, (currentProjection.propertyEquity / currentProjection.propertyValue) * 100)) : 0;
-  const lvrRatio = Math.max(0, Math.min(100, 100 - equityRatio));
+  const rawEquityPct = currentProjection.propertyValue > 0
+    ? (currentProjection.propertyEquity / currentProjection.propertyValue) * 100
+    : 0;
+  const equityRatio = Math.max(0, Math.min(100, rawEquityPct)); // for progress bar (0-100)
+  const rawLvrPct = currentProjection.propertyValue > 0
+    ? ((currentProjection.mainLoanBalance + currentProjection.equityLoanBalance) / currentProjection.propertyValue) * 100
+    : 0;
+  const lvrBarPct = Math.max(0, Math.min(100, rawLvrPct)); // cap bar at 100% while label can exceed
 
   // Expand/collapse state for sections (default collapsed)
   const [showIncomeDetails, setShowIncomeDetails] = useState(false);
@@ -216,7 +222,7 @@ const MobileProjectionsView = ({
                     <span className={`font-mono ${(assumptions.initialPropertyValue > 0 && (currentProjection.propertyValue - assumptions.initialPropertyValue) < 0) ? 'text-destructive' : 'text-foreground'}`}>
                       {formatPercentage(
                         assumptions.initialPropertyValue > 0
-                          ? Math.abs(((currentProjection.propertyValue - assumptions.initialPropertyValue) / assumptions.initialPropertyValue) * 100)
+                          ? ((currentProjection.propertyValue - assumptions.initialPropertyValue) / assumptions.initialPropertyValue) * 100
                           : 0
                       )}
                     </span>
@@ -251,7 +257,7 @@ const MobileProjectionsView = ({
                 <div className="mt-2">
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <span>Equity ratio</span>
-                    <span>{Math.round(equityRatio)}%</span>
+                    <span>{Math.round(rawEquityPct)}%</span>
                   </div>
                   <Progress value={Math.round(equityRatio)} className="mt-1" />
                 </div>
@@ -294,9 +300,9 @@ const MobileProjectionsView = ({
                 <div className="mt-3">
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <span>LVR</span>
-                    <span>{Math.round(lvrRatio)}%</span>
+                    <span>{Math.round(rawLvrPct)}%</span>
                   </div>
-                  <Progress value={Math.round(lvrRatio)} className="mt-1" />
+                  <Progress value={Math.round(lvrBarPct)} className="mt-1" />
                 </div>
 
                 {/* Annual Repayments */}
