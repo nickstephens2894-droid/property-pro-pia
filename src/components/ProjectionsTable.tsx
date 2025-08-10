@@ -206,6 +206,22 @@ const MobileProjectionsView = ({
                     <span>YoY {Math.abs(yoyChange).toFixed(1)}%</span>
                   </div>
                 </div>
+                <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                  <div className="flex items-center justify-between">
+                    <span>Purchase price</span>
+                    <span className="font-mono">{formatCurrency(assumptions.initialPropertyValue)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>% since purchase</span>
+                    <span className={`font-mono ${(assumptions.initialPropertyValue > 0 && (currentProjection.propertyValue - assumptions.initialPropertyValue) < 0) ? 'text-destructive' : 'text-foreground'}`}>
+                      {formatPercentage(
+                        assumptions.initialPropertyValue > 0
+                          ? Math.abs(((currentProjection.propertyValue - assumptions.initialPropertyValue) / assumptions.initialPropertyValue) * 100)
+                          : 0
+                      )}
+                    </span>
+                  </div>
+                </div>
               </CardContent>
             </CollapsibleContent>
           </Collapsible>
