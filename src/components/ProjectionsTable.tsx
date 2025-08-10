@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, ArrowUpRight, ArrowDownRight, Wallet, CreditCard, Layers, Banknote, FileText, PiggyBank } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, ArrowUpRight, ArrowDownRight, Wallet, CreditCard, Layers, Banknote, FileText, PiggyBank, Home, Landmark, TrendingUp } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
@@ -95,6 +95,28 @@ return (
 );
 };
 
+// Tiny inline sparkline for trend visualization
+const TinySparkline = ({ data }: { data: number[] }) => {
+  if (!data || data.length < 2) return null;
+  const width = 120;
+  const height = 28;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const points = data
+    .map((v, i) => {
+      const x = (i / (data.length - 1)) * width;
+      const y = height - ((v - min) / range) * height;
+      return `${x},${y}`;
+    })
+    .join(" ");
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-7 text-primary">
+      <polyline fill="none" stroke="currentColor" strokeWidth="2" points={points} />
+    </svg>
+  );
+};
+
 const MobileProjectionsView = ({ 
   projections, 
   assumptions, 
@@ -130,6 +152,11 @@ const MobileProjectionsView = ({
   const depreciationPct = nonCashTotal ? (currentProjection.depreciation / nonCashTotal) * 100 : 0;
   const taxBenefitNonCashPct = nonCashTotal ? (Math.max(0, currentProjection.taxBenefit) / nonCashTotal) * 100 : 0;
   const weeklyCashflow = currentProjection.afterTaxCashFlow / 52;
+  const equityRatio = currentProjection.propertyValue > 0 ? Math.max(0, Math.min(100, (currentProjection.propertyEquity / currentProjection.propertyValue) * 100)) : 0;
+  const lvrRatio = Math.max(0, Math.min(100, 100 - equityRatio));
+  const valueSeries = projections.filter((p: any) => p.year > 0).slice(0, currentYearIndex + 1).map((p: any) => p.propertyValue);
+  const prevValue = currentYearIndex > 0 ? projections[currentYearIndex - 1].propertyValue : currentProjection.propertyValue;
+  const yoyChange = prevValue > 0 ? ((currentProjection.propertyValue - prevValue) / prevValue) * 100 : 0;
   return (
     <div className="space-y-4">
       {/* Year Navigation */}
@@ -170,8 +197,48 @@ const MobileProjectionsView = ({
         <Card>
           <CardContent className="pt-4">
             <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">Property Value</span>
+              <span className="text-sm font-medium flex items-center gap-2">
+                <Home className="h-4 w-4 text-muted-foreground" />
+                Property Value
+              </span>
               <span className="font-bold">{formatCurrency(currentProjection.propertyValue)}</span>
+            </div>
+            <div className="mt-2 flex items-center justify-between">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                {yoyChange >= 0 ? (
+                  <ArrowUpRight className="h-4 w-4 text-primary" />
+                ) : (
+                  <ArrowDownRight className="h-4 w-4 text-destructive" />
+                )}
+                <span>YoY {Math.abs(yoyChange).toFixed(1)}%</span>
+              </div>
+            </div>
+            {valueSeries.length > 1 && (
+              <div className="mt-2">
+                <TinySparkline data={valueSeries} />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Equity (moved under Property Value) */}
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                Equity
+              </span>
+              <span className={`font-bold ${currentProjection.propertyEquity < 0 ? 'text-destructive' : 'text-foreground'}`}>
+                {formatCurrency(currentProjection.propertyEquity)}
+              </span>
+            </div>
+            <div className="mt-2">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Equity ratio</span>
+                <span>{Math.round(equityRatio)}%</span>
+              </div>
+              <Progress value={Math.round(equityRatio)} className="mt-1" />
             </div>
           </CardContent>
         </Card>
@@ -179,6 +246,13 @@ const MobileProjectionsView = ({
         {/* Loan Balances */}
         <Card>
           <CardContent className="pt-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium flex items-center gap-2">
+                <Landmark className="h-4 w-4 text-muted-foreground" />
+                Loans
+              </span>
+              <Badge variant="outline">{formatCurrency(currentProjection.mainLoanBalance + currentProjection.equityLoanBalance)}</Badge>
+            </div>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">Main Loan Balance</span>
@@ -191,6 +265,13 @@ const MobileProjectionsView = ({
                 </div>
               )}
             </div>
+            <div className="mt-3">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>LVR</span>
+                <span>{Math.round(lvrRatio)}%</span>
+              </div>
+              <Progress value={Math.round(lvrRatio)} className="mt-1" />
+            </div>
           </CardContent>
         </Card>
 
@@ -201,6 +282,7 @@ const MobileProjectionsView = ({
               <CardContent className="pt-4 cursor-pointer">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
+                    <CreditCard className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm font-medium">Annual Mortgage Repayments</span>
                     {showLoanDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </div>
@@ -262,17 +344,6 @@ const MobileProjectionsView = ({
           </Collapsible>
         </Card>
 
-        {/* Equity */}
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">Equity</span>
-              <span className={`font-bold ${currentProjection.propertyEquity < 0 ? 'text-destructive' : 'text-foreground'}`}>
-                {formatCurrency(currentProjection.propertyEquity)}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Income & Expenses (Combined) */}
         <Card>
