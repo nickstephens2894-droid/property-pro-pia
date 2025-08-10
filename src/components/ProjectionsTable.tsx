@@ -347,38 +347,6 @@ const MobileProjectionsView = ({
         </Card>
 
 
-        {/* Income - Expandable */}
-        <Card>
-          <Collapsible open={showIncomeDetails} onOpenChange={setShowIncomeDetails}>
-            <CollapsibleTrigger asChild>
-              <CardContent className="pt-4 cursor-pointer">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Wallet className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium">Income</span>
-                    {showIncomeDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                  </div>
-                  <Badge variant="secondary">{formatCurrency(incomeTotal)}</Badge>
-                </div>
-              </CardContent>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <CardContent className="pt-0 space-y-2">
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm flex items-center gap-2">
-                      <Banknote className="h-4 w-4 text-muted-foreground" />
-                      Rental income
-                    </span>
-                    <span className="font-mono text-sm">{formatCurrency(currentProjection.rentalIncome)}</span>
-                  </div>
-                  <Progress value={Math.round(rentalPct)} className="mt-1" />
-                </div>
-              </CardContent>
-            </CollapsibleContent>
-          </Collapsible>
-        </Card>
-
         {/* Expenses - Expandable */}
         <Card>
           <Collapsible open={showExpensesDetails} onOpenChange={setShowExpensesDetails}>
@@ -415,6 +383,38 @@ const MobileProjectionsView = ({
                     <span className="font-mono text-sm">{formatCurrency(currentProjection.otherExpenses)}</span>
                   </div>
                   <Progress value={Math.round(operatingPct)} className="mt-1" />
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
+        </Card>
+
+        {/* Income - Expandable */}
+        <Card>
+          <Collapsible open={showIncomeDetails} onOpenChange={setShowIncomeDetails}>
+            <CollapsibleTrigger asChild>
+              <CardContent className="pt-4 cursor-pointer">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Wallet className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium">Income</span>
+                    {showIncomeDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </div>
+                  <Badge variant="secondary">{formatCurrency(incomeTotal)}</Badge>
+                </div>
+              </CardContent>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="pt-0 space-y-2">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm flex items-center gap-2">
+                      <Banknote className="h-4 w-4 text-muted-foreground" />
+                      Rental income
+                    </span>
+                    <span className="font-mono text-sm">{formatCurrency(currentProjection.rentalIncome)}</span>
+                  </div>
+                  <Progress value={Math.round(rentalPct)} className="mt-1" />
                 </div>
               </CardContent>
             </CollapsibleContent>
