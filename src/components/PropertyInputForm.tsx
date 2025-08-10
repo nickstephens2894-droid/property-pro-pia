@@ -1253,7 +1253,7 @@ export const PropertyInputForm = ({
                       />
                     </div>
                     <div>
-                      <Label htmlFor="rentalGrowthRate" className="text-sm font-medium">Annual Growth Rate</Label>
+                      <Label htmlFor="rentalGrowthRate" className="text-sm font-medium">Rental Growth Rate</Label>
                       <PercentageInput
                         id="rentalGrowthRate"
                         value={propertyData.rentalGrowthRate}
