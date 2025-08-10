@@ -75,12 +75,12 @@ const Projections = () => {
   };
 
   // Property assumptions derived from property data but adjustable (with overrides)
-  const [assumptions, setAssumptions] = useState({
+  const [assumptions, setAssumptions] = useState<Assumptions>({
     initialPropertyValue: propertyData.purchasePrice || funding.totalProjectCost,
-    initialWeeklyRent: { mode: 'auto' as const, auto: propertyData.weeklyRent, manual: null },
-    capitalGrowthRate: { mode: 'auto' as const, auto: 7.0, manual: null },
-    rentalGrowthRate: { mode: 'auto' as const, auto: 5.0, manual: null },
-    vacancyRate: { mode: 'auto' as const, auto: propertyData.vacancyRate, manual: null },
+    initialWeeklyRent: { mode: 'auto', auto: propertyData.weeklyRent, manual: null },
+    capitalGrowthRate: { mode: 'auto', auto: 7.0, manual: null },
+    rentalGrowthRate: { mode: 'auto', auto: 5.0, manual: null },
+    vacancyRate: { mode: 'auto', auto: propertyData.vacancyRate, manual: null },
     initialMainLoanBalance: funding.mainLoanAmount,
     initialEquityLoanBalance: funding.equityLoanAmount,
     mainInterestRate: propertyData.interestRate,
@@ -92,7 +92,7 @@ const Projections = () => {
     equityLoanType: propertyData.equityLoanType,
     mainIOTermYears: propertyData.ioTermYears,
     equityIOTermYears: propertyData.equityLoanIoTermYears,
-    propertyManagementRate: { mode: 'auto' as const, auto: propertyData.propertyManagement, manual: null },
+    propertyManagementRate: { mode: 'auto', auto: propertyData.propertyManagement, manual: null },
     councilRates: propertyData.councilRates,
     insurance: propertyData.insurance,
     repairs: propertyData.repairs,
