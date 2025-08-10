@@ -140,6 +140,7 @@ const MobileProjectionsView = ({
   const [showValueDetails, setShowValueDetails] = useState(false);
   const [showEquityDetails, setShowEquityDetails] = useState(false);
   const [showTaxDetails, setShowTaxDetails] = useState(false);
+  const [showCashFlowDetailsMobile, setShowCashFlowDetailsMobile] = useState(false);
   
   const expandAll = () => {
     setShowValueDetails(true);
@@ -148,6 +149,7 @@ const MobileProjectionsView = ({
     setShowExpensesDetails(true);
     setShowIncomeDetails(true);
     setShowTaxDetails(true);
+    setShowCashFlowDetailsMobile(true);
   };
   const collapseAll = () => {
     setShowValueDetails(false);
@@ -156,6 +158,7 @@ const MobileProjectionsView = ({
     setShowExpensesDetails(false);
     setShowIncomeDetails(false);
     setShowTaxDetails(false);
+    setShowCashFlowDetailsMobile(false);
   };
   
   const prevValue = currentYearIndex > 0 ? projections[currentYearIndex - 1].propertyValue : currentProjection.propertyValue;
@@ -489,32 +492,48 @@ const MobileProjectionsView = ({
           </Collapsible>
         </Card>
 
-        {/* Cash Flow */}
+        {/* Cash flow - Expandable */}
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Cash Flow</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-baseline justify-between">
-              <div className="flex items-center gap-2">
-                {weeklyCashflow >= 0 ? (
-                  <ArrowUpRight className="h-5 w-5 text-primary" />
-                ) : (
-                  <ArrowDownRight className="h-5 w-5 text-destructive" />
-                )}
-                <span className="text-sm text-muted-foreground">Weekly</span>
-              </div>
-              <span className={`text-2xl font-bold ${weeklyCashflow >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                {formatCurrency(weeklyCashflow)}
-              </span>
-            </div>
-            <div className="flex justify-between items-center pt-2 border-t">
-              <span className="text-sm font-medium">After-tax cash flow (year)</span>
-              <span className={`font-semibold ${currentProjection.afterTaxCashFlow >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                {formatCurrency(currentProjection.afterTaxCashFlow)}
-              </span>
-            </div>
-          </CardContent>
+          <Collapsible open={showCashFlowDetailsMobile} onOpenChange={setShowCashFlowDetailsMobile}>
+            <CollapsibleTrigger asChild>
+              <CardContent className="pt-4 cursor-pointer">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Wallet className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Cash flow</span>
+                    {showCashFlowDetailsMobile ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </div>
+                  <Badge variant="secondary" className={weeklyCashflow >= 0 ? 'text-primary' : 'text-destructive'}>
+                    {formatCurrency(weeklyCashflow)}
+                  </Badge>
+                </div>
+              </CardContent>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="pt-0 space-y-3">
+                <div className="flex items-baseline justify-between">
+                  <div className="flex items-center gap-2">
+                    {weeklyCashflow >= 0 ? (
+                      <ArrowUpRight className="h-5 w-5 text-primary" />
+                    ) : (
+                      <ArrowDownRight className="h-5 w-5 text-destructive" />
+                    )}
+                    <span className="text-sm text-muted-foreground">Weekly</span>
+                  </div>
+                  <span className={`text-2xl font-bold ${weeklyCashflow >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                    {formatCurrency(weeklyCashflow)}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center pt-2 border-t">
+                  <span className="text-sm font-medium">After-tax cash flow (year)</span>
+                  <span className={`font-semibold ${currentProjection.afterTaxCashFlow >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                    {formatCurrency(currentProjection.afterTaxCashFlow)}
+                  </span>
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
         </Card>
       </div>
     </div>
