@@ -134,6 +134,10 @@ const MobileProjectionsView = ({
   const equityRatio = currentProjection.propertyValue > 0 ? Math.max(0, Math.min(100, (currentProjection.propertyEquity / currentProjection.propertyValue) * 100)) : 0;
   const lvrRatio = Math.max(0, Math.min(100, 100 - equityRatio));
   
+  // Expand/collapse state for Income and Expenses
+  const [showIncomeDetails, setShowIncomeDetails] = useState(true);
+  const [showExpensesDetails, setShowExpensesDetails] = useState(false);
+  
   const prevValue = currentYearIndex > 0 ? projections[currentYearIndex - 1].propertyValue : currentProjection.propertyValue;
   const yoyChange = prevValue > 0 ? ((currentProjection.propertyValue - prevValue) / prevValue) * 100 : 0;
   return (
@@ -319,22 +323,23 @@ const MobileProjectionsView = ({
         </Card>
 
 
-        {/* Income & Expenses (Combined) */}
+        {/* Income - Expandable */}
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Income & Expenses</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {/* Income Section */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium flex items-center gap-2">
-                  <Wallet className="h-4 w-4 text-primary" />
-                  Income
-                </span>
-                <Badge variant="secondary">{formatCurrency(incomeTotal)}</Badge>
-              </div>
-              <div className="space-y-2">
+          <Collapsible open={showIncomeDetails} onOpenChange={setShowIncomeDetails}>
+            <CollapsibleTrigger asChild>
+              <CardContent className="pt-4 cursor-pointer">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Wallet className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium">Income</span>
+                    {showIncomeDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </div>
+                  <Badge variant="secondary">{formatCurrency(incomeTotal)}</Badge>
+                </div>
+              </CardContent>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="pt-0 space-y-2">
                 <div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm flex items-center gap-2">
@@ -345,21 +350,28 @@ const MobileProjectionsView = ({
                   </div>
                   <Progress value={Math.round(rentalPct)} className="mt-1" />
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
+        </Card>
 
-            <Separator />
-
-            {/* Expenses Section */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium flex items-center gap-2">
-                  <CreditCard className="h-4 w-4 text-destructive" />
-                  Expenses
-                </span>
-                <Badge variant="outline">{formatCurrency(expensesTotal)}</Badge>
-              </div>
-              <div className="space-y-2">
+        {/* Expenses - Expandable */}
+        <Card>
+          <Collapsible open={showExpensesDetails} onOpenChange={setShowExpensesDetails}>
+            <CollapsibleTrigger asChild>
+              <CardContent className="pt-4 cursor-pointer">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-4 w-4 text-destructive" />
+                    <span className="text-sm font-medium">Expenses</span>
+                    {showExpensesDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </div>
+                  <Badge variant="outline">{formatCurrency(expensesTotal)}</Badge>
+                </div>
+              </CardContent>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="pt-0 space-y-2">
                 <div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm flex items-center gap-2">
@@ -380,9 +392,9 @@ const MobileProjectionsView = ({
                   </div>
                   <Progress value={Math.round(operatingPct)} className="mt-1" />
                 </div>
-              </div>
-            </div>
-          </CardContent>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
         </Card>
 
         <Card>
