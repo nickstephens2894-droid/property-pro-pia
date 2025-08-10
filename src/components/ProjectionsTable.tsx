@@ -369,7 +369,7 @@ const MobileProjectionsView = ({
                     </span>
                     <span className="font-mono text-sm">{formatCurrency(repaymentsTotal)}</span>
                   </div>
-                  <Progress value={Math.round(repaymentPct)} className="mt-1" />
+                  
                 </div>
                 <div>
                   <div className="flex items-center justify-between">
@@ -379,7 +379,7 @@ const MobileProjectionsView = ({
                     </span>
                     <span className="font-mono text-sm">{formatCurrency(currentProjection.otherExpenses)}</span>
                   </div>
-                  <Progress value={Math.round(operatingPct)} className="mt-1" />
+                  
                 </div>
               </CardContent>
             </CollapsibleContent>
@@ -411,7 +411,7 @@ const MobileProjectionsView = ({
                     </span>
                     <span className="font-mono text-sm">{formatCurrency(currentProjection.rentalIncome)}</span>
                   </div>
-                  <Progress value={Math.round(rentalPct)} className="mt-1" />
+                  
                 </div>
               </CardContent>
             </CollapsibleContent>
@@ -445,7 +445,7 @@ const MobileProjectionsView = ({
                     </span>
                     <span className="font-mono text-sm">{formatCurrency(currentProjection.depreciation)}</span>
                   </div>
-                  <Progress value={Math.round(depreciationPct)} className="mt-1" />
+                  
                 </div>
                 {currentProjection.taxBenefit > 0 && (
                   <div>
@@ -456,7 +456,7 @@ const MobileProjectionsView = ({
                       </span>
                       <span className="font-mono text-sm">{formatCurrency(currentProjection.taxBenefit)}</span>
                     </div>
-                    <Progress value={Math.round(taxBenefitNonCashPct)} className="mt-1" />
+                    
                   </div>
                 )}
               </CardContent>
