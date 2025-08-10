@@ -460,7 +460,7 @@ const [inputValues, setInputValues] = useState({
             </CollapsibleTrigger>
             <CollapsibleContent>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               {/* Year Range From/To */}
               <div className="space-y-2">
                 <Label htmlFor="yearFrom" className="text-sm font-medium">Year From</Label>
@@ -513,7 +513,7 @@ const [inputValues, setInputValues] = useState({
               />
               
 {/* Interest Rate Adjustment */}
-              <div className="space-y-2 col-span-2 lg:col-span-2">
+              <div className="space-y-2 col-span-1">
                 <Label htmlFor="interestAdj" className="text-sm font-medium">Interest Rate Adjustment</Label>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                   <div className="relative flex-1">
