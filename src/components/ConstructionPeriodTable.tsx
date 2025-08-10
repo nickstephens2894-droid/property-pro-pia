@@ -33,7 +33,7 @@ const ConstructionPeriodTable: React.FC<ConstructionPeriodTableProps> = ({ proje
         <TableBody>
           <TableRow>
             <TableCell>Period</TableCell>
-            <TableCell className="text-right">{months} months (IO)</TableCell>
+            <TableCell className="text-right">{months} months</TableCell>
           </TableRow>
           <TableRow>
             <TableCell>Main Loan Status</TableCell>

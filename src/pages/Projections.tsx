@@ -180,49 +180,100 @@ const [inputValues, setInputValues] = useState({
 
     // Construction period calculation (if applicable)
     const holdingCosts = calculateHoldingCosts();
-    let constructionPeriodProjection = null;
+    let constructionPeriodProjection: YearProjection | null = null;
+
+    // Adjust opening balances for construction period (capitalisation and equity P&I)
     if (propertyData.isConstructionProject && propertyData.constructionPeriod > 0) {
-      // Calculate construction period loan payments (assume IO during construction at current base rates)
-      const constructionMonths = propertyData.constructionPeriod;
-      const constructionMainMonthly = assumptions.initialMainLoanBalance * (assumptions.mainInterestRate / 100 / 12);
-      const constructionEquityMonthly = assumptions.initialEquityLoanBalance * (assumptions.equityInterestRate / 100 / 12);
-      const constructionMainPayment = constructionMainMonthly * constructionMonths;
-      const constructionEquityPayment = constructionEquityMonthly * constructionMonths;
-      const totalConstructionPayments = constructionMainPayment + constructionEquityPayment;
+      const months = propertyData.constructionPeriod;
 
-      // Tax benefit from holding costs (interest only is deductible)
-      const constructionTaxableIncome = -holdingCosts.total; // Negative income from interest deductions
+      // Capitalisation split
+      const capitalisePortion = propertyData.capitalizeConstructionCosts
+        ? 1
+        : propertyData.holdingCostFunding === 'debt'
+        ? 1
+        : propertyData.holdingCostFunding === 'hybrid'
+        ? Math.max(0, Math.min(1, (100 - (propertyData.holdingCostCashPercentage || 0)) / 100))
+        : 0;
+
+      // Rates during construction
+      const mainMonthlyRateConstruction = (propertyData.constructionInterestRate || assumptions.mainInterestRate) / 100 / 12;
+      const equityMonthlyRateConstruction = (assumptions.equityInterestRate || 0) / 100 / 12;
+
+      // Main loan: IO during construction
+      const mainInterestAccrued = assumptions.initialMainLoanBalance * mainMonthlyRateConstruction * months;
+      const mainInterestCapitalised = mainInterestAccrued * capitalisePortion;
+      const mainInterestCash = mainInterestAccrued - mainInterestCapitalised;
+      // Update opening main balance for post-construction
+      mainLoanBalance = assumptions.initialMainLoanBalance + mainInterestCapitalised;
+
+      // Equity loan during construction: IO or P&I
+      let equityInterestAccrued = 0;
+      let equityInterestCapitalised = 0;
+      let equityInterestCash = 0;
+      let equityPrincipalPaid = 0;
+      let equityBalanceTemp = assumptions.initialEquityLoanBalance;
+
+      if (equityBalanceTemp > 0) {
+        if (propertyData.constructionEquityRepaymentType === 'io') {
+          equityInterestAccrued = equityBalanceTemp * equityMonthlyRateConstruction * months;
+          equityInterestCapitalised = equityInterestAccrued * capitalisePortion;
+          equityInterestCash = equityInterestAccrued - equityInterestCapitalised;
+          // Balance only increases by capitalised interest under IO
+          equityBalanceTemp = equityBalanceTemp + equityInterestCapitalised;
+        } else {
+          // P&I during construction: principal is always cash, interest can be capitalised per split
+          const totalMonths = equityTotalMonths; // use full term for amortisation baseline
+          const monthlyPayment = calculateMonthlyPayment(equityBalanceTemp, equityMonthlyRateConstruction, totalMonths);
+          for (let m = 0; m < months; m++) {
+            const interest = equityBalanceTemp * equityMonthlyRateConstruction;
+            const principal = Math.min(Math.max(0, monthlyPayment - interest), equityBalanceTemp);
+            equityInterestAccrued += interest;
+            const capInt = interest * capitalisePortion;
+            equityInterestCapitalised += capInt;
+            equityInterestCash += interest - capInt;
+            equityPrincipalPaid += principal; // always cash
+            equityBalanceTemp = Math.max(0, equityBalanceTemp - principal + capInt);
+            if (equityBalanceTemp <= 0) break;
+          }
+          // Reduce remaining P&I months after construction
+          equityRemainingMonths = Math.max(0, equityRemainingMonths - months);
+        }
+      }
+
+      // Set post-construction opening balance
+      equityLoanBalance = equityBalanceTemp;
+
+      const totalInterestAccrued = mainInterestAccrued + equityInterestAccrued;
+      const constructionMainPaymentCash = mainInterestCash; // IO interest cash portion only
+      const constructionEquityPaymentCash = equityInterestCash + equityPrincipalPaid;
+
+      // Tax: use existing holdingCosts breakdown (deductible interest proxy)
+      const constructionTaxableIncome = -holdingCosts.total;
       const constructionTaxBenefit = -calculateTotalTaxDifference(constructionTaxableIncome, 0);
-
-      // After-tax cash flow for construction period
-      const constructionAfterTaxCashFlow = -totalConstructionPayments + constructionTaxBenefit;
+      const constructionAfterTaxCashFlow = -(constructionMainPaymentCash + constructionEquityPaymentCash) + constructionTaxBenefit;
       cumulativeCashFlow += constructionAfterTaxCashFlow;
+
       constructionPeriodProjection = {
         year: 0,
-        // Construction period
         rentalIncome: 0,
         propertyValue: 0,
-        // Not applicable during construction
         mainLoanBalance: 0,
-        // Not applicable during construction
         equityLoanBalance: 0,
-        // Not applicable during construction
-        totalInterest: holdingCosts.total,
-        mainLoanPayment: constructionMainPayment,
-        equityLoanPayment: constructionEquityPayment,
-        mainInterestYear: constructionMainPayment,
-        equityInterestYear: constructionEquityPayment,
-        mainLoanIOStatus: 'IO' as const,
-        equityLoanIOStatus: 'IO' as const,
+        totalInterest: Math.round(totalInterestAccrued),
+        mainLoanPayment: Math.round(constructionMainPaymentCash),
+        equityLoanPayment: Math.round(constructionEquityPaymentCash),
+        mainInterestYear: Math.round(mainInterestAccrued),
+        equityInterestYear: Math.round(equityInterestAccrued),
+        mainLoanIOStatus: 'IO',
+        equityLoanIOStatus: propertyData.constructionEquityRepaymentType === 'pi' ? 'P&I' : 'IO',
         otherExpenses: 0,
         depreciation: 0,
-        taxableIncome: constructionTaxableIncome,
-        taxBenefit: constructionTaxBenefit,
-        afterTaxCashFlow: constructionAfterTaxCashFlow,
+        taxableIncome: Math.round(constructionTaxableIncome),
+        taxBenefit: Math.round(constructionTaxBenefit),
+        afterTaxCashFlow: Math.round(constructionAfterTaxCashFlow),
         cumulativeCashFlow,
         propertyEquity: 0,
-        // Not applicable during construction
-        totalReturn: constructionAfterTaxCashFlow
+        totalReturn: Math.round(constructionAfterTaxCashFlow),
       };
     }
     for (let year = 1; year <= 40; year++) {

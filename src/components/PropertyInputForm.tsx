@@ -1173,13 +1173,39 @@ export const PropertyInputForm = ({
                   <div className="space-y-4">
                     <h4 className="font-medium text-sm">Construction Holding Costs Funding</h4>
                     <div className="space-y-3">
+                      {/* Quick toggle to capitalise everything */}
+                      <div className="flex items-center space-x-3">
+                        <input
+                          type="checkbox"
+                          id="capitalizeConstructionCosts"
+                          checked={propertyData.capitalizeConstructionCosts}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            updateField('capitalizeConstructionCosts', checked);
+                            if (checked) {
+                              updateField('holdingCostFunding', 'debt');
+                              updateField('holdingCostCashPercentage', 0);
+                            }
+                          }}
+                          className="rounded border-border"
+                        />
+                        <Label htmlFor="capitalizeConstructionCosts" className="text-sm">Capitalise all costs during construction</Label>
+                      </div>
+                      <div className="text-xs text-muted-foreground ml-6 -mt-1">
+                        Interest and eligible holding costs will be added to the loan balance instead of paid from cash.
+                      </div>
+                      {/* Detailed funding split */}
                       <div className="flex items-center space-x-3">
                         <input
                           type="radio"
                           id="holdingCostCash"
                           name="holdingCostFunding"
                           checked={propertyData.holdingCostFunding === 'cash'}
-                          onChange={() => updateField('holdingCostFunding', 'cash')}
+                          onChange={() => {
+                            updateField('holdingCostFunding', 'cash');
+                            updateField('holdingCostCashPercentage', 100);
+                            updateField('capitalizeConstructionCosts', false);
+                          }}
                           className="rounded-full"
                         />
                         <Label htmlFor="holdingCostCash" className="text-sm">Pay holding costs in cash</Label>
@@ -1206,7 +1232,6 @@ export const PropertyInputForm = ({
                         />
                         <Label htmlFor="holdingCostHybrid" className="text-sm">Hybrid (partial cash, partial debt)</Label>
                       </div>
-                      
                       {propertyData.holdingCostFunding === 'hybrid' && (
                         <div className="ml-6">
                           <Label htmlFor="holdingCostCashPercentage" className="text-sm font-medium">Percentage to pay in cash</Label>
@@ -1219,6 +1244,30 @@ export const PropertyInputForm = ({
                         </div>
                       )}
                     </div>
+
+                    {/* Equity repayments during construction */}
+                    {propertyData.useEquityFunding && (
+                      <div className="space-y-3">
+                        <Label className="text-sm font-medium">Equity loan repayments during construction</Label>
+                        <RadioGroup
+                          value={propertyData.constructionEquityRepaymentType}
+                          onValueChange={(value: 'io' | 'pi') => updateField('constructionEquityRepaymentType', value)}
+                          className="flex flex-row space-x-6"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="io" id="equity-construct-io" />
+                            <Label htmlFor="equity-construct-io" className="text-sm">Interest Only</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="pi" id="equity-construct-pi" />
+                            <Label htmlFor="equity-construct-pi" className="text-sm">Principal & Interest</Label>
+                          </div>
+                        </RadioGroup>
+                        <div className="text-xs text-muted-foreground">
+                          Construction loan is Interest-Only during construction (progressive drawdown). Equity can be IO or P&I.
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

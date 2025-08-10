@@ -73,6 +73,9 @@ export interface PropertyData {
   // Holding Costs During Construction
   holdingCostFunding: 'cash' | 'debt' | 'hybrid';
   holdingCostCashPercentage: number; // For hybrid funding
+  // Capitalisation option and equity repayments during construction
+  capitalizeConstructionCosts: boolean;
+  constructionEquityRepaymentType: 'io' | 'pi';
   
   // Separate interest calculations for tax purposes
   landHoldingInterest: number; // Land-related interest (non-deductible)
@@ -209,6 +212,8 @@ const defaultPropertyData: PropertyData = {
   // Holding Costs During Construction
   holdingCostFunding: 'cash',
   holdingCostCashPercentage: 100,
+  capitalizeConstructionCosts: false,
+  constructionEquityRepaymentType: 'io',
   
   // Separate interest calculations for tax purposes - Auto-calculated
   landHoldingInterest: 0,
@@ -316,8 +321,12 @@ export const PropertyDataProvider: React.FC<{ children: ReactNode }> = ({ childr
       ? propertyData.councilFees + propertyData.architectFees + propertyData.siteCosts 
       : 0;
     
-    // Include capitalized holding costs for construction projects
-    const holdingCosts = propertyData.isConstructionProject ? calculateHoldingCosts().total : 0;
+    // Include holding costs only when capitalised during construction
+    const holdingCosts = propertyData.isConstructionProject && (
+      propertyData.capitalizeConstructionCosts ||
+      propertyData.holdingCostFunding === 'debt' ||
+      (propertyData.holdingCostFunding === 'hybrid' && propertyData.holdingCostCashPercentage < 100)
+    ) ? calculateHoldingCosts().total : 0;
     
     return baseCosts + transactionCosts + developmentCosts + holdingCosts;
   };
