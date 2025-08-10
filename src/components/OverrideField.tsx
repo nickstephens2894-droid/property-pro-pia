@@ -1,6 +1,6 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { NumberInput } from "@/components/ui/number-input";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Triplet } from "@/utils/overrides";
 
@@ -50,18 +50,19 @@ export const OverrideField: React.FC<OverrideFieldProps> = ({
         </div>
         <div className="flex-1 w-full grid grid-cols-1 gap-2">
           <div className="relative">
-            <NumberInput
-              id={`${label.replace(/\s+/g, '-').toLowerCase()}-input`}
-              value={isManual ? triplet.manual : triplet.auto}
-              onChange={(val: number | null) => {
-                if (isManual) {
-                  onChange({ ...triplet, manual: val });
-                }
-              }}
+            <Input
+              value={isManual ? (triplet.manual ?? "") : (triplet.auto ?? "")}
+              onChange={(e) =>
+                onChange({
+                  ...triplet,
+                  manual: e.target.value === "" ? null : Number(e.target.value),
+                })
+              }
               readOnly={!isManual}
               disabled={!isManual}
-              placeholder={placeholder}
+              aria-label={`${label} value`}
               className="h-9 pr-8"
+              placeholder={placeholder}
             />
             {unit && (
               <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
