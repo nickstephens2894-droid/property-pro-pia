@@ -134,11 +134,11 @@ const MobileProjectionsView = ({
   const equityRatio = currentProjection.propertyValue > 0 ? Math.max(0, Math.min(100, (currentProjection.propertyEquity / currentProjection.propertyValue) * 100)) : 0;
   const lvrRatio = Math.max(0, Math.min(100, 100 - equityRatio));
   
-  // Expand/collapse state for sections
-  const [showIncomeDetails, setShowIncomeDetails] = useState(true);
+  // Expand/collapse state for sections (default collapsed)
+  const [showIncomeDetails, setShowIncomeDetails] = useState(false);
   const [showExpensesDetails, setShowExpensesDetails] = useState(false);
-  const [showValueDetails, setShowValueDetails] = useState(true);
-  const [showEquityDetails, setShowEquityDetails] = useState(true);
+  const [showValueDetails, setShowValueDetails] = useState(false);
+  const [showEquityDetails, setShowEquityDetails] = useState(false);
   const [showTaxDetails, setShowTaxDetails] = useState(false);
   
   const expandAll = () => {
