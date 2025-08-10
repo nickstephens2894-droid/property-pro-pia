@@ -15,6 +15,8 @@ interface YearProjection {
   totalInterest: number;
   mainLoanPayment: number;
   equityLoanPayment: number;
+  mainInterestYear: number;
+  equityInterestYear: number;
   mainLoanIOStatus: 'IO' | 'P&I';
   equityLoanIOStatus: 'IO' | 'P&I';
   otherExpenses: number;
@@ -213,6 +215,12 @@ const MobileProjectionsView = ({
                     </span>
                     <span className="font-bold">{formatCurrency(currentProjection.mainLoanPayment)}</span>
                   </div>
+                  {currentProjection.mainLoanIOStatus === 'P\u0026I' && (
+                    <div className="flex justify-between items-center mt-1">
+                      <span className="text-xs text-muted-foreground">Interest component</span>
+                      <span className="font-mono text-xs">{formatCurrency(currentProjection.mainInterestYear)}</span>
+                    </div>
+                  )}
                 </div>
                 
                 {/* Equity Loan Details */}
@@ -230,6 +238,12 @@ const MobileProjectionsView = ({
                       </span>
                       <span className="font-bold">{formatCurrency(currentProjection.equityLoanPayment)}</span>
                     </div>
+                    {currentProjection.equityLoanIOStatus === 'P\u0026I' && (
+                      <div className="flex justify-between items-center mt-1">
+                        <span className="text-xs text-muted-foreground">Interest component</span>
+                        <span className="font-mono text-xs">{formatCurrency(currentProjection.equityInterestYear)}</span>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
@@ -249,10 +263,10 @@ const MobileProjectionsView = ({
           </CardContent>
         </Card>
 
-        {/* Income & Expenses */}
+        {/* Income */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Income & Expenses</CardTitle>
+            <CardTitle className="text-base">Income</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="flex justify-between items-center">
@@ -265,6 +279,15 @@ const MobileProjectionsView = ({
                 {formatCurrency(Math.max(0, currentProjection.taxBenefit))}
               </span>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Expenses */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Expenses</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-sm">Interest Expense</span>
               <span className="font-mono text-sm">{formatCurrency(currentProjection.totalInterest)}</span>
@@ -273,6 +296,15 @@ const MobileProjectionsView = ({
               <span className="text-sm">Operating Expenses</span>
               <span className="font-mono text-sm">{formatCurrency(currentProjection.otherExpenses)}</span>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Depreciation */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Depreciation (Non-cash)</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-sm">Depreciation</span>
               <span className="font-mono text-sm">{formatCurrency(currentProjection.depreciation)}</span>
@@ -407,6 +439,14 @@ const DesktopProjectionsTable = ({
   </tr>
 )}
 
+{/* Expenses Header */}
+<tr className="bg-muted/30 border-y">
+  <td className="sticky left-0 bg-muted/30 z-10 font-semibold p-3">Expenses</td>
+  {projections.map((p: YearProjection) => (
+    <td key={p.year} className="bg-muted/30 p-3" />
+  ))}
+</tr>
+
 {/* Annual Mortgage Repayments - Expandable */}
 <tr className="border-b hover:bg-muted/50 cursor-pointer" onClick={() => setShowMortgageDetails(!showMortgageDetails)}>
   <td className="sticky left-0 bg-background z-10 font-medium p-3">
@@ -415,7 +455,7 @@ const DesktopProjectionsTable = ({
       Annual mortgage repayments
       <Badge variant="outline" className="ml-2">
         {/* Check if any loan is IO */}
-        {projections[0]?.mainLoanIOStatus === 'IO' || projections[0]?.equityLoanIOStatus === 'IO' ? 'IO' : 'P&I'}
+        {projections[0]?.mainLoanIOStatus === 'IO' || projections[0]?.equityLoanIOStatus === 'IO' ? 'IO' : 'P\u0026I'}
       </Badge>
     </div>
   </td>
@@ -425,6 +465,32 @@ const DesktopProjectionsTable = ({
     </td>
   ))}
 </tr>
+
+{/* Interest Components (P&I years) */}
+{showMortgageDetails && (
+  <tr className="bg-blue-50 dark:bg-blue-950/20 border-b">
+    <td className="sticky left-0 bg-blue-50 dark:bg-blue-950/20 z-10 pl-8 text-sm p-3">
+      Main loan interest component (P\u0026I)
+    </td>
+    {projections.map((projection: YearProjection) => (
+      <td key={projection.year} className="text-center font-mono text-xs p-3">
+        {projection.mainLoanIOStatus === 'P\u0026I' ? formatCurrency(projection.mainInterestYear) : '—'}
+      </td>
+    ))}
+  </tr>
+)}
+{showMortgageDetails && assumptions.initialEquityLoanBalance > 0 && (
+  <tr className="bg-green-50 dark:bg-green-950/20 border-b">
+    <td className="sticky left-0 bg-green-50 dark:bg-green-950/20 z-10 pl-8 text-sm p-3">
+      Equity loan interest component (P\u0026I)
+    </td>
+    {projections.map((projection: YearProjection) => (
+      <td key={projection.year} className="text-center font-mono text-xs p-3">
+        {projection.equityLoanIOStatus === 'P\u0026I' ? formatCurrency(projection.equityInterestYear) : '—'}
+      </td>
+    ))}
+  </tr>
+)}
 
 {/* Interest Expense */}
 {showMortgageDetails && (
@@ -448,6 +514,14 @@ const DesktopProjectionsTable = ({
   </td>
   {projections.map((projection: YearProjection) => (
     <td key={projection.year} className="text-center font-mono text-sm p-3">{formatCurrency(projection.otherExpenses)}</td>
+  ))}
+</tr>
+
+{/* Income Header */}
+<tr className="bg-muted/30 border-y">
+  <td className="sticky left-0 bg-muted/30 z-10 font-semibold p-3">Income</td>
+  {projections.map((p: YearProjection) => (
+    <td key={p.year} className="bg-muted/30 p-3" />
   ))}
 </tr>
 
@@ -514,6 +588,14 @@ const DesktopProjectionsTable = ({
     ))}
   </tr>
 )}
+
+{/* Non-cash Header */}
+<tr className="bg-muted/30 border-y">
+  <td className="sticky left-0 bg-muted/30 z-10 font-semibold p-3">Non-cash</td>
+  {projections.map((p: YearProjection) => (
+    <td key={p.year} className="bg-muted/30 p-3" />
+  ))}
+</tr>
 
 {/* Depreciation - Expandable */}
 <tr className="border-b hover:bg-muted/50 cursor-pointer" onClick={() => setShowDepreciationDetails(!showDepreciationDetails)}>

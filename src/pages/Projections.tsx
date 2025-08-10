@@ -24,6 +24,8 @@ interface YearProjection {
   totalInterest: number;
   mainLoanPayment: number;
   equityLoanPayment: number;
+  mainInterestYear: number;
+  equityInterestYear: number;
   mainLoanIOStatus: 'IO' | 'P&I';
   equityLoanIOStatus: 'IO' | 'P&I';
   otherExpenses: number;
@@ -206,6 +208,8 @@ const [inputValues, setInputValues] = useState({
         totalInterest: holdingCosts.total,
         mainLoanPayment: constructionMainPayment,
         equityLoanPayment: constructionEquityPayment,
+        mainInterestYear: constructionMainPayment,
+        equityInterestYear: constructionEquityPayment,
         mainLoanIOStatus: 'IO' as const,
         equityLoanIOStatus: 'IO' as const,
         otherExpenses: 0,
@@ -326,6 +330,8 @@ const [inputValues, setInputValues] = useState({
         totalInterest,
         mainLoanPayment,
         equityLoanPayment,
+        mainInterestYear,
+        equityInterestYear,
         mainLoanIOStatus,
         equityLoanIOStatus,
         otherExpenses,
