@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, ArrowUpRight, ArrowDownRight, Wallet, CreditCard, Layers, Banknote, FileText, PiggyBank } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
@@ -120,12 +120,14 @@ const MobileProjectionsView = ({
       setCurrentYearIndex(currentYearIndex - 1);
     }
   };
-  const incomeTotal = currentProjection.rentalIncome + Math.max(0, currentProjection.taxBenefit);
+  const incomeTotal = currentProjection.rentalIncome;
   const expensesTotal = currentProjection.totalInterest + currentProjection.otherExpenses;
+  const nonCashTotal = currentProjection.depreciation + Math.max(0, currentProjection.taxBenefit);
   const rentalPct = incomeTotal ? (currentProjection.rentalIncome / incomeTotal) * 100 : 0;
-  const taxBenefitPct = incomeTotal ? (Math.max(0, currentProjection.taxBenefit) / incomeTotal) * 100 : 0;
   const interestPct = expensesTotal ? (currentProjection.totalInterest / expensesTotal) * 100 : 0;
   const operatingPct = expensesTotal ? (currentProjection.otherExpenses / expensesTotal) * 100 : 0;
+  const depreciationPct = nonCashTotal ? (currentProjection.depreciation / nonCashTotal) * 100 : 0;
+  const taxBenefitNonCashPct = nonCashTotal ? (Math.max(0, currentProjection.taxBenefit) / nonCashTotal) * 100 : 0;
   const weeklyCashflow = currentProjection.afterTaxCashFlow / 52;
   return (
     <div className="space-y-4">
@@ -280,26 +282,23 @@ const MobileProjectionsView = ({
             {/* Income Section */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium">Income</span>
+                <span className="text-sm font-medium flex items-center gap-2">
+                  <Wallet className="h-4 w-4 text-primary" />
+                  Income
+                </span>
                 <Badge variant="secondary">{formatCurrency(incomeTotal)}</Badge>
               </div>
               <div className="space-y-2">
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm">Rental income</span>
+                    <span className="text-sm flex items-center gap-2">
+                      <Banknote className="h-4 w-4 text-muted-foreground" />
+                      Rental income
+                    </span>
                     <span className="font-mono text-sm">{formatCurrency(currentProjection.rentalIncome)}</span>
                   </div>
                   <Progress value={Math.round(rentalPct)} className="mt-1" />
                 </div>
-                {currentProjection.taxBenefit > 0 && (
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Tax benefit</span>
-                      <span className="font-mono text-sm">{formatCurrency(currentProjection.taxBenefit)}</span>
-                    </div>
-                    <Progress value={Math.round(taxBenefitPct)} className="mt-1" />
-                  </div>
-                )}
               </div>
             </div>
 
@@ -308,20 +307,29 @@ const MobileProjectionsView = ({
             {/* Expenses Section */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium">Expenses</span>
+                <span className="text-sm font-medium flex items-center gap-2">
+                  <CreditCard className="h-4 w-4 text-destructive" />
+                  Expenses
+                </span>
                 <Badge variant="outline">{formatCurrency(expensesTotal)}</Badge>
               </div>
               <div className="space-y-2">
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm">Interest</span>
+                    <span className="text-sm flex items-center gap-2">
+                      <CreditCard className="h-4 w-4 text-muted-foreground" />
+                      Interest
+                    </span>
                     <span className="font-mono text-sm">{formatCurrency(currentProjection.totalInterest)}</span>
                   </div>
                   <Progress value={Math.round(interestPct)} className="mt-1" />
                 </div>
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm">Operating expenses</span>
+                    <span className="text-sm flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      Operating expenses
+                    </span>
                     <span className="font-mono text-sm">{formatCurrency(currentProjection.otherExpenses)}</span>
                   </div>
                   <Progress value={Math.round(operatingPct)} className="mt-1" />
@@ -331,15 +339,41 @@ const MobileProjectionsView = ({
           </CardContent>
         </Card>
 
-        {/* Depreciation */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Depreciation (Non-cash)</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Layers className="h-4 w-4 text-muted-foreground" />
+              Depreciation (Non-cash)
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm">Depreciation</span>
-              <span className="font-mono text-sm">{formatCurrency(currentProjection.depreciation)}</span>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm font-medium">Non-cash total</span>
+              <Badge variant="secondary">{formatCurrency(nonCashTotal)}</Badge>
+            </div>
+            <div className="space-y-2">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm flex items-center gap-2">
+                    <Layers className="h-4 w-4 text-muted-foreground" />
+                    Depreciation
+                  </span>
+                  <span className="font-mono text-sm">{formatCurrency(currentProjection.depreciation)}</span>
+                </div>
+                <Progress value={Math.round(depreciationPct)} className="mt-1" />
+              </div>
+              {currentProjection.taxBenefit > 0 && (
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm flex items-center gap-2">
+                      <PiggyBank className="h-4 w-4 text-muted-foreground" />
+                      Tax benefit
+                    </span>
+                    <span className="font-mono text-sm">{formatCurrency(currentProjection.taxBenefit)}</span>
+                  </div>
+                  <Progress value={Math.round(taxBenefitNonCashPct)} className="mt-1" />
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
