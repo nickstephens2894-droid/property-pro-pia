@@ -23,7 +23,7 @@ export const OverrideField: React.FC<OverrideFieldProps> = ({
 
   return (
     <div className="space-y-1">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <label className="text-sm font-medium">{label}</label>
         <Badge variant={isManual ? "default" : "secondary"}>Active: {isManual ? "Manual" : "Auto"}</Badge>
       </div>
@@ -48,7 +48,7 @@ export const OverrideField: React.FC<OverrideFieldProps> = ({
             Manual
           </Button>
         </div>
-        <div className="flex-1 w-full grid grid-cols-2 gap-2">
+        <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div className="relative">
             <Input
               value={triplet.auto ?? ""}
