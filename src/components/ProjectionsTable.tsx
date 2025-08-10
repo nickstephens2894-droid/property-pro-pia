@@ -209,7 +209,7 @@ const MobileProjectionsView = ({
                     ) : (
                       <ArrowDownRight className="h-4 w-4 text-destructive" />
                     )}
-                    <span>YoY {Math.abs(yoyChange).toFixed(1)}%</span>
+                    <span>YoY {yoyChange.toFixed(1)}%</span>
                   </div>
                 </div>
                 <div className="mt-2 space-y-1 text-xs text-muted-foreground">
