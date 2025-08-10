@@ -260,6 +260,12 @@ const MobileProjectionsView = ({
               <span className="font-mono text-sm">{formatCurrency(currentProjection.rentalIncome)}</span>
             </div>
             <div className="flex justify-between items-center">
+              <span className="text-sm">Tax Benefit</span>
+              <span className={`font-mono text-sm ${currentProjection.taxBenefit > 0 ? 'text-green-600' : 'text-muted-foreground'}`}>
+                {formatCurrency(Math.max(0, currentProjection.taxBenefit))}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
               <span className="text-sm">Interest Expense</span>
               <span className="font-mono text-sm">{formatCurrency(currentProjection.totalInterest)}</span>
             </div>
