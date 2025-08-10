@@ -112,14 +112,15 @@ const [inputValues, setInputValues] = useState({
     interestAdjStartYear: ''
   });
 
-  // Calculate total household tax difference from property taxable income
-  const calculateTotalTaxDifference = (propertyTaxableIncome: number) => {
+  // Calculate total household tax difference from property taxable income, indexing client incomes by CPI
+  const calculateTotalTaxDifference = (propertyTaxableIncome: number, year: number) => {
+    const cpiMultiplier = year >= 1 ? Math.pow(1 + (assumptions.expenseInflationRate || 0) / 100, year - 1) : 1;
     let totalDifference = 0;
     propertyData.clients.forEach(client => {
       const ownership = propertyData.ownershipAllocations.find(o => o.clientId === client.id);
       const ownershipPercentage = ownership ? ownership.ownershipPercentage / 100 : 0;
       if (ownershipPercentage > 0) {
-        const baseIncome = client.annualIncome + client.otherIncome;
+        const baseIncome = (client.annualIncome + client.otherIncome) * cpiMultiplier;
         const allocatedPropertyIncome = propertyTaxableIncome * ownershipPercentage;
         const taxWithoutProperty = totalTaxAU(baseIncome, client.hasMedicareLevy);
         const taxWithProperty = totalTaxAU(baseIncome + allocatedPropertyIncome, client.hasMedicareLevy);
@@ -190,7 +191,7 @@ const [inputValues, setInputValues] = useState({
 
       // Tax benefit from holding costs (interest only is deductible)
       const constructionTaxableIncome = -holdingCosts.total; // Negative income from interest deductions
-      const constructionTaxBenefit = -calculateTotalTaxDifference(constructionTaxableIncome);
+      const constructionTaxBenefit = -calculateTotalTaxDifference(constructionTaxableIncome, 0);
 
       // After-tax cash flow for construction period
       const constructionAfterTaxCashFlow = -totalConstructionPayments + constructionTaxBenefit;
@@ -309,7 +310,7 @@ const [inputValues, setInputValues] = useState({
 
       // Tax calculations using progressive tax method
       const taxableIncome = rentalIncome - totalInterest - otherExpenses - depreciation;
-      const taxBenefit = -calculateTotalTaxDifference(taxableIncome);
+      const taxBenefit = -calculateTotalTaxDifference(taxableIncome, year);
 
       // Cash flow calculations
       const totalLoanPayments = mainLoanPayment + equityLoanPayment;
@@ -390,8 +391,9 @@ const [inputValues, setInputValues] = useState({
     // Calculate ROI = Net Equity / Cumulative Cash Contribution * 100
     const roiAtYearTo = cumulativeCashContribution > 0 ? (equityAtYearTo / cumulativeCashContribution) * 100 : 0;
     
+    const cpiMultiplier = yearFrom >= 1 ? Math.pow(1 + (assumptions.expenseInflationRate || 0) / 100, yearFrom - 1) : 1;
     const marginalTaxRateSummary = propertyData.clients.length > 0
-      ? Math.max(...propertyData.clients.map(c => marginalRateAU(c.annualIncome + c.otherIncome)))
+      ? Math.max(...propertyData.clients.map(c => marginalRateAU((c.annualIncome + c.otherIncome) * cpiMultiplier)))
       : 0.325;
     
     return {
@@ -402,7 +404,7 @@ const [inputValues, setInputValues] = useState({
       roiAtYearTo,
       marginalTaxRateSummary
     };
-  }, [projections, validatedYearRange, propertyData.clients]);
+  }, [projections, validatedYearRange, propertyData.clients, assumptions.expenseInflationRate]);
   return <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {/* Header */}
@@ -512,7 +514,29 @@ const [inputValues, setInputValues] = useState({
                 onChange={(t) => setAssumptions(prev => ({ ...prev, rentalGrowthRate: t }))}
               />
               
-{/* Interest Rate Adjustment */}
+              {/* CPI for fixed costs & client incomes */}
+              <div className="space-y-2">
+                <Label htmlFor="cpiRate" className="text-sm font-medium">CPI (applies to fixed costs and client incomes)</Label>
+                <div className="relative max-w-xs">
+                  <Input
+                    id="cpiRate"
+                    type="text"
+                    value={assumptions.expenseInflationRate.toString()}
+                    onChange={e => {
+                      const raw = e.target.value.replace(/[^0-9.]/g, '');
+                      const val = Math.max(0, parseFloat(raw) || 0);
+                      setAssumptions(prev => ({ ...prev, expenseInflationRate: val }));
+                    }}
+                    className="h-9 pr-10"
+                  />
+                  <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Applies to council rates, insurance, repairs and client incomes. Not applied to % fees, rent/capital growth, depreciation, or loan repayments.
+                </p>
+              </div>
+
+              {/* Interest Rate Adjustment */}
               <div className="space-y-2 col-span-1">
                 <Label htmlFor="interestAdj" className="text-sm font-medium">Interest Rate Adjustment</Label>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
