@@ -1,6 +1,6 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Badge } from "@/components/ui/badge";
 import { Triplet } from "@/utils/overrides";
 
@@ -48,34 +48,20 @@ export const OverrideField: React.FC<OverrideFieldProps> = ({
             Manual
           </Button>
         </div>
-        <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="flex-1 w-full grid grid-cols-1 gap-2">
           <div className="relative">
-            <Input
-              value={triplet.auto ?? ""}
-              readOnly
-              aria-label={`${label} auto value`}
-              className="h-9 pr-8"
-              placeholder={placeholder}
-            />
-            {unit && (
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                {unit}
-              </span>
-            )}
-          </div>
-          <div className="relative">
-            <Input
-              value={triplet.manual ?? ""}
-              onChange={(e) =>
-                onChange({
-                  ...triplet,
-                  manual: e.target.value === "" ? null : Number(e.target.value),
-                })
-              }
-              aria-label={`${label} manual value`}
-              className="h-9 pr-8"
-              placeholder={placeholder}
+            <NumberInput
+              id={`${label.replace(/\s+/g, '-').toLowerCase()}-input`}
+              value={isManual ? triplet.manual : triplet.auto}
+              onChange={(val: number | null) => {
+                if (isManual) {
+                  onChange({ ...triplet, manual: val });
+                }
+              }}
+              readOnly={!isManual}
               disabled={!isManual}
+              placeholder={placeholder}
+              className="h-9 pr-8"
             />
             {unit && (
               <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
