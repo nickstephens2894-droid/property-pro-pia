@@ -8,6 +8,7 @@ import { ChevronDown, Download, Users, Plus, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { usePropertyData } from "@/contexts/PropertyDataContext";
 import ProjectionsTable from "@/components/ProjectionsTable";
+import ConstructionPeriodTable from "@/components/ConstructionPeriodTable";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PropertySummaryDashboard } from "@/components/PropertySummaryDashboard";
 import { PresetSelector } from "@/components/PresetSelector";
@@ -596,6 +597,23 @@ Tax Rate: {formatPercentage(investmentSummary.marginalTaxRateSummary * 100)} (hi
           </CardContent>
         </Card>
 
+        {/* Construction Period Table */}
+        {projections.some(p => p.year === 0) && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle>Construction Period Summary</CardTitle>
+              <CardDescription>Interest-only holding costs and tax impact during build</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ConstructionPeriodTable
+                projection={projections.find(p => p.year === 0)!}
+                months={propertyData.constructionPeriod}
+                formatCurrency={formatCurrency}
+              />
+            </CardContent>
+          </Card>
+        )}
+ 
         {/* Client Income & Tax Optimization */}
         <Card>
           <Collapsible open={clientAccordionOpen} onOpenChange={setClientAccordionOpen}>
