@@ -58,6 +58,8 @@ export const OverrideField: React.FC<OverrideFieldProps> = ({
                   manual: e.target.value === "" ? null : Number(e.target.value),
                 })
               }
+              inputMode="decimal"
+              pattern="^-?\d*\.?\d*$"
               readOnly={!isManual}
               disabled={!isManual}
               aria-label={`${label} value`}
