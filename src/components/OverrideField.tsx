@@ -25,12 +25,10 @@ export const OverrideField: React.FC<OverrideFieldProps> = ({
     <div className="space-y-1">
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium">{label}</label>
-        <Badge variant={isManual ? "default" : "secondary"}>
-          Active: {isManual ? "Manual" : "Auto"}
-        </Badge>
+        <Badge variant={isManual ? "default" : "secondary"}>Active: {isManual ? "Manual" : "Auto"}</Badge>
       </div>
-      <div className="flex items-center gap-2">
-        <div className="flex rounded-md border border-input overflow-hidden">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <div className="flex w-full sm:w-auto rounded-md border border-input overflow-hidden">
           <Button
             type="button"
             size="sm"
@@ -50,7 +48,7 @@ export const OverrideField: React.FC<OverrideFieldProps> = ({
             Manual
           </Button>
         </div>
-        <div className="flex-1 grid grid-cols-2 gap-2">
+        <div className="flex-1 w-full grid grid-cols-2 gap-2">
           <div className="relative">
             <Input
               value={triplet.auto ?? ""}
