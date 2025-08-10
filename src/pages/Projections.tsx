@@ -12,6 +12,9 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PropertySummaryDashboard } from "@/components/PropertySummaryDashboard";
 import { PresetSelector } from "@/components/PresetSelector";
 import AppNav from "@/components/AppNav";
+import { resolve, Triplet } from "@/utils/overrides";
+import { OverrideField } from "@/components/OverrideField";
+import { totalTaxAU, marginalRateAU } from "@/utils/tax";
 interface YearProjection {
   year: number;
   rentalIncome: number;
@@ -32,6 +35,29 @@ interface YearProjection {
   propertyEquity: number;
   totalReturn: number;
 }
+type Assumptions = {
+  initialPropertyValue: number;
+  initialWeeklyRent: Triplet<number>;
+  capitalGrowthRate: Triplet<number>;
+  rentalGrowthRate: Triplet<number>;
+  vacancyRate: Triplet<number>;
+  initialMainLoanBalance: number;
+  initialEquityLoanBalance: number;
+  mainInterestRate: number;
+  equityInterestRate: number;
+  mainLoanTerm: number;
+  equityLoanTerm: number;
+  mainLoanType: 'io' | 'pi';
+  equityLoanType: 'io' | 'pi';
+  mainIOTermYears: number;
+  equityIOTermYears: number;
+  propertyManagementRate: Triplet<number>;
+  councilRates: number;
+  insurance: number;
+  repairs: number;
+  expenseInflationRate: number;
+  depreciationYear1: number;
+};
 const Projections = () => {
   const navigate = useNavigate();
   const { propertyData, setPropertyData, applyPreset } = usePropertyData();
@@ -48,13 +74,13 @@ const Projections = () => {
     totalProjectCost: calculateTotalProjectCost()
   };
 
-  // Property assumptions derived from property data but adjustable
+  // Property assumptions derived from property data but adjustable (with overrides)
   const [assumptions, setAssumptions] = useState({
     initialPropertyValue: propertyData.purchasePrice || funding.totalProjectCost,
-    initialWeeklyRent: propertyData.weeklyRent,
-    capitalGrowthRate: 7.0,
-    rentalGrowthRate: 5.0,
-    vacancyRate: propertyData.vacancyRate,
+    initialWeeklyRent: { mode: 'auto' as const, auto: propertyData.weeklyRent, manual: null },
+    capitalGrowthRate: { mode: 'auto' as const, auto: 7.0, manual: null },
+    rentalGrowthRate: { mode: 'auto' as const, auto: 5.0, manual: null },
+    vacancyRate: { mode: 'auto' as const, auto: propertyData.vacancyRate, manual: null },
     initialMainLoanBalance: funding.mainLoanAmount,
     initialEquityLoanBalance: funding.equityLoanAmount,
     mainInterestRate: propertyData.interestRate,
@@ -66,7 +92,7 @@ const Projections = () => {
     equityLoanType: propertyData.equityLoanType,
     mainIOTermYears: propertyData.ioTermYears,
     equityIOTermYears: propertyData.equityLoanIoTermYears,
-    propertyManagementRate: propertyData.propertyManagement,
+    propertyManagementRate: { mode: 'auto' as const, auto: propertyData.propertyManagement, manual: null },
     councilRates: propertyData.councilRates,
     insurance: propertyData.insurance,
     repairs: propertyData.repairs,
@@ -80,53 +106,11 @@ const Projections = () => {
 const [inputValues, setInputValues] = useState({
     yearFrom: yearRange[0].toString(),
     yearTo: yearRange[1].toString(),
-    capitalGrowth: assumptions.capitalGrowthRate.toString(),
-    rentalGrowth: assumptions.rentalGrowthRate.toString(),
-    interestRate: propertyData.interestRate.toString(),
     interestAdjValue: '',
     interestAdjStartYear: ''
   });
 
-  // Calculate per-client progressive tax instead of weighted average
-  const calculateClientTax = (client: any, totalIncome: number) => {
-    let tax = 0;
-
-    // 2024-25 Australian tax brackets
-    const brackets = [{
-      min: 0,
-      max: 18200,
-      rate: 0
-    }, {
-      min: 18201,
-      max: 45000,
-      rate: 0.19
-    }, {
-      min: 45001,
-      max: 120000,
-      rate: 0.325
-    }, {
-      min: 120001,
-      max: 180000,
-      rate: 0.37
-    }, {
-      min: 180001,
-      max: Infinity,
-      rate: 0.45
-    }];
-    for (const bracket of brackets) {
-      if (totalIncome <= bracket.min) break;
-      const taxableInThisBracket = Math.min(totalIncome - bracket.min, bracket.max - bracket.min);
-      if (taxableInThisBracket > 0) {
-        tax += taxableInThisBracket * bracket.rate;
-      }
-    }
-
-    // Add Medicare levy (2%) for applicable clients
-    if (client.hasMedicareLevy && totalIncome > 26000) {
-      tax += totalIncome * 0.02;
-    }
-    return tax;
-  };
+  // Calculate total household tax difference from property taxable income
   const calculateTotalTaxDifference = (propertyTaxableIncome: number) => {
     let totalDifference = 0;
     propertyData.clients.forEach(client => {
@@ -135,8 +119,8 @@ const [inputValues, setInputValues] = useState({
       if (ownershipPercentage > 0) {
         const baseIncome = client.annualIncome + client.otherIncome;
         const allocatedPropertyIncome = propertyTaxableIncome * ownershipPercentage;
-        const taxWithoutProperty = calculateClientTax(client, baseIncome);
-        const taxWithProperty = calculateClientTax(client, baseIncome + allocatedPropertyIncome);
+        const taxWithoutProperty = totalTaxAU(baseIncome, client.hasMedicareLevy);
+        const taxWithProperty = totalTaxAU(baseIncome + allocatedPropertyIncome, client.hasMedicareLevy);
         totalDifference += taxWithProperty - taxWithoutProperty;
       }
     });
@@ -154,7 +138,8 @@ const [inputValues, setInputValues] = useState({
   }, [yearRange]);
   const projections = useMemo(() => {
     const years: YearProjection[] = [];
-    const annualRent = assumptions.initialWeeklyRent * 52;
+    const weeklyRent = resolve(assumptions.initialWeeklyRent) ?? 0;
+    const annualRent = weeklyRent * 52;
     let mainLoanBalance = assumptions.initialMainLoanBalance;
     let equityLoanBalance = assumptions.initialEquityLoanBalance;
 
@@ -236,11 +221,14 @@ const [inputValues, setInputValues] = useState({
     }
     for (let year = 1; year <= 40; year++) {
       // Rental income with growth and vacancy
-      const grossRentalIncome = annualRent * Math.pow(1 + assumptions.rentalGrowthRate / 100, year - 1);
-      const rentalIncome = grossRentalIncome * (1 - assumptions.vacancyRate / 100);
+      const rentalGrowth = (resolve(assumptions.rentalGrowthRate) ?? 0) / 100;
+      const vacancy = (resolve(assumptions.vacancyRate) ?? 0) / 100;
+      const grossRentalIncome = annualRent * Math.pow(1 + rentalGrowth, year - 1);
+      const rentalIncome = grossRentalIncome * (1 - vacancy);
 
       // Property value with capital growth
-      const propertyValue = assumptions.initialPropertyValue * Math.pow(1 + assumptions.capitalGrowthRate / 100, year - 1);
+      const capitalGrowth = (resolve(assumptions.capitalGrowthRate) ?? 0) / 100;
+      const propertyValue = assumptions.initialPropertyValue * Math.pow(1 + capitalGrowth, year - 1);
 
       // Main and equity loan calculations with dynamic interest adjustment
       const mainIsIOPeriod = assumptions.mainLoanType === 'io' && year <= assumptions.mainIOTermYears;
@@ -305,7 +293,8 @@ const [inputValues, setInputValues] = useState({
 
       // Operating expenses with inflation
       const inflationMultiplier = Math.pow(1 + assumptions.expenseInflationRate / 100, year - 1);
-      const propertyManagement = rentalIncome * (assumptions.propertyManagementRate / 100);
+      const pmRate = (resolve(assumptions.propertyManagementRate) ?? 0) / 100;
+      const propertyManagement = rentalIncome * pmRate;
       const councilRates = assumptions.councilRates * inflationMultiplier;
       const insurance = assumptions.insurance * inflationMultiplier;
       const repairs = assumptions.repairs * inflationMultiplier;
@@ -327,7 +316,7 @@ const [inputValues, setInputValues] = useState({
       const propertyEquity = propertyValue - mainLoanBalance - equityLoanBalance;
 
       // Total return (cash flow + equity growth)
-      const totalReturn = afterTaxCashFlow + (year > 1 ? propertyValue - assumptions.initialPropertyValue * Math.pow(1 + assumptions.capitalGrowthRate / 100, year - 2) : 0);
+      const totalReturn = afterTaxCashFlow + (year > 1 ? propertyValue - assumptions.initialPropertyValue * Math.pow(1 + capitalGrowth, year - 2) : 0);
       years.push({
         year,
         rentalIncome,
@@ -395,14 +384,9 @@ const [inputValues, setInputValues] = useState({
     // Calculate ROI = Net Equity / Cumulative Cash Contribution * 100
     const roiAtYearTo = cumulativeCashContribution > 0 ? (equityAtYearTo / cumulativeCashContribution) * 100 : 0;
     
-    const marginalTaxRateSummary = propertyData.clients.length > 0 ? Math.max(...propertyData.clients.map(c => {
-      const income = c.annualIncome + c.otherIncome;
-      if (income <= 18200) return 0;
-      if (income <= 45000) return 0.19;
-      if (income <= 120000) return 0.325;
-      if (income <= 180000) return 0.37;
-      return 0.45;
-    })) : 0.325;
+    const marginalTaxRateSummary = propertyData.clients.length > 0
+      ? Math.max(...propertyData.clients.map(c => marginalRateAU(c.annualIncome + c.otherIncome)))
+      : 0.325;
     
     return {
       weeklyAfterTaxCashFlowSummary,
@@ -508,53 +492,19 @@ const [inputValues, setInputValues] = useState({
               }} className="h-9" />
               </div>
               
-              {/* Capital Growth Rate */}
-              <div className="space-y-2">
-                <Label htmlFor="capitalGrowth" className="text-sm font-medium">Capital Growth</Label>
-                <div className="relative">
-                  <Input id="capitalGrowth" type="text" value={inputValues.capitalGrowth} onChange={e => {
-                  setInputValues(prev => ({
-                    ...prev,
-                    capitalGrowth: e.target.value
-                  }));
-                }} onBlur={e => {
-                  const value = Math.max(0, Math.min(15, parseFloat(e.target.value) || 0));
-                  setAssumptions(prev => ({
-                    ...prev,
-                    capitalGrowthRate: value
-                  }));
-                  setInputValues(prev => ({
-                    ...prev,
-                    capitalGrowth: value.toString()
-                  }));
-                }} className="h-9 pr-8" />
-                  <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">%</span>
-                </div>
-              </div>
-              
-              {/* Rental Growth Rate */}
-              <div className="space-y-2">
-                <Label htmlFor="rentalGrowth" className="text-sm font-medium">Rental Growth</Label>
-                <div className="relative">
-                  <Input id="rentalGrowth" type="text" value={inputValues.rentalGrowth} onChange={e => {
-                  setInputValues(prev => ({
-                    ...prev,
-                    rentalGrowth: e.target.value
-                  }));
-                }} onBlur={e => {
-                  const value = Math.max(0, Math.min(10, parseFloat(e.target.value) || 0));
-                  setAssumptions(prev => ({
-                    ...prev,
-                    rentalGrowthRate: value
-                  }));
-                  setInputValues(prev => ({
-                    ...prev,
-                    rentalGrowth: value.toString()
-                  }));
-                }} className="h-9 pr-8" />
-                  <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">%</span>
-                </div>
-              </div>
+              {/* Growth Assumptions */}
+              <OverrideField
+                label="Capital Growth"
+                unit="%"
+                triplet={assumptions.capitalGrowthRate}
+                onChange={(t) => setAssumptions(prev => ({ ...prev, capitalGrowthRate: t }))}
+              />
+              <OverrideField
+                label="Rental Growth"
+                unit="%"
+                triplet={assumptions.rentalGrowthRate}
+                onChange={(t) => setAssumptions(prev => ({ ...prev, rentalGrowthRate: t }))}
+              />
               
 {/* Interest Rate Adjustment */}
               <div className="space-y-2 col-span-2 lg:col-span-2">

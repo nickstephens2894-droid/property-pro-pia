@@ -1,0 +1,92 @@
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Triplet } from "@/utils/overrides";
+
+interface OverrideFieldProps {
+  label: string;
+  triplet: Triplet<number>;
+  onChange: (t: Triplet<number>) => void;
+  unit?: "%" | "$";
+  placeholder?: string;
+}
+
+export const OverrideField: React.FC<OverrideFieldProps> = ({
+  label,
+  triplet,
+  onChange,
+  unit,
+  placeholder,
+}) => {
+  const isManual = triplet.mode === "manual";
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between">
+        <label className="text-sm font-medium">{label}</label>
+        <Badge variant={isManual ? "default" : "secondary"}>
+          Active: {isManual ? "Manual" : "Auto"}
+        </Badge>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="flex rounded-md border border-input overflow-hidden">
+          <Button
+            type="button"
+            size="sm"
+            variant={isManual ? "ghost" : "default"}
+            className="rounded-none"
+            onClick={() => onChange({ ...triplet, mode: "auto" })}
+          >
+            Auto
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={isManual ? "default" : "ghost"}
+            className="rounded-none border-l"
+            onClick={() => onChange({ ...triplet, mode: "manual" })}
+          >
+            Manual
+          </Button>
+        </div>
+        <div className="flex-1 grid grid-cols-2 gap-2">
+          <div className="relative">
+            <Input
+              value={triplet.auto ?? ""}
+              readOnly
+              aria-label={`${label} auto value`}
+              className="h-9 pr-8"
+              placeholder={placeholder}
+            />
+            {unit && (
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                {unit}
+              </span>
+            )}
+          </div>
+          <div className="relative">
+            <Input
+              value={triplet.manual ?? ""}
+              onChange={(e) =>
+                onChange({
+                  ...triplet,
+                  manual: e.target.value === "" ? null : Number(e.target.value),
+                })
+              }
+              aria-label={`${label} manual value`}
+              className="h-9 pr-8"
+              placeholder={placeholder}
+              disabled={!isManual}
+            />
+            {unit && (
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                {unit}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
