@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -165,37 +166,7 @@ const MobileProjectionsView = ({
   const yoyChange = prevValue > 0 ? ((currentProjection.propertyValue - prevValue) / prevValue) * 100 : 0;
   return (
     <div className="space-y-4">
-      {/* Year Navigation */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={prevYear}
-              disabled={currentYearIndex === 0}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            
-            <div className="text-center">
-              <h3 className="text-lg font-semibold">Year {currentProjection.year}</h3>
-              <p className="text-sm text-muted-foreground">
-                {currentYearIndex + 1} of {projections.length}
-              </p>
-            </div>
-            
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={nextYear}
-              disabled={currentYearIndex === projections.length - 1}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardHeader>
-      </Card>
+      {/* Year Navigation moved to fixed bottom bar */}
 
       <div className="flex justify-end gap-2">
         <Button variant="outline" size="sm" onClick={expandAll}>Expand all</Button>
@@ -536,6 +507,49 @@ const MobileProjectionsView = ({
           </Collapsible>
         </Card>
       </div>
+
+      {/* Spacer so content isn't hidden behind fixed year controls + bottom nav */}
+      <div className="h-16 md:hidden" aria-hidden="true" />
+
+      {/* Fixed Year Controls (mobile) */}
+      {typeof document !== "undefined" &&
+        createPortal(
+          <div className="md:hidden fixed bottom-14 left-0 right-0 z-50 px-4 pb-[env(safe-area-inset-bottom)]">
+            <Card className="shadow-lg border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+              <CardHeader className="py-2">
+                <div className="flex items-center justify-between">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={prevYear}
+                    disabled={currentYearIndex === 0}
+                    aria-label="Previous year"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+
+                  <div className="text-center">
+                    <h3 className="text-base font-semibold">Year {currentProjection.year}</h3>
+                    <p className="text-xs text-muted-foreground">
+                      {currentYearIndex + 1} of {projections.length}
+                    </p>
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={nextYear}
+                    disabled={currentYearIndex === projections.length - 1}
+                    aria-label="Next year"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+            </Card>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
