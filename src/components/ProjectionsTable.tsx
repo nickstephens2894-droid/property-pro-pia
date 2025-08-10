@@ -131,10 +131,11 @@ const MobileProjectionsView = ({
   const operatingPct = expensesTotal ? (currentProjection.otherExpenses / expensesTotal) * 100 : 0;
   const depreciationPct = nonCashTotal ? (currentProjection.depreciation / nonCashTotal) * 100 : 0;
   const taxBenefitNonCashPct = nonCashTotal ? (Math.max(0, currentProjection.taxBenefit) / nonCashTotal) * 100 : 0;
+  const taxTotal = currentProjection.taxBenefit;
   const weeklyCashflow = currentProjection.afterTaxCashFlow / 52;
   const equityRatio = currentProjection.propertyValue > 0 ? Math.max(0, Math.min(100, (currentProjection.propertyEquity / currentProjection.propertyValue) * 100)) : 0;
   const lvrRatio = Math.max(0, Math.min(100, 100 - equityRatio));
-  
+
   // Expand/collapse state for sections (default collapsed)
   const [showIncomeDetails, setShowIncomeDetails] = useState(false);
   const [showExpensesDetails, setShowExpensesDetails] = useState(false);
@@ -429,7 +430,7 @@ const MobileProjectionsView = ({
                   </div>
                   <div className="flex items-center gap-2">
                     {showTaxDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                    <span className={`font-bold ${nonCashTotal >= 0 ? 'text-primary' : 'text-destructive'}`}>{nonCashTotal >= 0 ? '+' : '-'}{formatCurrency(Math.abs(nonCashTotal))}</span>
+                    <span className={`font-bold ${taxTotal >= 0 ? 'text-primary' : 'text-destructive'}`}>{taxTotal >= 0 ? '+' : '-'}{formatCurrency(Math.abs(taxTotal))}</span>
                   </div>
                 </div>
               </CardContent>
