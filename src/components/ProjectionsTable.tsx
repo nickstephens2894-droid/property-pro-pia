@@ -3,8 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
 
 interface YearProjection {
   year: number;
@@ -118,7 +120,13 @@ const MobileProjectionsView = ({
       setCurrentYearIndex(currentYearIndex - 1);
     }
   };
-
+  const incomeTotal = currentProjection.rentalIncome + Math.max(0, currentProjection.taxBenefit);
+  const expensesTotal = currentProjection.totalInterest + currentProjection.otherExpenses;
+  const rentalPct = incomeTotal ? (currentProjection.rentalIncome / incomeTotal) * 100 : 0;
+  const taxBenefitPct = incomeTotal ? (Math.max(0, currentProjection.taxBenefit) / incomeTotal) * 100 : 0;
+  const interestPct = expensesTotal ? (currentProjection.totalInterest / expensesTotal) * 100 : 0;
+  const operatingPct = expensesTotal ? (currentProjection.otherExpenses / expensesTotal) * 100 : 0;
+  const weeklyCashflow = currentProjection.afterTaxCashFlow / 52;
   return (
     <div className="space-y-4">
       {/* Year Navigation */}
@@ -263,38 +271,62 @@ const MobileProjectionsView = ({
           </CardContent>
         </Card>
 
-        {/* Income */}
+        {/* Income & Expenses (Combined) */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Income</CardTitle>
+            <CardTitle className="text-base">Income & Expenses</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm">Rental Income</span>
-              <span className="font-mono text-sm">{formatCurrency(currentProjection.rentalIncome)}</span>
+          <CardContent className="space-y-3">
+            {/* Income Section */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-medium">Income</span>
+                <Badge variant="secondary">{formatCurrency(incomeTotal)}</Badge>
+              </div>
+              <div className="space-y-2">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Rental income</span>
+                    <span className="font-mono text-sm">{formatCurrency(currentProjection.rentalIncome)}</span>
+                  </div>
+                  <Progress value={Math.round(rentalPct)} className="mt-1" />
+                </div>
+                {currentProjection.taxBenefit > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Tax benefit</span>
+                      <span className="font-mono text-sm">{formatCurrency(currentProjection.taxBenefit)}</span>
+                    </div>
+                    <Progress value={Math.round(taxBenefitPct)} className="mt-1" />
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm">Tax Benefit</span>
-              <span className={`font-mono text-sm ${currentProjection.taxBenefit > 0 ? 'text-green-600' : 'text-muted-foreground'}`}>
-                {formatCurrency(Math.max(0, currentProjection.taxBenefit))}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Expenses */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Expenses</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm">Interest Expense</span>
-              <span className="font-mono text-sm">{formatCurrency(currentProjection.totalInterest)}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm">Operating Expenses</span>
-              <span className="font-mono text-sm">{formatCurrency(currentProjection.otherExpenses)}</span>
+            <Separator />
+
+            {/* Expenses Section */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-medium">Expenses</span>
+                <Badge variant="outline">{formatCurrency(expensesTotal)}</Badge>
+              </div>
+              <div className="space-y-2">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Interest</span>
+                    <span className="font-mono text-sm">{formatCurrency(currentProjection.totalInterest)}</span>
+                  </div>
+                  <Progress value={Math.round(interestPct)} className="mt-1" />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Operating expenses</span>
+                    <span className="font-mono text-sm">{formatCurrency(currentProjection.otherExpenses)}</span>
+                  </div>
+                  <Progress value={Math.round(operatingPct)} className="mt-1" />
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -312,28 +344,29 @@ const MobileProjectionsView = ({
           </CardContent>
         </Card>
 
-        {/* Tax & Cash Flow */}
+        {/* Cash Flow */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Tax & Cash Flow</CardTitle>
+            <CardTitle className="text-base">Cash Flow</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm">Tax Benefit</span>
-              <span className={`font-mono text-sm ${currentProjection.taxBenefit > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatCurrency(Math.max(0, currentProjection.taxBenefit))}
+          <CardContent className="space-y-3">
+            <div className="flex items-baseline justify-between">
+              <div className="flex items-center gap-2">
+                {weeklyCashflow >= 0 ? (
+                  <ArrowUpRight className="h-5 w-5 text-primary" />
+                ) : (
+                  <ArrowDownRight className="h-5 w-5 text-destructive" />
+                )}
+                <span className="text-sm text-muted-foreground">Weekly</span>
+              </div>
+              <span className={`text-2xl font-bold ${weeklyCashflow >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                {formatCurrency(weeklyCashflow)}
               </span>
             </div>
             <div className="flex justify-between items-center pt-2 border-t">
-              <span className="text-sm font-medium">After-tax Cash Flow</span>
-              <span className={`font-bold ${currentProjection.afterTaxCashFlow >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+              <span className="text-sm font-medium">After-tax cash flow (year)</span>
+              <span className={`font-semibold ${currentProjection.afterTaxCashFlow >= 0 ? 'text-primary' : 'text-destructive'}`}>
                 {formatCurrency(currentProjection.afterTaxCashFlow)}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-muted-foreground">Weekly</span>
-              <span className={`text-xs font-mono ${currentProjection.afterTaxCashFlow >= 0 ? 'text-green-600' : 'text-destructive'}`}>
-                {formatCurrency(currentProjection.afterTaxCashFlow / 52)}
               </span>
             </div>
           </CardContent>
