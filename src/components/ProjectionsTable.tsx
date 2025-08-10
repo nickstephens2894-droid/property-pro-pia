@@ -509,12 +509,12 @@ const MobileProjectionsView = ({
       </div>
 
       {/* Spacer so content isn't hidden behind fixed year controls + bottom nav */}
-      <div className="h-16 md:hidden" aria-hidden="true" />
+      <div className="h-24 md:hidden" aria-hidden="true" />
 
       {/* Fixed Year Controls (mobile) */}
       {typeof document !== "undefined" &&
         createPortal(
-          <div className="md:hidden fixed bottom-14 left-0 right-0 z-50 px-4 pb-[env(safe-area-inset-bottom)]">
+          <div className="md:hidden fixed bottom-16 left-0 right-0 z-[60] px-4 pb-[env(safe-area-inset-bottom)]">
             <Card className="shadow-lg border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
               <CardHeader className="py-2">
                 <div className="flex items-center justify-between">
