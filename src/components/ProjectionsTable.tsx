@@ -121,10 +121,11 @@ const MobileProjectionsView = ({
     }
   };
   const incomeTotal = currentProjection.rentalIncome;
-  const expensesTotal = currentProjection.totalInterest + currentProjection.otherExpenses;
+  const repaymentsTotal = currentProjection.mainLoanPayment + currentProjection.equityLoanPayment;
+  const expensesTotal = repaymentsTotal + currentProjection.otherExpenses;
   const nonCashTotal = currentProjection.depreciation + Math.max(0, currentProjection.taxBenefit);
   const rentalPct = incomeTotal ? (currentProjection.rentalIncome / incomeTotal) * 100 : 0;
-  const interestPct = expensesTotal ? (currentProjection.totalInterest / expensesTotal) * 100 : 0;
+  const repaymentPct = expensesTotal ? (repaymentsTotal / expensesTotal) * 100 : 0;
   const operatingPct = expensesTotal ? (currentProjection.otherExpenses / expensesTotal) * 100 : 0;
   const depreciationPct = nonCashTotal ? (currentProjection.depreciation / nonCashTotal) * 100 : 0;
   const taxBenefitNonCashPct = nonCashTotal ? (Math.max(0, currentProjection.taxBenefit) / nonCashTotal) * 100 : 0;
@@ -318,11 +319,11 @@ const MobileProjectionsView = ({
                   <div className="flex items-center justify-between">
                     <span className="text-sm flex items-center gap-2">
                       <CreditCard className="h-4 w-4 text-muted-foreground" />
-                      Interest
+                      Loan repayments
                     </span>
-                    <span className="font-mono text-sm">{formatCurrency(currentProjection.totalInterest)}</span>
+                    <span className="font-mono text-sm">{formatCurrency(repaymentsTotal)}</span>
                   </div>
-                  <Progress value={Math.round(interestPct)} className="mt-1" />
+                  <Progress value={Math.round(repaymentPct)} className="mt-1" />
                 </div>
                 <div>
                   <div className="flex items-center justify-between">
