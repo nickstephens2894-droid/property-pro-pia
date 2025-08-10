@@ -787,7 +787,7 @@ const DesktopProjectionsTable = ({
 {showOperatingDetails && (
   <tr className="bg-orange-50 dark:bg-orange-950/20 border-b">
     <td className="sticky left-0 bg-orange-50 dark:bg-orange-950/20 z-10 pl-8 text-sm p-3">
-      Property management
+      Property management ({formatPercentage(resolve<number>(assumptions.propertyManagementRate) ?? 0)})
     </td>
     {projections.map((projection: YearProjection) => (
       <td key={projection.year} className="text-center font-mono text-xs p-3">
