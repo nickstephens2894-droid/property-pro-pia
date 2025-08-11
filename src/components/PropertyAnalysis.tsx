@@ -72,10 +72,6 @@ const DesktopLayout = ({
         </div>
       </div>
 
-      {/* Detailed Calculations - Full Width Below */}
-      <div className="w-full">
-        <PropertyCalculationDetails {...calculationProps} />
-      </div>
     </div>
   );
 };
@@ -428,40 +424,6 @@ const PropertyAnalysis = () => {
                 marginalTaxRate={marginalTaxRate}
               />
               <FundingSummaryPanel />
-              <PropertyCalculationDetails
-                monthlyRepayment={totalWeeklyLoanPayments * 52 / 12}
-                annualRepayment={totalAnnualLoanPayments}
-                annualRent={annualRent}
-                propertyManagementCost={annualPropertyManagement}
-                councilRates={propertyData.councilRates}
-                insurance={propertyData.insurance}
-                repairs={propertyData.repairs}
-                totalDeductibleExpenses={totalDeductibleExpenses}
-                depreciation={{
-                  ...depreciation,
-                  capitalWorksAvailable: propertyData.constructionYear >= 1987,
-                  plantEquipmentRestricted: !propertyData.isNewProperty
-                }}
-                clientTaxResults={clientTaxResults}
-                totalTaxWithProperty={totalTaxWithProperty}
-                totalTaxWithoutProperty={totalTaxWithoutProperty}
-                marginalTaxRate={marginalTaxRate}
-                purchasePrice={propertyData.purchasePrice}
-                constructionYear={propertyData.constructionYear}
-                depreciationMethod={propertyData.depreciationMethod}
-                isConstructionProject={propertyData.isConstructionProject}
-                totalProjectCost={totalProjectCost}
-                holdingCosts={holdingCosts}
-                funding={funding}
-                outOfPocketHoldingCosts={outOfPocketHoldingCosts}
-                capitalizedHoldingCosts={capitalizedHoldingCosts}
-                actualCashInvested={actualCashInvested}
-                constructionPeriod={propertyData.constructionPeriod}
-                holdingCostFunding={propertyData.holdingCostFunding}
-                mainLoanPayments={mainLoanPayments}
-                equityLoanPayments={equityLoanPayments}
-                totalAnnualInterest={totalAnnualInterest}
-              />
             </div>
           </div>
         ) : (

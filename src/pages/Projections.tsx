@@ -13,6 +13,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PropertySummaryDashboard } from "@/components/PropertySummaryDashboard";
 import { PresetSelector } from "@/components/PresetSelector";
 import AppNav from "@/components/AppNav";
+import { PropertyCalculationDetails } from "@/components/PropertyCalculationDetails";
 import { resolve, Triplet } from "@/utils/overrides";
 import { OverrideField } from "@/components/OverrideField";
 import { totalTaxAU, marginalRateAU } from "@/utils/tax";
@@ -457,6 +458,205 @@ const [inputValues, setInputValues] = useState({
       marginalTaxRateSummary
     };
   }, [projections, validatedYearRange, propertyData.clients, assumptions.expenseInflationRate]);
+  // Detailed calculations (moved from Analysis page)
+  const annualRent = propertyData.weeklyRent * 52;
+
+  const calculateDepreciation = () => {
+    const currentYear = new Date().getFullYear();
+    const propertyAge = currentYear - propertyData.constructionYear;
+
+    let capitalWorksDepreciation = 0;
+    if (propertyData.constructionYear >= 1987) {
+      capitalWorksDepreciation = propertyData.buildingValue * 0.025;
+    }
+
+    const plantEquipmentItems = [
+      { name: 'Air Conditioning', value: propertyData.plantEquipmentValue * 0.25, effectiveLife: 15 },
+      { name: 'Kitchen Appliances', value: propertyData.plantEquipmentValue * 0.20, effectiveLife: 8 },
+      { name: 'Carpets & Flooring', value: propertyData.plantEquipmentValue * 0.15, effectiveLife: 10 },
+      { name: 'Hot Water System', value: propertyData.plantEquipmentValue * 0.15, effectiveLife: 12 },
+      { name: 'Window Furnishings', value: propertyData.plantEquipmentValue * 0.10, effectiveLife: 10 },
+      { name: 'Other Equipment', value: propertyData.plantEquipmentValue * 0.15, effectiveLife: 10 },
+    ];
+
+    let totalPlantEquipmentDepreciation = 0;
+    plantEquipmentItems.forEach(item => {
+      if (propertyData.depreciationMethod === 'prime-cost') {
+        totalPlantEquipmentDepreciation += item.value / item.effectiveLife;
+      } else {
+        const rate = (1 / item.effectiveLife) * 1.5;
+        totalPlantEquipmentDepreciation += item.value * rate;
+      }
+    });
+
+    if (!propertyData.isNewProperty && propertyAge > 0) {
+      totalPlantEquipmentDepreciation *= 0.3;
+    }
+
+    return {
+      capitalWorks: capitalWorksDepreciation,
+      plantEquipment: totalPlantEquipmentDepreciation,
+      total: capitalWorksDepreciation + totalPlantEquipmentDepreciation,
+      items: plantEquipmentItems
+    };
+  };
+
+  const depreciation = calculateDepreciation();
+
+  const { calculateAvailableEquity } = usePropertyData();
+  const holdingCosts = calculateHoldingCosts();
+  const totalProjectCost = calculateTotalProjectCost();
+  const equityLoanAmount = calculateEquityLoanAmount();
+
+  const fundingDetails = {
+    totalRequired: totalProjectCost,
+    equityUsed: equityLoanAmount,
+    cashRequired: propertyData.depositAmount,
+    availableEquity: calculateAvailableEquity(),
+    loanAmount: propertyData.loanAmount
+  };
+
+  const calculateLoanPayments = (loanAmount: number, interestRate: number, totalTerm: number, loanType: 'io' | 'pi', ioTermYears: number = 0) => {
+    if (loanType === 'io' && ioTermYears > 0) {
+      const ioPayment = loanAmount * (interestRate / 100 / 52);
+      const remainingTerm = totalTerm - ioTermYears;
+      let piPayment = 0;
+      if (remainingTerm > 0) {
+        const weeklyRate = interestRate / 100 / 52;
+        const totalPayments = remainingTerm * 52;
+        piPayment = (loanAmount * weeklyRate * Math.pow(1 + weeklyRate, totalPayments)) / (Math.pow(1 + weeklyRate, totalPayments) - 1);
+      }
+      const ioInterest = loanAmount * (interestRate / 100) * ioTermYears;
+      const piInterest = remainingTerm > 0 ? (piPayment * remainingTerm * 52) - loanAmount : 0;
+      const totalInterest = ioInterest + piInterest;
+      return {
+        ioPayment,
+        piPayment,
+        ioTermYears,
+        remainingTerm,
+        totalInterest,
+        currentPayment: ioPayment,
+        futurePayment: piPayment
+      };
+    } else {
+      const weeklyRate = interestRate / 100 / 52;
+      const totalPayments = totalTerm * 52;
+      const piPayment = (loanAmount * weeklyRate * Math.pow(1 + weeklyRate, totalPayments)) / (Math.pow(1 + weeklyRate, totalPayments) - 1);
+      const totalInterest = (piPayment * totalPayments) - loanAmount;
+      return {
+        ioPayment: 0,
+        piPayment,
+        ioTermYears: 0,
+        remainingTerm: totalTerm,
+        totalInterest,
+        currentPayment: piPayment,
+        futurePayment: 0
+      };
+    }
+  };
+
+  const mainLoanPayments = calculateLoanPayments(
+    fundingDetails.loanAmount,
+    propertyData.interestRate,
+    propertyData.loanTerm,
+    propertyData.mainLoanType,
+    propertyData.ioTermYears
+  );
+
+  const equityLoanPayments = propertyData.useEquityFunding ? calculateLoanPayments(
+    fundingDetails.equityUsed,
+    propertyData.equityLoanInterestRate,
+    propertyData.equityLoanTerm,
+    propertyData.equityLoanType,
+    propertyData.equityLoanIoTermYears
+  ) : null;
+
+  const totalWeeklyLoanPayments = mainLoanPayments.currentPayment + (equityLoanPayments?.currentPayment || 0);
+  const totalAnnualLoanPayments = totalWeeklyLoanPayments * 52;
+  const annualPropertyManagement = annualRent * (propertyData.propertyManagement / 100);
+
+  const mainLoanInterest = fundingDetails.loanAmount * (propertyData.interestRate / 100);
+  const equityLoanInterest = equityLoanPayments ? fundingDetails.equityUsed * (propertyData.equityLoanInterestRate / 100) : 0;
+  const totalAnnualInterest = mainLoanInterest + equityLoanInterest;
+
+  const totalDeductibleExpenses = totalAnnualInterest + annualPropertyManagement + propertyData.councilRates + propertyData.insurance + propertyData.repairs + depreciation.total;
+
+  const outOfPocketHoldingCosts = propertyData.holdingCostFunding === 'cash'
+    ? holdingCosts.total
+    : propertyData.holdingCostFunding === 'debt'
+      ? 0
+      : holdingCosts.total * (propertyData.holdingCostCashPercentage / 100);
+
+  const capitalizedHoldingCosts = holdingCosts.total - outOfPocketHoldingCosts;
+  const actualCashInvested = fundingDetails.cashRequired + outOfPocketHoldingCosts;
+
+  const calculateTax = (income: number) => {
+    let tax = 0;
+    let remainingIncome = income;
+    const brackets = [
+      { min: 0, max: 18200, rate: 0 },
+      { min: 18201, max: 45000, rate: 0.16 },
+      { min: 45001, max: 135000, rate: 0.30 },
+      { min: 135001, max: 190000, rate: 0.37 },
+      { min: 190001, max: Infinity, rate: 0.45 }
+    ];
+    for (const bracket of brackets) {
+      if (remainingIncome <= 0) break;
+      const taxableInThisBracket = Math.min(remainingIncome, bracket.max - bracket.min + 1);
+      if (income > bracket.min) {
+        const actualTaxable = Math.min(taxableInThisBracket, Math.max(0, income - bracket.min));
+        tax += actualTaxable * bracket.rate;
+        remainingIncome -= actualTaxable;
+      }
+    }
+    return tax;
+  };
+
+  const getMarginalTaxRate = (income: number) => {
+    if (income <= 18200) return 0;
+    if (income <= 45000) return 0.16;
+    if (income <= 135000) return 0.30;
+    if (income <= 190000) return 0.37;
+    return 0.45;
+  };
+
+  const clientTaxResults = propertyData.clients.map(client => {
+    const ownership = propertyData.ownershipAllocations.find(o => o.clientId === client.id);
+    const ownershipPercentage = ownership ? ownership.ownershipPercentage / 100 : 0;
+    const allocatedRent = annualRent * ownershipPercentage;
+    const allocatedDeductions = totalDeductibleExpenses * ownershipPercentage;
+
+    const totalIncome = client.annualIncome + client.otherIncome;
+    const propertyTaxableIncome = allocatedRent - allocatedDeductions;
+    const totalIncomeWithProperty = totalIncome + propertyTaxableIncome;
+
+    let taxWithoutProperty = calculateTax(totalIncome);
+    let taxWithProperty = calculateTax(totalIncomeWithProperty);
+
+    if (client.hasMedicareLevy && totalIncome > 26000) {
+      taxWithoutProperty += totalIncome * 0.02;
+    }
+    if (client.hasMedicareLevy && totalIncomeWithProperty > 26000) {
+      taxWithProperty += totalIncomeWithProperty * 0.02;
+    }
+
+    return {
+      client,
+      ownershipPercentage,
+      taxWithoutProperty,
+      taxWithProperty,
+      taxDifference: taxWithProperty - taxWithoutProperty,
+      marginalTaxRate: getMarginalTaxRate(totalIncome),
+      propertyTaxableIncome
+    };
+  });
+
+  const totalTaxWithoutProperty = clientTaxResults.reduce((sum, r) => sum + r.taxWithoutProperty, 0);
+  const totalTaxWithProperty = clientTaxResults.reduce((sum, r) => sum + r.taxWithProperty, 0);
+  const marginalTaxRate = clientTaxResults.length > 0 ? Math.max(...clientTaxResults.map(r => r.marginalTaxRate)) : 0;
+
+  const monthlyRepayment = totalWeeklyLoanPayments * 52 / 12;
+
   return <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {/* Header */}
@@ -721,8 +921,45 @@ Tax Rate: {formatPercentage(investmentSummary.marginalTaxRateSummary * 100)} (hi
                                   {formatCurrency(clientTaxBenefit)}
                                 </div>
                               </div>
-                            </div>
-                          </div>;
+          {/* Detailed Calculations (moved from Analysis) */}
+          <div className="mt-8">
+            <PropertyCalculationDetails
+              monthlyRepayment={monthlyRepayment}
+              annualRepayment={totalAnnualLoanPayments}
+              annualRent={annualRent}
+              propertyManagementCost={annualPropertyManagement}
+              councilRates={propertyData.councilRates}
+              insurance={propertyData.insurance}
+              repairs={propertyData.repairs}
+              totalDeductibleExpenses={totalDeductibleExpenses}
+              depreciation={{
+                ...depreciation,
+                capitalWorksAvailable: propertyData.constructionYear >= 1987,
+                plantEquipmentRestricted: !propertyData.isNewProperty
+              }}
+              clientTaxResults={clientTaxResults}
+              totalTaxWithProperty={totalTaxWithProperty}
+              totalTaxWithoutProperty={totalTaxWithoutProperty}
+              marginalTaxRate={marginalTaxRate}
+              purchasePrice={propertyData.purchasePrice}
+              constructionYear={propertyData.constructionYear}
+              depreciationMethod={propertyData.depreciationMethod}
+              isConstructionProject={propertyData.isConstructionProject}
+              totalProjectCost={totalProjectCost}
+              holdingCosts={holdingCosts}
+              funding={fundingDetails}
+              outOfPocketHoldingCosts={outOfPocketHoldingCosts}
+              capitalizedHoldingCosts={capitalizedHoldingCosts}
+              actualCashInvested={actualCashInvested}
+              constructionPeriod={propertyData.constructionPeriod}
+              holdingCostFunding={propertyData.holdingCostFunding}
+              mainLoanPayments={mainLoanPayments}
+              equityLoanPayments={equityLoanPayments}
+              totalAnnualInterest={totalAnnualInterest}
+            />
+          </div>
+        </div>
+      </div>;
                     })}
                     </div>
                     
