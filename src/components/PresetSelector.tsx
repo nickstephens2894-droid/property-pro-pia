@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -110,56 +109,48 @@ export const PresetSelector = ({
             )}
 
             <div className="grid md:grid-cols-2 gap-4">
-              {/* Property Method Selection */}
+              {/* Property Method Selection - Icon Buttons */}
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <Home className="h-4 w-4" />
                   Property Method
                 </Label>
-                <Select 
-                  value={selectedPropertyMethod} 
-                  onValueChange={(value) => setSelectedPropertyMethod(value as PropertyMethod)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select property type..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border border-border z-50">
-                    {Object.entries(PROPERTY_METHODS).map(([key, method]) => (
-                      <SelectItem key={key} value={key}>
-                        <div className="space-y-1">
-                          <div className="font-medium">{method.name}</div>
-                          <div className="text-xs text-muted-foreground">{method.description}</div>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="grid grid-cols-3 gap-2">
+                  {Object.entries(PROPERTY_METHODS).map(([key, method]) => (
+                    <Button
+                      key={key}
+                      type="button"
+                      variant={selectedPropertyMethod === key ? "default" : "outline"}
+                      onClick={() => setSelectedPropertyMethod(key as PropertyMethod)}
+                      className="h-auto py-3 flex flex-col items-center gap-1"
+                    >
+                      <Home className="h-4 w-4" />
+                      <span className="text-xs text-center leading-tight">{method.name}</span>
+                    </Button>
+                  ))}
+                </div>
               </div>
 
-              {/* Funding Method Selection */}
+              {/* Funding Method Selection - Icon Buttons */}
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <CreditCard className="h-4 w-4" />
                   Funding Method
                 </Label>
-                <Select 
-                  value={selectedFundingMethod} 
-                  onValueChange={(value) => setSelectedFundingMethod(value as FundingMethod)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select funding type..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border border-border z-50">
-                    {Object.entries(FUNDING_METHODS).map(([key, method]) => (
-                      <SelectItem key={key} value={key}>
-                        <div className="space-y-1">
-                          <div className="font-medium">{method.name}</div>
-                          <div className="text-xs text-muted-foreground">{method.description}</div>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="grid grid-cols-3 gap-2">
+                  {Object.entries(FUNDING_METHODS).map(([key, method]) => (
+                    <Button
+                      key={key}
+                      type="button"
+                      variant={selectedFundingMethod === key ? "default" : "outline"}
+                      onClick={() => setSelectedFundingMethod(key as FundingMethod)}
+                      className="h-auto py-3 flex flex-col items-center gap-1"
+                    >
+                      <CreditCard className="h-4 w-4" />
+                      <span className="text-xs text-center leading-tight">{method.name}</span>
+                    </Button>
+                  ))}
+                </div>
               </div>
             </div>
 

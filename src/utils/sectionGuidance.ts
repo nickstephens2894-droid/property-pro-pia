@@ -59,10 +59,11 @@ export const getSectionGuidance = (
     }
     case "funding-finance": {
       status = validateFinancing(propertyData);
-      if (!propertyData.loanAmount || propertyData.loanAmount <= 0) items.push("Enter main loan amount");
-      if (!propertyData.interestRate || propertyData.interestRate <= 0)
-        items.push("Enter loan interest rate");
-      if (!propertyData.loanTerm || propertyData.loanTerm <= 0) items.push("Enter loan term (years)");
+      if (propertyData.loanAmount > 0) {
+        if (!propertyData.interestRate || propertyData.interestRate <= 0)
+          items.push("Enter loan interest rate");
+        if (!propertyData.loanTerm || propertyData.loanTerm <= 0) items.push("Enter loan term (years)");
+      }
 
       const totalCost = propertyData.isConstructionProject
         ? propertyData.landValue +
@@ -75,14 +76,18 @@ export const getSectionGuidance = (
           propertyData.siteCosts
         : propertyData.purchasePrice + propertyData.stampDuty + propertyData.legalFees + propertyData.inspectionFees;
 
+      const availableEquity = propertyData.useEquityFunding
+        ? Math.max(0, propertyData.primaryPropertyValue * (propertyData.maxLVR / 100) - propertyData.existingDebt)
+        : 0;
+
       const equityLoanAmount = propertyData.useEquityFunding
         ? Math.min(
-            propertyData.primaryPropertyValue * (propertyData.maxLVR / 100) - propertyData.existingDebt,
-            totalCost - propertyData.loanAmount
+            availableEquity,
+            Math.max(0, totalCost - propertyData.loanAmount - (propertyData.depositAmount || 0))
           )
         : 0;
 
-      const totalFunding = propertyData.loanAmount + equityLoanAmount;
+      const totalFunding = (propertyData.loanAmount || 0) + equityLoanAmount + (propertyData.depositAmount || 0);
       const fundingShortfall = Math.max(0, totalCost - totalFunding);
       if (totalCost > 0 && fundingShortfall > totalCost * 0.1) {
         items.push(

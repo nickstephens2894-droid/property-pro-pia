@@ -958,18 +958,6 @@ export const PropertyInputForm = ({
             </AccordionTrigger>
             <AccordionContent className="px-6 pb-6">
               <div className="space-y-6">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="useEquityFunding"
-                    checked={propertyData.useEquityFunding}
-                    onChange={(e) => updateField('useEquityFunding', e.target.checked)}
-                    className="rounded border-border"
-                  />
-                  <Label htmlFor="useEquityFunding" className="text-sm font-medium">
-                    Use Equity from Existing Property
-                  </Label>
-                </div>
 
                 {/* Cash Deposit - Always show regardless of funding method */}
                 <div className="space-y-4">
@@ -998,6 +986,20 @@ export const PropertyInputForm = ({
                   </div>
                 </div>
 
+                {/* Use Equity toggle - moved below Cash Deposit */}
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="useEquityFunding"
+                    checked={propertyData.useEquityFunding}
+                    onChange={(e) => updateField('useEquityFunding', e.target.checked)}
+                    className="rounded border-border"
+                  />
+                  <Label htmlFor="useEquityFunding" className="text-sm font-medium">
+                    Use Equity from Existing Property
+                  </Label>
+                </div>
+
                 {/* Main Loan Structure */}
                 <div className="space-y-4">
                   <h4 className="font-medium text-sm">Main Loan Structure</h4>
@@ -1023,17 +1025,15 @@ export const PropertyInputForm = ({
                           max={50}
                         />
                       </div>
-                      {!propertyData.useEquityFunding && (
-                        <div>
-                          <Label htmlFor="lvr" className="text-sm font-medium">Loan to Value Ratio (LVR)</Label>
-                          <PercentageInput
-                            id="lvr"
-                            value={propertyData.lvr}
-                            onChange={(value) => updateField('lvr', value)}
-                            className="mt-1"
-                          />
-                        </div>
-                      )}
+                      <div>
+                        <Label htmlFor="lvr" className="text-sm font-medium">Loan to Value Ratio (LVR)</Label>
+                        <PercentageInput
+                          id="lvr"
+                          value={propertyData.lvr}
+                          onChange={(value) => updateField('lvr', value)}
+                          className="mt-1"
+                        />
+                      </div>
                     </div>
 
                     {/* Loan Type Selection */}
