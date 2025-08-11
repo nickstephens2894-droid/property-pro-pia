@@ -300,7 +300,7 @@ export const PropertyInputForm = ({
           >
           {/* 1. Personal Financial Profile */}
           <AccordionItem value="personal-profile" className="border-b">
-            <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
+            <AccordionTrigger className="px-4 sm:px-6 py-3 hover:bg-muted/50">
               <div className="flex items-center gap-2 w-full">
                 <Users className="h-4 w-4 text-primary" />
                 <span className="font-medium">Personal Financial Profile</span>
@@ -309,7 +309,7 @@ export const PropertyInputForm = ({
                 </div>
               </div>
             </AccordionTrigger>
-            <AccordionContent className="px-6 pb-6">
+            <AccordionContent className="px-4 sm:px-6 pb-6">
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <h4 className="font-medium text-sm">Clients</h4>
@@ -416,7 +416,7 @@ export const PropertyInputForm = ({
 
           {/* 2. Property Basics */}
           <AccordionItem value="property-basics" className="border-b">
-            <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
+            <AccordionTrigger className="px-4 sm:px-6 py-3 hover:bg-muted/50">
               <div className="flex items-center gap-2 w-full">
                 <Building2 className="h-4 w-4 text-primary" />
                 <span className="font-medium">Property Basics</span>
@@ -425,7 +425,7 @@ export const PropertyInputForm = ({
                 </div>
               </div>
             </AccordionTrigger>
-            <AccordionContent className="px-6 pb-6">
+            <AccordionContent className="px-4 sm:px-6 pb-6">
               <div className="space-y-6">
 <div className="space-y-2">
   <Label className="text-sm font-medium">Property Method</Label>
@@ -531,13 +531,13 @@ export const PropertyInputForm = ({
 {/* 3. Construction */}
 {propertyData.isConstructionProject && (
   <AccordionItem value="construction" className="border-b">
-    <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
+    <AccordionTrigger className="px-4 sm:px-6 py-3 hover:bg-muted/50">
       <div className="flex items-center gap-2 w-full">
         <Hammer className="h-4 w-4 text-primary" />
         <span className="font-medium">Construction</span>
       </div>
     </AccordionTrigger>
-    <AccordionContent className="px-6 pb-6">
+    <AccordionContent className="px-4 sm:px-6 pb-6">
       <div className="space-y-6">
         {/* Construction Value & Summary */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -851,7 +851,7 @@ export const PropertyInputForm = ({
 
 {/* 5. Transaction & Setup Costs */}
 <AccordionItem value="transaction-costs" className="border-b">
-  <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
+  <AccordionTrigger className="px-4 sm:px-6 py-3 hover:bg-muted/50">
     <div className="flex items-center gap-2 w-full">
       <Receipt className="h-4 w-4 text-primary" />
       <span className="font-medium">Transaction & Setup Costs</span>
@@ -860,7 +860,7 @@ export const PropertyInputForm = ({
       </div>
     </div>
   </AccordionTrigger>
-            <AccordionContent className="px-6 pb-6">
+            <AccordionContent className="px-4 sm:px-6 pb-6">
               <div className="space-y-6">
                 <div className="space-y-4">
                   <h4 className="font-medium text-sm">Purchase Costs</h4>
@@ -947,7 +947,7 @@ export const PropertyInputForm = ({
 
           {/* 5. Funding & Finance Structure */}
           <AccordionItem value="funding-finance" className="border-b">
-            <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
+            <AccordionTrigger className="px-4 sm:px-6 py-3 hover:bg-muted/50">
               <div className="flex items-center gap-2 w-full">
                 <CreditCard className="h-4 w-4 text-primary" />
                 <span className="font-medium">Funding & Finance Structure</span>
@@ -956,7 +956,7 @@ export const PropertyInputForm = ({
                 </div>
               </div>
             </AccordionTrigger>
-            <AccordionContent className="px-6 pb-6">
+            <AccordionContent className="px-4 sm:px-6 pb-6">
               <div className="space-y-6">
 
                 {/* Cash Deposit - Always show regardless of funding method */}
@@ -1324,7 +1324,7 @@ export const PropertyInputForm = ({
 
           {/* 6. Ongoing Income & Expenses */}
           <AccordionItem value="ongoing-income-expenses" className="border-b">
-            <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
+            <AccordionTrigger className="px-4 sm:px-6 py-3 hover:bg-muted/50">
               <div className="flex items-center gap-2 w-full">
                 <DollarSign className="h-4 w-4 text-primary" />
                 <span className="font-medium">Ongoing Income & Expenses</span>
@@ -1333,7 +1333,7 @@ export const PropertyInputForm = ({
                 </div>
               </div>
             </AccordionTrigger>
-            <AccordionContent className="px-6 pb-6">
+            <AccordionContent className="px-4 sm:px-6 pb-6">
               <div className="space-y-6">
                 {/* Rental Income Section */}
                 <div className="space-y-4">
@@ -1421,7 +1421,7 @@ export const PropertyInputForm = ({
 
           {/* 7. Tax Optimization */}
           <AccordionItem value="tax-optimization" className="border-b">
-            <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
+            <AccordionTrigger className="px-4 sm:px-6 py-3 hover:bg-muted/50">
               <div className="flex items-center gap-2 w-full">
                 <Calculator className="h-4 w-4 text-primary" />
                 <span className="font-medium">Tax Optimization & Depreciation</span>
@@ -1430,7 +1430,7 @@ export const PropertyInputForm = ({
                 </div>
               </div>
             </AccordionTrigger>
-           <AccordionContent className="px-6 pb-6">
+           <AccordionContent className="px-4 sm:px-6 pb-6">
               <div className="space-y-6">
                 {/* Depreciation Settings */}
                 <div className="space-y-4">

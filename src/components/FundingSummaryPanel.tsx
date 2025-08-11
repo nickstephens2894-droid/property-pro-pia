@@ -69,7 +69,7 @@ export const FundingSummaryPanel = () => {
           {status === 'error' && <AlertTriangle className="h-4 w-4 text-destructive" />}
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4 sm:space-y-6">
         {/* Selected Presets */}
         {(propertyData.currentPropertyMethod || propertyData.currentFundingMethod) && (
           <div className="flex flex-wrap items-center gap-2 p-2 bg-muted/30 border border-border rounded">
