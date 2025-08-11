@@ -304,7 +304,7 @@ export const PropertyInputForm = ({
                 <Users className="h-4 w-4 text-primary" />
                 <span className="font-medium">Personal Financial Profile</span>
                 <div className="ml-auto">
-                  <AccordionCompletionIndicator status={personalProfileStatus} />
+                  <AccordionCompletionIndicator status={personalProfileStatus} sectionKey="personal-profile" />
                 </div>
               </div>
             </AccordionTrigger>
@@ -420,7 +420,7 @@ export const PropertyInputForm = ({
                 <Building2 className="h-4 w-4 text-primary" />
                 <span className="font-medium">Property Basics</span>
                 <div className="ml-auto">
-                  <AccordionCompletionIndicator status={propertyBasicsStatus} />
+                  <AccordionCompletionIndicator status={propertyBasicsStatus} sectionKey="property-basics" />
                 </div>
               </div>
             </AccordionTrigger>
@@ -855,7 +855,7 @@ export const PropertyInputForm = ({
       <Receipt className="h-4 w-4 text-primary" />
       <span className="font-medium">Transaction & Setup Costs</span>
       <div className="ml-auto">
-        <AccordionCompletionIndicator status={purchaseCostsStatus} />
+        <AccordionCompletionIndicator status={purchaseCostsStatus} sectionKey="transaction-costs" />
       </div>
     </div>
   </AccordionTrigger>
@@ -951,7 +951,7 @@ export const PropertyInputForm = ({
                 <CreditCard className="h-4 w-4 text-primary" />
                 <span className="font-medium">Funding & Finance Structure</span>
                 <div className="ml-auto">
-                  <AccordionCompletionIndicator status={financingStatus} />
+                  <AccordionCompletionIndicator status={financingStatus} sectionKey="funding-finance" />
                 </div>
               </div>
             </AccordionTrigger>
@@ -1327,7 +1327,7 @@ export const PropertyInputForm = ({
                 <DollarSign className="h-4 w-4 text-primary" />
                 <span className="font-medium">Ongoing Income & Expenses</span>
                 <div className="ml-auto">
-                  <AccordionCompletionIndicator status={annualExpensesStatus} />
+                  <AccordionCompletionIndicator status={annualExpensesStatus} sectionKey="ongoing-income-expenses" />
                 </div>
               </div>
             </AccordionTrigger>
@@ -1424,7 +1424,7 @@ export const PropertyInputForm = ({
                 <Calculator className="h-4 w-4 text-primary" />
                 <span className="font-medium">Tax Optimization & Depreciation</span>
                 <div className="ml-auto">
-                  <AccordionCompletionIndicator status={taxOptimizationStatus} />
+                  <AccordionCompletionIndicator status={taxOptimizationStatus} sectionKey="tax-optimization" />
                 </div>
               </div>
             </AccordionTrigger>
