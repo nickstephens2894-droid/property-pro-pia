@@ -65,9 +65,8 @@ const DesktopLayout = ({
         </div>
         
         {/* Right Side - Summaries */}
-        <div className="col-span-5">
-          {/* Sticky on desktop, offset under header; unpins at section end */}
-          <div className="lg:sticky lg:top-24 space-y-6">
+        <div className="col-span-5 hidden lg:block lg:sticky lg:top-20">
+          <div className="space-y-6">
             <FundingSummaryPanel />
           </div>
         </div>
