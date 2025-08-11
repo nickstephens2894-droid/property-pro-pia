@@ -7,6 +7,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import AppNav from "@/components/AppNav";
 import { usePropertyData } from "@/contexts/PropertyDataContext";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { downloadInputsCsv } from "@/utils/csvExport";
 
 interface Client {
@@ -68,7 +69,7 @@ const DesktopLayout = ({
         {/* Right Side - Summaries */}
         <div className="col-span-5">
           {/* Make funding summary follow scroll on desktop */}
-          <div className="lg:sticky lg:top-24 space-y-6">
+          <div className="sticky top-4 space-y-6">
             <FundingSummaryPanel />
           </div>
         </div>
@@ -84,7 +85,7 @@ const DesktopLayout = ({
 
 const PropertyAnalysis = () => {
   
-  const { propertyData, updateField, calculateTotalProjectCost, calculateEquityLoanAmount, applyPreset } = usePropertyData();
+  const { propertyData, updateField, calculateTotalProjectCost, calculateEquityLoanAmount, applyPreset, resetData } = usePropertyData();
 
   // Tax calculations
   const calculateTax = (income: number) => {
@@ -370,6 +371,29 @@ const PropertyAnalysis = () => {
             </div>
             <div className="flex items-center gap-2">
               <AppNav />
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    aria-label="Clear all inputs"
+                  >
+                    Clear all
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Clear all inputs?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will reset all fields to their default values. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => resetData()}>Yes, clear all</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
               <Button
                 variant="outline"
                 size="sm"

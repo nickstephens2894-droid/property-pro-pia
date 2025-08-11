@@ -131,6 +131,7 @@ interface PropertyDataContextType {
     monthlyBreakdown: any[];
   };
   calculateMinimumDeposit: () => number;
+  resetData: () => void;
 }
 
 const PropertyDataContext = createContext<PropertyDataContextType | undefined>(undefined);
@@ -382,6 +383,8 @@ export const PropertyDataProvider: React.FC<{ children: ReactNode }> = ({ childr
     }));
   };
 
+  const resetData = () => setPropertyData(defaultPropertyData);
+
   return (
     <PropertyDataContext.Provider value={{ 
       propertyData, 
@@ -393,7 +396,8 @@ export const PropertyDataProvider: React.FC<{ children: ReactNode }> = ({ childr
       calculateTotalProjectCost,
       calculateAvailableEquity,
       calculateHoldingCosts,
-      calculateMinimumDeposit
+      calculateMinimumDeposit,
+      resetData
     }}>
       {children}
     </PropertyDataContext.Provider>

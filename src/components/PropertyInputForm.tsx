@@ -115,7 +115,7 @@ export const PropertyInputForm = ({
   totalTaxableIncome, 
   marginalTaxRate 
 }: PropertyInputFormProps) => {
-  const [openSections, setOpenSections] = useState<string[]>(["personal-profile"]);
+  const [openSection, setOpenSection] = useState<string>("personal-profile");
   const { confirmations, updateConfirmation } = useFieldConfirmations();
   const { applyPreset, calculateEquityLoanAmount, calculateAvailableEquity } = usePropertyData();
   const [pendingUpdate, setPendingUpdate] = useState<{
@@ -293,9 +293,10 @@ export const PropertyInputForm = ({
         </CardHeader>
         <CardContent className="p-0">
           <Accordion 
-            type="multiple" 
-            value={openSections} 
-            onValueChange={setOpenSections}
+            type="single" 
+            collapsible
+            value={openSection} 
+            onValueChange={setOpenSection}
             className="w-full"
           >
           {/* 1. Personal Financial Profile */}

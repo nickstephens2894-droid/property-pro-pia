@@ -122,7 +122,7 @@ export const PropertyCalculationDetails = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <Accordion type="multiple" className="w-full">
+        <Accordion type="single" collapsible className="w-full">
           
           {/* Project Costs & Funding (for construction projects) */}
           {isConstructionProject && (

@@ -4,7 +4,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription 
 } from "@/components/ui/dialog";
 import { 
-  Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter 
+  Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose 
 } from "@/components/ui/drawer";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -13,7 +13,7 @@ import {
 } from "@/types/presets";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePropertyData } from "@/contexts/PropertyDataContext";
-import { Home, CreditCard, Check } from "lucide-react";
+import { Home, CreditCard, Check, X } from "lucide-react";
 
 interface QuickSetupWizardProps {
   open: boolean;
@@ -169,16 +169,28 @@ export const QuickSetupWizard: React.FC<QuickSetupWizardProps> = ({
     return (
       <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground>
         <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>Quick setup</DrawerTitle>
-            <DrawerDescription>Select property and funding methods</DrawerDescription>
+          <DrawerHeader className="flex items-start justify-between">
+            <div>
+              <DrawerTitle>Quick setup</DrawerTitle>
+              <DrawerDescription>Select property and funding methods</DrawerDescription>
+            </div>
+            <DrawerClose asChild>
+              <Button variant="ghost" size="icon" aria-label="Close quick setup">
+                <X className="h-4 w-4" />
+              </Button>
+            </DrawerClose>
           </DrawerHeader>
           <div className="px-4 pb-4 space-y-4">
             {Header}
             {Body}
           </div>
           <DrawerFooter>
-            {Footer}
+            <div className="flex flex-col sm:flex-row gap-2 w-full">
+              <DrawerClose asChild>
+                <Button variant="outline" className="flex-1" aria-label="Cancel quick setup">Cancel</Button>
+              </DrawerClose>
+              {Footer}
+            </div>
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
