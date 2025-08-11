@@ -115,7 +115,7 @@ export const PropertyInputForm = ({
   totalTaxableIncome, 
   marginalTaxRate 
 }: PropertyInputFormProps) => {
-  const [openSection, setOpenSection] = useState<string>("personal-profile");
+  const [openSection, setOpenSection] = useState<string | undefined>(undefined);
   const { confirmations, updateConfirmation } = useFieldConfirmations();
   const { applyPreset, calculateEquityLoanAmount, calculateAvailableEquity } = usePropertyData();
   const [pendingUpdate, setPendingUpdate] = useState<{

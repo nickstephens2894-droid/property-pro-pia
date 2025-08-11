@@ -1,7 +1,7 @@
+import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Calculator, Building2, TrendingDown, AlertCircle, Receipt } from "lucide-react";
-
 interface DepreciationDetails {
   capitalWorks: number;
   plantEquipment: number;
@@ -112,6 +112,7 @@ export const PropertyCalculationDetails = ({
 
   const currentYear = new Date().getFullYear();
   const propertyAge = currentYear - constructionYear;
+  const [openDetail, setOpenDetail] = React.useState<string | undefined>(undefined);
 
   return (
     <Card className="w-full">
@@ -122,7 +123,7 @@ export const PropertyCalculationDetails = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <Accordion type="single" collapsible className="w-full">
+        <Accordion type="single" collapsible value={openDetail} onValueChange={setOpenDetail} className="w-full">
           
           {/* Project Costs & Funding (for construction projects) */}
           {isConstructionProject && (

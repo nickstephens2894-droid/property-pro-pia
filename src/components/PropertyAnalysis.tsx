@@ -55,21 +55,19 @@ const DesktopLayout = ({
       <div className="grid grid-cols-12 gap-6">
         {/* Property Investment Details - Prominent Left Section */}
         <div className="col-span-7">
-          <div className="sticky top-4">
-            <PropertyInputForm
-              propertyData={propertyData}
-              updateField={updateField}
-              clientTaxResults={clientTaxResults}
-              totalTaxableIncome={totalTaxableIncome}
-              marginalTaxRate={marginalTaxRate}
-            />
-          </div>
+          <PropertyInputForm
+            propertyData={propertyData}
+            updateField={updateField}
+            clientTaxResults={clientTaxResults}
+            totalTaxableIncome={totalTaxableIncome}
+            marginalTaxRate={marginalTaxRate}
+          />
         </div>
         
         {/* Right Side - Summaries */}
         <div className="col-span-5">
-          {/* Make funding summary follow scroll on desktop */}
-          <div className="sticky top-4 space-y-6">
+          {/* Sticky on desktop, offset under header; unpins at section end */}
+          <div className="lg:sticky lg:top-24 space-y-6">
             <FundingSummaryPanel />
           </div>
         </div>
