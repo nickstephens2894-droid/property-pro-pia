@@ -405,7 +405,7 @@ const PropertyAnalysis = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div className="flex-1 min-h-0">
         {isMobile ? (
           <div className="px-4 sm:px-6 py-6">
             <div className="space-y-6">
