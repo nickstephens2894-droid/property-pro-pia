@@ -971,6 +971,33 @@ export const PropertyInputForm = ({
                   </Label>
                 </div>
 
+                {/* Cash Deposit - Always show regardless of funding method */}
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm">Cash Deposit Requirements</h4>
+                  <div>
+                    <Label htmlFor="depositAmount" className="text-sm font-medium">Cash Deposit Amount</Label>
+                    <CurrencyInput
+                      id="depositAmount"
+                      value={propertyData.depositAmount}
+                      onChange={(value) => updateFieldWithCascade('depositAmount', value)}
+                      className="mt-1"
+                      placeholder="Enter deposit amount"
+                    />
+                    {propertyData.useEquityFunding && propertyData.depositAmount > 0 && (
+                      <div className="flex items-center gap-2 mt-2 text-blue-600 text-sm">
+                        <AlertTriangle className="h-4 w-4" />
+                        Additional cash deposit on top of equity funding
+                      </div>
+                    )}
+                    {!propertyData.useEquityFunding && propertyData.depositAmount < propertyData.minimumDepositRequired && (
+                      <div className="flex items-center gap-2 mt-2 text-warning text-sm">
+                        <AlertTriangle className="h-4 w-4" />
+                        Shortfall of ${(propertyData.minimumDepositRequired - propertyData.depositAmount).toLocaleString()} - require additional cash or equity financing
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {/* Main Loan Structure */}
                 <div className="space-y-4">
                   <h4 className="font-medium text-sm">Main Loan Structure</h4>
@@ -1189,32 +1216,6 @@ export const PropertyInputForm = ({
                   </div>
                 )}
 
-                {/* Cash Deposit - Always show regardless of funding method */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-sm">Cash Deposit Requirements</h4>
-                  <div>
-                    <Label htmlFor="depositAmount" className="text-sm font-medium">Cash Deposit Amount</Label>
-                    <CurrencyInput
-                      id="depositAmount"
-                      value={propertyData.depositAmount}
-                      onChange={(value) => updateFieldWithCascade('depositAmount', value)}
-                      className="mt-1"
-                      placeholder="Enter deposit amount"
-                    />
-                    {propertyData.useEquityFunding && propertyData.depositAmount > 0 && (
-                      <div className="flex items-center gap-2 mt-2 text-blue-600 text-sm">
-                        <AlertTriangle className="h-4 w-4" />
-                        Additional cash deposit on top of equity funding
-                      </div>
-                    )}
-                    {!propertyData.useEquityFunding && propertyData.depositAmount < propertyData.minimumDepositRequired && (
-                      <div className="flex items-center gap-2 mt-2 text-warning text-sm">
-                        <AlertTriangle className="h-4 w-4" />
-                        Shortfall of ${(propertyData.minimumDepositRequired - propertyData.depositAmount).toLocaleString()} - require additional cash or equity financing
-                      </div>
-                    )}
-                  </div>
-                </div>
 
                 {propertyData.isConstructionProject && (
                   <div className="space-y-4">
