@@ -27,6 +27,9 @@ import {
 import { Users, Home, Receipt, Calculator, Building2, Hammer, CreditCard, Clock, DollarSign, TrendingUp, Percent, X, Plus, AlertTriangle } from "lucide-react";
 import { PROPERTY_METHODS, type PropertyMethod } from "@/types/presets";
 import StampDutyCalculator from "@/components/StampDutyCalculator";
+import { calculateStampDuty, type Jurisdiction } from "@/utils/stampDuty";
+
+const JURISDICTIONS: Jurisdiction[] = ["ACT", "NSW", "NT", "QLD", "SA", "TAS", "VIC", "WA"];
 
 interface Client {
   id: string;
@@ -440,6 +443,38 @@ export const PropertyInputForm = ({
       ))}
     </SelectContent>
   </Select>
+</div>
+
+<div className="space-y-2">
+  <Label className="text-sm font-medium">State</Label>
+  <Select
+    value={propertyData.PropertyState ?? 'VIC'}
+    onValueChange={(value) => {
+      const v = value as Jurisdiction;
+      updateField('PropertyState' as keyof PropertyData, v);
+      const dutiableValue = propertyData.isConstructionProject ? propertyData.landValue : propertyData.purchasePrice;
+      const duty = calculateStampDuty(dutiableValue, v);
+      updateFieldWithCascade('stampDuty', duty);
+    }}
+  >
+    <SelectTrigger>
+      <SelectValue placeholder="Select state" />
+    </SelectTrigger>
+    <SelectContent className="bg-background border border-border">
+      {JURISDICTIONS.map((j) => (
+        <SelectItem key={j} value={j}>{j}</SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+  <div className="text-[11px] text-muted-foreground">
+    Used for stamp duty calculations
+  </div>
+  {(['ACT','NT'] as Jurisdiction[]).includes(propertyData.PropertyState as Jurisdiction) && (
+    <div className="flex items-center gap-1 text-warning text-xs">
+      <AlertTriangle className="h-3 w-3" />
+      Base rates only; ACT/NT are estimated
+    </div>
+  )}
 </div>
 
                 {propertyData.isConstructionProject ? (

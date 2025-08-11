@@ -15,7 +15,7 @@ const JURISDICTIONS: Jurisdiction[] = ["ACT", "NSW", "NT", "QLD", "SA", "TAS", "
 
 export default function StampDutyCalculator({ open, onOpenChange }: StampDutyCalculatorProps) {
   const { propertyData, updateField } = usePropertyData();
-  const [jurisdiction, setJurisdiction] = useState<Jurisdiction>((propertyData as any).dutyJurisdiction || "VIC");
+  const [jurisdiction, setJurisdiction] = useState<Jurisdiction>((propertyData as any).PropertyState || "VIC");
 
   const dutiableValue = useMemo(() => {
     return propertyData.isConstructionProject ? propertyData.landValue : propertyData.purchasePrice;
@@ -25,7 +25,7 @@ export default function StampDutyCalculator({ open, onOpenChange }: StampDutyCal
 
   const applyDuty = () => {
     updateField("stampDuty", duty);
-    updateField("dutyJurisdiction" as any, jurisdiction);
+    updateField("PropertyState" as any, jurisdiction);
     onOpenChange(false);
   };
 

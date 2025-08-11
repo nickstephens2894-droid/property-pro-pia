@@ -86,7 +86,7 @@ export interface PropertyData {
   stampDuty: number;
   legalFees: number;
   inspectionFees: number;
-  dutyJurisdiction: 'ACT'|'NSW'|'NT'|'QLD'|'SA'|'TAS'|'VIC'|'WA';
+  PropertyState: 'ACT'|'NSW'|'NT'|'QLD'|'SA'|'TAS'|'VIC'|'WA';
   
   // Construction Costs
   councilFees: number;
@@ -222,7 +222,7 @@ const defaultPropertyData: PropertyData = {
   totalHoldingCosts: 0,
   
   // Purchase Costs - Current market rates
-  dutyJurisdiction: 'VIC',
+  PropertyState: 'VIC',
   stampDuty: 42000, // Realistic VIC stamp duty for $750k
   legalFees: 2000,
   inspectionFees: 600,
