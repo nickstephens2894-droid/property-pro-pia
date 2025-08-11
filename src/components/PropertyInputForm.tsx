@@ -26,6 +26,7 @@ import {
 } from "@/utils/validationUtils";
 import { Users, Home, Receipt, Calculator, Building2, Hammer, CreditCard, Clock, DollarSign, TrendingUp, Percent, X, Plus, AlertTriangle } from "lucide-react";
 import { PROPERTY_METHODS, type PropertyMethod } from "@/types/presets";
+import StampDutyCalculator from "@/components/StampDutyCalculator";
 
 interface Client {
   id: string;
@@ -118,6 +119,7 @@ export const PropertyInputForm = ({
     value: any;
     confirmationType: 'construction' | 'building';
   } | null>(null);
+  const [dutyCalcOpen, setDutyCalcOpen] = useState(false);
 
   // Calculate total construction value
   const totalConstructionValue = propertyData.buildingValue + propertyData.plantEquipmentValue;
@@ -825,7 +827,12 @@ export const PropertyInputForm = ({
                   <h4 className="font-medium text-sm">Purchase Costs</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                      <Label htmlFor="stampDuty" className="text-sm font-medium">Stamp Duty</Label>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="stampDuty" className="text-sm font-medium">Stamp Duty</Label>
+                        <Button type="button" size="sm" variant="outline" onClick={() => setDutyCalcOpen(true)}>
+                          Calculate
+                        </Button>
+                      </div>
                       <CurrencyInput
                         id="stampDuty"
                         value={propertyData.stampDuty}
@@ -833,6 +840,7 @@ export const PropertyInputForm = ({
                         className="mt-1"
                         placeholder="Enter stamp duty"
                       />
+                      <StampDutyCalculator open={dutyCalcOpen} onOpenChange={setDutyCalcOpen} />
                     </div>
                     <div>
                       <Label htmlFor="legalFees" className="text-sm font-medium">Legal Fees</Label>
