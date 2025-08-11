@@ -392,7 +392,7 @@ export const PropertyInputForm = ({
                             <span className="text-muted-foreground">Marginal Rate:</span>
                             <span className="ml-1 font-medium">
                               {(clientTaxResults.find(r => r.client.id === client.id)?.marginalTaxRate * 100).toFixed(0)}%
-                              {client.annualIncome + client.otherIncome > 26000 && (
+                              {client.hasMedicareLevy && (
                                 <span className="text-muted-foreground"> +2% Medicare</span>
                               )}
                             </span>
@@ -1537,7 +1537,7 @@ export const PropertyInputForm = ({
                       <span className="text-muted-foreground">Highest Marginal Rate:</span>
                       <div className="font-medium">
                         {(marginalTaxRate * 100).toFixed(0)}%
-                        {totalTaxableIncome > 26000 && (
+                        {propertyData.clients.some(c => c.hasMedicareLevy) && (
                           <span className="text-muted-foreground"> +2% Medicare</span>
                         )}
                       </div>
