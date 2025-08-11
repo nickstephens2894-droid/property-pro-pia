@@ -466,7 +466,7 @@ const MobileProjectionsView = ({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <PiggyBank className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Tax benefits</span>
+                    <span className="text-sm font-medium">Tax impact (savings or cost)</span>
                   </div>
                   <div className="flex items-center gap-2">
                     {showTaxDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -487,18 +487,17 @@ const MobileProjectionsView = ({
                   </div>
                   
                 </div>
-                {currentProjection.taxBenefit > 0 && (
                   <div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm flex items-center gap-2">
                         <PiggyBank className="h-4 w-4 text-muted-foreground" />
-                        Tax benefit
+                        Tax impact (savings or cost)
                       </span>
-                      <span className="font-mono text-sm">{formatCurrency(currentProjection.taxBenefit)}</span>
+                      <span className={`font-mono text-sm ${currentProjection.taxBenefit >= 0 ? 'text-success' : 'text-destructive'}`}>
+                        {formatCurrency(currentProjection.taxBenefit)}
+                      </span>
                     </div>
-                    
                   </div>
-                )}
               </CardContent>
             </CollapsibleContent>
           </Collapsible>
@@ -609,6 +608,8 @@ const DesktopProjectionsTable = ({
   formatCurrency, 
   formatPercentage 
 }: any) => {
+  const flipYear = projections.find((p: YearProjection) => p.year >= 1 && p.taxBenefit <= 0)?.year;
+
   return (
     <div className="overflow-auto">
       <table className="w-full border-collapse">
@@ -620,7 +621,14 @@ const DesktopProjectionsTable = ({
   )}
   {projections.map((projection: YearProjection) => (
     <th key={projection.year} className="sticky top-0 bg-background z-20 text-center min-w-[100px] font-medium p-3 border-b">
-      {projection.year === 0 ? 'Construction' : `Year ${projection.year}`}
+      <div className="flex flex-col items-center">
+        <span>{projection.year === 0 ? 'Construction' : `Year ${projection.year}`}</span>
+        {flipYear && projection.year === flipYear && projection.year !== 0 && (
+          <Badge variant="outline" className="mt-1" title="First year where tax impact is zero or negative">
+            Gearing flips
+          </Badge>
+        )}
+      </div>
     </th>
   ))}
 </tr>
@@ -890,9 +898,9 @@ const DesktopProjectionsTable = ({
 
 {/* Tax Benefit */}
 <tr className="border-b">
-  <td className="sticky left-0 bg-background z-10 font-medium p-3">Tax benefit</td>
+  <td className="sticky left-0 bg-background z-10 font-medium p-3">Tax impact (savings or cost)</td>
   {projections.map((projection: YearProjection) => (
-    <td key={projection.year} className={`text-center font-mono text-sm p-3 ${projection.taxBenefit > 0 ? 'text-green-600' : 'text-destructive'}`}>
+    <td key={projection.year} className={`text-center font-mono text-sm p-3 ${projection.taxBenefit > 0 ? 'text-success' : 'text-destructive'}`}>
       {formatCurrency(projection.taxBenefit)}
     </td>
   ))}

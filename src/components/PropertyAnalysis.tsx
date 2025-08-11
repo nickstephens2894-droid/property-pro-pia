@@ -9,7 +9,7 @@ import { usePropertyData } from "@/contexts/PropertyDataContext";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { downloadInputsCsv } from "@/utils/csvExport";
-
+import { totalTaxAU, marginalRateAU } from "@/utils/tax";
 interface Client {
   id: string;
   name: string;
@@ -80,44 +80,7 @@ const PropertyAnalysis = () => {
   
   const { propertyData, updateField, calculateTotalProjectCost, calculateEquityLoanAmount, applyPreset, resetData } = usePropertyData();
 
-  // Tax calculations
-  const calculateTax = (income: number) => {
-    let tax = 0;
-    let remainingIncome = income;
-    
-    // 2024-25 Australian tax brackets
-    const brackets = [
-      { min: 0, max: 18200, rate: 0 },
-      { min: 18201, max: 45000, rate: 0.16 },
-      { min: 45001, max: 135000, rate: 0.30 },
-      { min: 135001, max: 190000, rate: 0.37 },
-      { min: 190001, max: Infinity, rate: 0.45 }
-    ];
-
-    for (const bracket of brackets) {
-      if (remainingIncome <= 0) break;
-      
-      const taxableInThisBracket = Math.min(remainingIncome, bracket.max - bracket.min + 1);
-      if (income > bracket.min) {
-        const actualTaxable = Math.min(taxableInThisBracket, Math.max(0, income - bracket.min));
-        tax += actualTaxable * bracket.rate;
-        remainingIncome -= actualTaxable;
-      }
-    }
-
-    // Medicare levy will be calculated per client
-    // Removed from general calculation
-
-    return tax;
-  };
-
-  const getMarginalTaxRate = (income: number) => {
-    if (income <= 18200) return 0;
-    if (income <= 45000) return 0.16;
-    if (income <= 135000) return 0.30;
-    if (income <= 190000) return 0.37;
-    return 0.45;
-  };
+  // Tax logic centralized in src/utils/tax.ts (incomeTaxAU, marginalRateAU, totalTaxAU)
 
   // Depreciation calculations
   const calculateDepreciation = () => {
@@ -295,22 +258,14 @@ const PropertyAnalysis = () => {
     const propertyTaxableIncome = propertyIncome - propertyDeductions;
     const totalIncomeWithProperty = totalIncome + propertyTaxableIncome;
     
-    let taxWithoutProperty = calculateTax(totalIncome);
-    let taxWithProperty = calculateTax(totalIncomeWithProperty);
-    
-    // Add Medicare levy per client (2024-25 threshold)
-    if (client.hasMedicareLevy && totalIncome > 26000) {
-      taxWithoutProperty += totalIncome * 0.02;
-    }
-    if (client.hasMedicareLevy && totalIncomeWithProperty > 26000) {
-      taxWithProperty += totalIncomeWithProperty * 0.02;
-    }
+    let taxWithoutProperty = totalTaxAU(totalIncome, client.hasMedicareLevy);
+    let taxWithProperty = totalTaxAU(totalIncomeWithProperty, client.hasMedicareLevy);
     
     return {
       taxWithoutProperty,
       taxWithProperty,
       taxDifference: taxWithProperty - taxWithoutProperty,
-      marginalTaxRate: getMarginalTaxRate(totalIncome),
+      marginalTaxRate: marginalRateAU(totalIncome),
       propertyTaxableIncome
     };
   };

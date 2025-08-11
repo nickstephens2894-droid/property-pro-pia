@@ -17,6 +17,7 @@ interface PropertySummaryDashboardProps {
   weeklyCashflowYear1: number;
   taxSavingsYear1: number;
   taxSavingsTotal: number;
+  cumulativeTaxImpact: number;
   netEquityAtYearTo: number;
   roiAtYearTo: number;
   yearTo: number;
@@ -25,6 +26,7 @@ export const PropertySummaryDashboard = ({
   weeklyCashflowYear1,
   taxSavingsYear1,
   taxSavingsTotal,
+  cumulativeTaxImpact,
   netEquityAtYearTo,
   roiAtYearTo,
   yearTo
@@ -36,29 +38,40 @@ export const PropertySummaryDashboard = ({
   const safeWeeklyCashflow = weeklyCashflowYear1 ?? 0;
   const safeTaxSavingsYear1 = taxSavingsYear1 ?? 0;
   const safeTaxSavingsTotal = taxSavingsTotal ?? 0;
+  const safeCumulativeTaxImpact = cumulativeTaxImpact ?? 0;
   const safeNetEquity = netEquityAtYearTo ?? 0;
   const safeROI = roiAtYearTo ?? 0;
   const safeYearTo = yearTo ?? 1;
-  
-  const heroMetrics: SummaryMetric[] = [{
+const heroMetrics: SummaryMetric[] = [
+  {
     label: "Weekly Cashflow Year 1",
     value: `$${Math.round(safeWeeklyCashflow).toLocaleString()}`,
     sublabel: "After-tax weekly",
     type: safeWeeklyCashflow >= 0 ? 'positive' : 'negative',
     icon: DollarSign
-  }, {
+  },
+  {
     label: "Tax Savings Year 1",
     value: `$${Math.round(Math.abs(safeTaxSavingsYear1)).toLocaleString()}`,
     sublabel: "Annual benefit",
     type: safeTaxSavingsYear1 >= 0 ? 'positive' : 'warning',
     icon: Calculator
-  }, {
+  },
+  {
     label: `Tax Savings Total (Year ${safeYearTo})`,
     value: `$${Math.round(Math.abs(safeTaxSavingsTotal)).toLocaleString()}`,
     sublabel: `Cumulative to year ${safeYearTo}`,
     type: safeTaxSavingsTotal >= 0 ? 'positive' : 'warning',
     icon: PiggyBank
-  }];
+  },
+  {
+    label: `Cumulative Tax Impact (Year ${safeYearTo})`,
+    value: `$${Math.round(Math.abs(safeCumulativeTaxImpact)).toLocaleString()}`,
+    sublabel: "Savings if positive; cost if negative",
+    type: safeCumulativeTaxImpact >= 0 ? 'positive' : 'negative',
+    icon: AlertCircle
+  }
+];
   const getMetricStyles = (type: SummaryMetric['type']) => {
     switch (type) {
       case 'positive':
@@ -104,7 +117,7 @@ export const PropertySummaryDashboard = ({
         <CollapsibleContent>
           <CardContent className="pt-0 space-y-6">
             {/* Hero Metrics - Main KPIs */}
-            <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-3'}`}>
+            <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-4'}`}>
               {heroMetrics.map((metric, index) => {
                 const styles = getMetricStyles(metric.type);
                 const Icon = metric.icon;

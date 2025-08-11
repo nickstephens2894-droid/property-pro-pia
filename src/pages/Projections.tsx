@@ -436,6 +436,7 @@ const [inputValues, setInputValues] = useState({
     const weeklyAfterTaxCashFlowSummary = (currentYearData?.afterTaxCashFlow ?? 0) / 52;
     const taxDifferenceSummary = -(currentYearData?.taxBenefit ?? 0);
     const taxSavingsTotal = projections.slice(0, yearTo).reduce((sum, p) => sum + Math.max(0, p.taxBenefit), 0);
+    const cumulativeTaxImpact = projections.slice(0, yearTo).reduce((sum, p) => sum + p.taxBenefit, 0);
     const equityAtYearTo = yearToData?.propertyEquity ?? 0;
     
     // Calculate cumulative cash contribution (all negative cash flows = money put in)
@@ -453,6 +454,7 @@ const [inputValues, setInputValues] = useState({
       weeklyAfterTaxCashFlowSummary,
       taxDifferenceSummary,
       taxSavingsTotal,
+      cumulativeTaxImpact,
       equityAtYearTo,
       roiAtYearTo,
       marginalTaxRateSummary
@@ -690,6 +692,7 @@ const [inputValues, setInputValues] = useState({
         weeklyCashflowYear1={investmentSummary.weeklyAfterTaxCashFlowSummary}
         taxSavingsYear1={-investmentSummary.taxDifferenceSummary}
         taxSavingsTotal={investmentSummary.taxSavingsTotal}
+        cumulativeTaxImpact={investmentSummary.cumulativeTaxImpact}
         netEquityAtYearTo={investmentSummary.equityAtYearTo}
         roiAtYearTo={investmentSummary.roiAtYearTo}
         yearTo={validatedYearRange[1]}
