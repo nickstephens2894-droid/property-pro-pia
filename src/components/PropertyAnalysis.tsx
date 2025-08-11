@@ -66,9 +66,9 @@ const DesktopLayout = ({
         </div>
         
         {/* Right Side - Summaries */}
-        <div className="col-span-5 space-y-6">
-          {/* Funding Summary */}
-          <div className="grid grid-cols-1 gap-4">
+        <div className="col-span-5">
+          {/* Make funding summary follow scroll on desktop */}
+          <div className="lg:sticky lg:top-24 space-y-6">
             <FundingSummaryPanel />
           </div>
         </div>
