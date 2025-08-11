@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +31,12 @@ export const CurrencyInput = ({
     value === 0 ? "" : formatNumber(value)
   );
   const [isFocused, setIsFocused] = useState(false);
+
+  useEffect(() => {
+    if (!isFocused) {
+      setDisplayValue(value === 0 ? "" : formatNumber(value));
+    }
+  }, [value, isFocused]);
 
   const handleFocus = () => {
     setIsFocused(true);

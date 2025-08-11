@@ -65,6 +65,16 @@ export default function StampDutyCalculator({ open, onOpenChange }: StampDutyCal
             </div>
           </div>
 
+          <div className="rounded-md bg-muted/30 p-3">
+            <div className="text-sm font-medium">Assumptions</div>
+            <ul className="mt-1 list-disc pl-5 text-[11px] text-muted-foreground space-y-1">
+              <li>Treated as an investment property (no concessions or exemptions)</li>
+              <li>Dutiable value uses {propertyData.isConstructionProject ? "land value (construction)" : "purchase price (established)"}</li>
+              <li>Foreign purchaser surcharges not included</li>
+              <li>Base rates only; ACT/NT are estimated for v1</li>
+            </ul>
+          </div>
+
           <Separator />
 
           <div className="flex items-center justify-between">
@@ -77,6 +87,7 @@ export default function StampDutyCalculator({ open, onOpenChange }: StampDutyCal
             <Button onClick={applyDuty}>Apply to analysis</Button>
           </div>
         </div>
+
       </DialogContent>
     </Dialog>
   );
