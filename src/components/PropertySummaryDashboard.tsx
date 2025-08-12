@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { TrendingUp, TrendingDown, DollarSign, Calculator, AlertCircle, PiggyBank, ChevronDown } from "lucide-react";
+import { DollarSign, Calculator, PiggyBank, ChevronDown } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
 
@@ -17,7 +17,6 @@ interface PropertySummaryDashboardProps {
   weeklyCashflowYear1: number;
   taxSavingsYear1: number;
   taxSavingsTotal: number;
-  cumulativeTaxImpact: number;
   netEquityAtYearTo: number;
   roiAtYearTo: number;
   yearTo: number;
@@ -26,7 +25,6 @@ export const PropertySummaryDashboard = ({
   weeklyCashflowYear1,
   taxSavingsYear1,
   taxSavingsTotal,
-  cumulativeTaxImpact,
   netEquityAtYearTo,
   roiAtYearTo,
   yearTo
@@ -38,7 +36,7 @@ export const PropertySummaryDashboard = ({
   const safeWeeklyCashflow = weeklyCashflowYear1 ?? 0;
   const safeTaxSavingsYear1 = taxSavingsYear1 ?? 0;
   const safeTaxSavingsTotal = taxSavingsTotal ?? 0;
-  const safeCumulativeTaxImpact = cumulativeTaxImpact ?? 0;
+  
   const safeNetEquity = netEquityAtYearTo ?? 0;
   const safeROI = roiAtYearTo ?? 0;
   const safeYearTo = yearTo ?? 1;
@@ -58,19 +56,12 @@ const heroMetrics: SummaryMetric[] = [
     icon: Calculator
   },
   {
-    label: `Tax Savings Total (Year ${safeYearTo})`,
+    label: "Total Tax Benefits",
     value: `$${Math.round(Math.abs(safeTaxSavingsTotal)).toLocaleString()}`,
-    sublabel: `Cumulative to year ${safeYearTo}`,
+    sublabel: `Year 1-${safeYearTo}`,
     type: safeTaxSavingsTotal >= 0 ? 'positive' : 'warning',
     icon: PiggyBank
   },
-  {
-    label: `Cumulative Tax Impact (Year ${safeYearTo})`,
-    value: `$${Math.round(Math.abs(safeCumulativeTaxImpact)).toLocaleString()}`,
-    sublabel: "Savings if positive; cost if negative",
-    type: safeCumulativeTaxImpact >= 0 ? 'positive' : 'negative',
-    icon: AlertCircle
-  }
 ];
   const getMetricStyles = (type: SummaryMetric['type']) => {
     switch (type) {
@@ -117,7 +108,7 @@ const heroMetrics: SummaryMetric[] = [
         <CollapsibleContent>
           <CardContent className="pt-0 space-y-6">
             {/* Hero Metrics - Main KPIs */}
-            <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-4'}`}>
+            <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-3'}`}>
               {heroMetrics.map((metric, index) => {
                 const styles = getMetricStyles(metric.type);
                 const Icon = metric.icon;

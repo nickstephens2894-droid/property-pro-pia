@@ -14,6 +14,7 @@ import { PropertySummaryDashboard } from "@/components/PropertySummaryDashboard"
 import { PresetSelector } from "@/components/PresetSelector";
 import AppNav from "@/components/AppNav";
 import { PropertyCalculationDetails } from "@/components/PropertyCalculationDetails";
+import { InvestmentResultsDetailed } from "@/components/InvestmentResultsDetailed";
 import { resolve, Triplet } from "@/utils/overrides";
 import { OverrideField } from "@/components/OverrideField";
 import { totalTaxAU, marginalRateAU } from "@/utils/tax";
@@ -692,7 +693,6 @@ const [inputValues, setInputValues] = useState({
         weeklyCashflowYear1={investmentSummary.weeklyAfterTaxCashFlowSummary}
         taxSavingsYear1={-investmentSummary.taxDifferenceSummary}
         taxSavingsTotal={investmentSummary.taxSavingsTotal}
-        cumulativeTaxImpact={investmentSummary.cumulativeTaxImpact}
         netEquityAtYearTo={investmentSummary.equityAtYearTo}
         roiAtYearTo={investmentSummary.roiAtYearTo}
         yearTo={validatedYearRange[1]}
@@ -868,6 +868,16 @@ Tax Rate: {formatPercentage(investmentSummary.marginalTaxRateSummary * 100)} (hi
           </Card>
         )}
  
+        <InvestmentResultsDetailed
+          projections={projections}
+          yearTo={validatedYearRange[1]}
+          initialPropertyValue={assumptions.initialPropertyValue}
+          totalProjectCost={totalProjectCost}
+          cpiRate={assumptions.expenseInflationRate}
+          formatCurrency={formatCurrency}
+          formatPercentage={formatPercentage}
+        />
+        
         {/* Client Income & Tax Optimization */}
         <Card>
           <Collapsible open={clientAccordionOpen} onOpenChange={setClientAccordionOpen}>
