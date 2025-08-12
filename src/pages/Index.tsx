@@ -10,7 +10,7 @@ const Index = () => {
 
   useEffect(() => {
     // SEO
-    document.title = authed ? "Dashboard | Property Pro" : "Property Pro – Property Investment Analysis";
+    document.title = authed ? "Dashboard | Property Pro" : "Property Pro – Smart property analysis";
     const desc = authed
       ? "Analyze properties, projections, clients, and scenarios in your dashboard."
       : "Analyze property investments, model cash flows, and compare scenarios. Create your free account to get started.";
@@ -47,9 +47,9 @@ const Index = () => {
         <PropertyAnalysis />
       ) : (
         <section className="max-w-3xl mx-auto text-center space-y-4">
-          <h1 className="text-3xl font-bold">Property Investment Analysis</h1>
+          <h1 className="text-3xl font-bold">Property Pro</h1>
           <p className="text-muted-foreground">
-            Model cash flows, compare scenarios, and manage clients — all in one place.
+            Smart analysis for Australian property
           </p>
           <div className="flex items-center justify-center gap-3">
             <Button asChild>

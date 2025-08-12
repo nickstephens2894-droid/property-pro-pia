@@ -45,8 +45,8 @@ export default function AppNav({ className = "" }: { className?: string }) {
           <div className="flex items-center justify-between">
             {/* Left side - Title and Subtitle */}
             <div className="flex flex-col">
-              <h1 className="text-2xl font-bold text-gray-800">Property Investment Analysis</h1>
-              <p className="text-sm text-gray-600">Comprehensive analysis tool for Australian residential property investments</p>
+              <h1 className="text-2xl font-bold text-gray-800">Property Pro</h1>
+              <p className="text-sm text-gray-600">Smart analysis for Australian property</p>
             </div>
             
             {/* Center - Navigation Tabs */}
