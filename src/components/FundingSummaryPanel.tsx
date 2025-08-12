@@ -69,7 +69,7 @@ export const FundingSummaryPanel = () => {
           {status === 'error' && <AlertTriangle className="h-4 w-4 text-destructive" />}
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4 sm:space-y-6">
         {/* Selected Presets */}
         {(propertyData.currentPropertyMethod || propertyData.currentFundingMethod) && (
           <div className="flex flex-wrap items-center gap-2 p-2 bg-muted/30 border border-border rounded">
@@ -491,57 +491,6 @@ export const FundingSummaryPanel = () => {
           )}
         </div>
 
-        {/* LVR Summary */}
-        <div className="space-y-3">
-          <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
-            Loan Details
-          </h4>
-          
-          <Collapsible open={expandedSections.includes('lvr-details')} onOpenChange={() => toggleSection('lvr-details')}>
-            <CollapsibleTrigger className="flex items-center justify-between w-full">
-              <div className="grid grid-cols-2 gap-4 text-sm flex-1">
-                <div>
-                  <span className="text-muted-foreground">Main LVR:</span>
-                  <div className="font-medium">
-                    {purchaseCosts > 0 ? ((mainLoanAmount / purchaseCosts) * 100).toFixed(1) : 0}%
-                  </div>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Total LVR:</span>
-                  <div className="font-medium">
-                    {purchaseCosts > 0 ? (((mainLoanAmount + equityLoanAmount) / purchaseCosts) * 100).toFixed(1) : 0}%
-                  </div>
-                </div>
-              </div>
-              {expandedSections.includes('lvr-details') ? 
-                <ChevronDown className="h-4 w-4 ml-2" /> : 
-                <ChevronRight className="h-4 w-4 ml-2" />
-              }
-            </CollapsibleTrigger>
-            <CollapsibleContent className="pt-3 space-y-2">
-              <div className="text-xs text-muted-foreground space-y-1">
-                <div className="flex justify-between">
-                  <span>Main Loan Amount:</span>
-                  <span>${mainLoanAmount.toLocaleString()}</span>
-                </div>
-                {propertyData.useEquityFunding && (
-                  <div className="flex justify-between">
-                    <span>Equity Loan Amount:</span>
-                    <span>${equityLoanAmount.toLocaleString()}</span>
-                  </div>
-                )}
-                <div className="flex justify-between">
-                  <span>Total Loan Amount:</span>
-                  <span>${(mainLoanAmount + equityLoanAmount).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Property Value:</span>
-                  <span>${(propertyData.isConstructionProject ? propertyData.landValue + propertyData.constructionValue : propertyData.purchasePrice).toLocaleString()}</span>
-                </div>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-        </div>
       </CardContent>
     </Card>
   );
