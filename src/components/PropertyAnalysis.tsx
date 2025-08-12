@@ -4,10 +4,12 @@ import { PropertyCalculationDetails } from "@/components/PropertyCalculationDeta
 import { FundingSummaryPanel } from "@/components/FundingSummaryPanel";
 import { PresetSelector } from "@/components/PresetSelector";
 import { useIsMobile } from "@/hooks/use-mobile";
+import AppNav from "@/components/AppNav";
 import { usePropertyData } from "@/contexts/PropertyDataContext";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { downloadInputsCsv } from "@/utils/csvExport";
-
+import { totalTaxAU, marginalRateAU } from "@/utils/tax";
 interface Client {
   id: string;
   name: string;
@@ -53,76 +55,32 @@ const DesktopLayout = ({
       <div className="grid grid-cols-12 gap-6">
         {/* Property Investment Details - Prominent Left Section */}
         <div className="col-span-7">
-          <div className="sticky top-4">
-            <PropertyInputForm
-              propertyData={propertyData}
-              updateField={updateField}
-              clientTaxResults={clientTaxResults}
-              totalTaxableIncome={totalTaxableIncome}
-              marginalTaxRate={marginalTaxRate}
-            />
-          </div>
+          <PropertyInputForm
+            propertyData={propertyData}
+            updateField={updateField}
+            clientTaxResults={clientTaxResults}
+            totalTaxableIncome={totalTaxableIncome}
+            marginalTaxRate={marginalTaxRate}
+          />
         </div>
         
         {/* Right Side - Summaries */}
-        <div className="col-span-5 space-y-6">
-          {/* Funding Summary */}
-          <div className="grid grid-cols-1 gap-4">
+        <div className="col-span-5 hidden lg:block lg:sticky lg:top-20">
+          <div className="space-y-6">
             <FundingSummaryPanel />
           </div>
         </div>
       </div>
 
-      {/* Detailed Calculations - Full Width Below */}
-      <div className="w-full">
-        <PropertyCalculationDetails {...calculationProps} />
-      </div>
     </div>
   );
 };
 
 const PropertyAnalysis = () => {
   
-  const { propertyData, updateField, calculateTotalProjectCost, calculateEquityLoanAmount, applyPreset } = usePropertyData();
+  const { propertyData, updateField, calculateTotalProjectCost, calculateEquityLoanAmount, applyPreset, resetData } = usePropertyData();
 
-  // Tax calculations
-  const calculateTax = (income: number) => {
-    let tax = 0;
-    let remainingIncome = income;
-    
-    // 2024-25 Australian tax brackets
-    const brackets = [
-      { min: 0, max: 18200, rate: 0 },
-      { min: 18201, max: 45000, rate: 0.16 },
-      { min: 45001, max: 135000, rate: 0.30 },
-      { min: 135001, max: 190000, rate: 0.37 },
-      { min: 190001, max: Infinity, rate: 0.45 }
-    ];
-
-    for (const bracket of brackets) {
-      if (remainingIncome <= 0) break;
-      
-      const taxableInThisBracket = Math.min(remainingIncome, bracket.max - bracket.min + 1);
-      if (income > bracket.min) {
-        const actualTaxable = Math.min(taxableInThisBracket, Math.max(0, income - bracket.min));
-        tax += actualTaxable * bracket.rate;
-        remainingIncome -= actualTaxable;
-      }
-    }
-
-    // Medicare levy will be calculated per client
-    // Removed from general calculation
-
-    return tax;
-  };
-
-  const getMarginalTaxRate = (income: number) => {
-    if (income <= 18200) return 0;
-    if (income <= 45000) return 0.16;
-    if (income <= 135000) return 0.30;
-    if (income <= 190000) return 0.37;
-    return 0.45;
-  };
+  // Tax logic centralized in src/utils/tax.ts (incomeTaxAU, marginalRateAU, totalTaxAU)
 
   // Depreciation calculations
   const calculateDepreciation = () => {
@@ -300,22 +258,14 @@ const PropertyAnalysis = () => {
     const propertyTaxableIncome = propertyIncome - propertyDeductions;
     const totalIncomeWithProperty = totalIncome + propertyTaxableIncome;
     
-    let taxWithoutProperty = calculateTax(totalIncome);
-    let taxWithProperty = calculateTax(totalIncomeWithProperty);
-    
-    // Add Medicare levy per client (2024-25 threshold)
-    if (client.hasMedicareLevy && totalIncome > 26000) {
-      taxWithoutProperty += totalIncome * 0.02;
-    }
-    if (client.hasMedicareLevy && totalIncomeWithProperty > 26000) {
-      taxWithProperty += totalIncomeWithProperty * 0.02;
-    }
+    let taxWithoutProperty = totalTaxAU(totalIncome, client.hasMedicareLevy);
+    let taxWithProperty = totalTaxAU(totalIncomeWithProperty, client.hasMedicareLevy);
     
     return {
       taxWithoutProperty,
       taxWithProperty,
       taxDifference: taxWithProperty - taxWithoutProperty,
-      marginalTaxRate: getMarginalTaxRate(totalIncome),
+      marginalTaxRate: marginalRateAU(totalIncome),
       propertyTaxableIncome
     };
   };
@@ -360,8 +310,53 @@ const PropertyAnalysis = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <div className="bg-gradient-to-r from-primary/5 to-accent/5 border-b flex-shrink-0">
+        <div className="max-w-full px-6 py-3">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h1 className="text-xl font-bold text-foreground">Property Investment Analysis</h1>
+              <p className="text-muted-foreground text-sm">Comprehensive analysis tool for Australian residential property investments</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <AppNav />
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    aria-label="Clear all inputs"
+                  >
+                    Clear all
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Clear all inputs?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will reset all fields to their default values. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => resetData()}>Yes, clear all</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => downloadInputsCsv(propertyData)}
+                aria-label="Export inputs CSV"
+              >
+                Export inputs CSV
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Main Content Area */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div className="flex-1 min-h-0">
         {isMobile ? (
           <div className="px-4 sm:px-6 py-6">
             <div className="space-y-6">
@@ -384,40 +379,6 @@ const PropertyAnalysis = () => {
                 marginalTaxRate={marginalTaxRate}
               />
               <FundingSummaryPanel />
-              <PropertyCalculationDetails
-                monthlyRepayment={totalWeeklyLoanPayments * 52 / 12}
-                annualRepayment={totalAnnualLoanPayments}
-                annualRent={annualRent}
-                propertyManagementCost={annualPropertyManagement}
-                councilRates={propertyData.councilRates}
-                insurance={propertyData.insurance}
-                repairs={propertyData.repairs}
-                totalDeductibleExpenses={totalDeductibleExpenses}
-                depreciation={{
-                  ...depreciation,
-                  capitalWorksAvailable: propertyData.constructionYear >= 1987,
-                  plantEquipmentRestricted: !propertyData.isNewProperty
-                }}
-                clientTaxResults={clientTaxResults}
-                totalTaxWithProperty={totalTaxWithProperty}
-                totalTaxWithoutProperty={totalTaxWithoutProperty}
-                marginalTaxRate={marginalTaxRate}
-                purchasePrice={propertyData.purchasePrice}
-                constructionYear={propertyData.constructionYear}
-                depreciationMethod={propertyData.depreciationMethod}
-                isConstructionProject={propertyData.isConstructionProject}
-                totalProjectCost={totalProjectCost}
-                holdingCosts={holdingCosts}
-                funding={funding}
-                outOfPocketHoldingCosts={outOfPocketHoldingCosts}
-                capitalizedHoldingCosts={capitalizedHoldingCosts}
-                actualCashInvested={actualCashInvested}
-                constructionPeriod={propertyData.constructionPeriod}
-                holdingCostFunding={propertyData.holdingCostFunding}
-                mainLoanPayments={mainLoanPayments}
-                equityLoanPayments={equityLoanPayments}
-                totalAnnualInterest={totalAnnualInterest}
-              />
             </div>
           </div>
         ) : (
@@ -460,7 +421,10 @@ const PropertyAnalysis = () => {
               holdingCostFunding: propertyData.holdingCostFunding,
               mainLoanPayments,
               equityLoanPayments,
-              totalAnnualInterest
+              totalAnnualInterest,
+              weeklyAfterTaxCashFlow,
+              grossYield,
+              cashOnCashReturn
             }}
           />
         )}

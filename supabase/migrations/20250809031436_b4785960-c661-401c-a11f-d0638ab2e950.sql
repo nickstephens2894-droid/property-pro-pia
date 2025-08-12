@@ -137,9 +137,10 @@ DO $$ BEGIN
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- 6) Properties (current vs new) - REMOVED client_id to support multiple clients per property
+-- 6) Properties (current vs new)
 CREATE TABLE IF NOT EXISTS public.properties (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  client_id UUID NOT NULL REFERENCES public.clients(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   type TEXT NOT NULL,
   purchase_price NUMERIC NOT NULL DEFAULT 0,
@@ -153,67 +154,17 @@ CREATE TABLE IF NOT EXISTS public.properties (
 
 ALTER TABLE public.properties ENABLE ROW LEVEL SECURITY;
 
--- New policy: Properties are accessible if user owns any of the clients linked to it
 DO $$ BEGIN
   CREATE POLICY "Owners can CRUD properties via client ownership" ON public.properties
   FOR ALL TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.property_clients pc
-      JOIN public.clients c ON c.id = pc.client_id
-      WHERE pc.property_id = properties.id AND c.owner_user_id = auth.uid()
-    )
-  )
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.property_clients pc
-      JOIN public.clients c ON c.id = pc.client_id
-      WHERE pc.property_id = properties.id AND c.owner_user_id = auth.uid()
-    )
-  );
+  USING (public.is_owner_client(client_id))
+  WITH CHECK (public.is_owner_client(client_id));
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
   CREATE TRIGGER trg_properties_updated
   BEFORE UPDATE ON public.properties
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-
--- 6.5) Property-Clients junction table (up to 4 clients per property)
-CREATE TABLE IF NOT EXISTS public.property_clients (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  property_id UUID NOT NULL REFERENCES public.properties(id) ON DELETE CASCADE,
-  client_id UUID NOT NULL REFERENCES public.clients(id) ON DELETE CASCADE,
-  ownership_percentage NUMERIC NOT NULL DEFAULT 100,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE(property_id, client_id)
-);
-
-ALTER TABLE public.property_clients ENABLE ROW LEVEL SECURITY;
-
--- Policy: Users can manage property_clients if they own the client
-DO $$ BEGIN
-  CREATE POLICY "Owners can CRUD property_clients via client ownership" ON public.property_clients
-  FOR ALL TO authenticated
-  USING (public.is_owner_client(client_id))
-  WITH CHECK (public.is_owner_client(client_id));
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-
--- Enforce maximum 4 clients per property
-CREATE OR REPLACE FUNCTION public.check_max_clients_per_property()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF (SELECT COUNT(*) FROM public.property_clients WHERE property_id = NEW.property_id) > 4 THEN
-    RAISE EXCEPTION 'Maximum 4 clients allowed per property';
-  END IF;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-DO $$ BEGIN
-  CREATE TRIGGER trg_max_clients_per_property
-  BEFORE INSERT OR UPDATE ON public.property_clients
-  FOR EACH ROW EXECUTE FUNCTION public.check_max_clients_per_property();
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- 7) Scenarios (single core per client + multiple hypothetical)

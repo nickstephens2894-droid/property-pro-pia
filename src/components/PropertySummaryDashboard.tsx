@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { TrendingUp, TrendingDown, DollarSign, Calculator, AlertCircle, PiggyBank, ChevronDown } from "lucide-react";
+import { DollarSign, Calculator, PiggyBank, ChevronDown } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
 
@@ -36,29 +36,33 @@ export const PropertySummaryDashboard = ({
   const safeWeeklyCashflow = weeklyCashflowYear1 ?? 0;
   const safeTaxSavingsYear1 = taxSavingsYear1 ?? 0;
   const safeTaxSavingsTotal = taxSavingsTotal ?? 0;
+  
   const safeNetEquity = netEquityAtYearTo ?? 0;
   const safeROI = roiAtYearTo ?? 0;
   const safeYearTo = yearTo ?? 1;
-  
-  const heroMetrics: SummaryMetric[] = [{
+const heroMetrics: SummaryMetric[] = [
+  {
     label: "Weekly Cashflow Year 1",
     value: `$${Math.round(safeWeeklyCashflow).toLocaleString()}`,
     sublabel: "After-tax weekly",
     type: safeWeeklyCashflow >= 0 ? 'positive' : 'negative',
     icon: DollarSign
-  }, {
+  },
+  {
     label: "Tax Savings Year 1",
     value: `$${Math.round(Math.abs(safeTaxSavingsYear1)).toLocaleString()}`,
     sublabel: "Annual benefit",
     type: safeTaxSavingsYear1 >= 0 ? 'positive' : 'warning',
     icon: Calculator
-  }, {
-    label: `Tax Savings Total (Year ${safeYearTo})`,
+  },
+  {
+    label: "Total Tax Benefits",
     value: `$${Math.round(Math.abs(safeTaxSavingsTotal)).toLocaleString()}`,
-    sublabel: `Cumulative to year ${safeYearTo}`,
+    sublabel: `Year 1-${safeYearTo}`,
     type: safeTaxSavingsTotal >= 0 ? 'positive' : 'warning',
     icon: PiggyBank
-  }];
+  },
+];
   const getMetricStyles = (type: SummaryMetric['type']) => {
     switch (type) {
       case 'positive':
