@@ -37,30 +37,27 @@ export const validateFinancing = (propertyData: PropertyData): CompletionStatus 
   const hasMainLoan = propertyData.loanAmount > 0;
   const hasInterestRate = propertyData.interestRate > 0;
   const hasLoanTerm = propertyData.loanTerm > 0;
-
-  // If there is a main loan, interest rate and term are required
-  if (hasMainLoan && (!hasInterestRate || !hasLoanTerm)) return 'error';
-
-  // Total project cost
+  
+  if (!hasMainLoan || !hasInterestRate || !hasLoanTerm) return 'error';
+  
+  // Check funding coverage
   const totalCost = propertyData.isConstructionProject
-    ? propertyData.landValue + propertyData.constructionValue +
+    ? propertyData.landValue + propertyData.constructionValue + 
       propertyData.stampDuty + propertyData.legalFees + propertyData.inspectionFees +
       propertyData.councilFees + propertyData.architectFees + propertyData.siteCosts
     : propertyData.purchasePrice + propertyData.stampDuty + propertyData.legalFees + propertyData.inspectionFees;
-
-  // Available equity and equity loan amount needed after cash deposit and main loan
-  const availableEquity = propertyData.useEquityFunding
-    ? Math.max(0, propertyData.primaryPropertyValue * (propertyData.maxLVR / 100) - propertyData.existingDebt)
+  
+  const equityLoanAmount = propertyData.useEquityFunding 
+    ? Math.min(
+        propertyData.primaryPropertyValue * (propertyData.maxLVR / 100) - propertyData.existingDebt,
+        totalCost - propertyData.loanAmount
+      )
     : 0;
-
-  const equityLoanAmount = propertyData.useEquityFunding
-    ? Math.min(availableEquity, Math.max(0, totalCost - propertyData.loanAmount - propertyData.depositAmount))
-    : 0;
-
-  const totalFunding = (propertyData.loanAmount || 0) + equityLoanAmount + (propertyData.depositAmount || 0);
+  
+  const totalFunding = propertyData.loanAmount + equityLoanAmount;
   const fundingShortfall = Math.max(0, totalCost - totalFunding);
-
-  if (totalCost > 0 && fundingShortfall > totalCost * 0.1) return 'warning';
+  
+  if (fundingShortfall > totalCost * 0.1) return 'warning';
   return 'complete';
 };
 

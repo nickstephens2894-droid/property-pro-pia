@@ -7,6 +7,20 @@ import { PasswordInput } from "@/components/PasswordInput";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { 
+  Building2, 
+  TrendingUp, 
+  Calculator, 
+  BarChart3,
+  ArrowRight,
+  CheckCircle,
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  User,
+  Sparkles
+} from "lucide-react";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -161,6 +175,7 @@ const Auth = () => {
     if (error) toast.error(error.message || "Unable to resend confirmation");
     else toast.success("Confirmation email sent");
   };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (mode === "signin") await signIn();
@@ -169,145 +184,272 @@ const Auth = () => {
     else if (mode === "reset") await updatePassword();
   };
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    toast.success("Signed out");
+  const getModeConfig = () => {
+    switch (mode) {
+      case "signin":
+        return {
+          title: "Welcome back",
+          subtitle: "Sign in to your Property Pro account",
+          icon: <User className="h-5 w-5 sm:h-6 sm:w-6" />,
+          primaryAction: "Sign in",
+          secondaryAction: "Create account",
+          switchMode: () => setMode("signup")
+        };
+      case "signup":
+        return {
+          title: "Create your account",
+          subtitle: "Start analyzing property investments today",
+          icon: <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" />,
+          primaryAction: "Create account",
+          secondaryAction: "Have an account? Sign in",
+          switchMode: () => setMode("signin")
+        };
+      case "forgot":
+        return {
+          title: "Reset your password",
+          subtitle: "Enter your email to receive a reset link",
+          icon: <Lock className="h-5 w-5 sm:h-6 sm:w-6" />,
+          primaryAction: "Send reset link",
+          secondaryAction: "Back to sign in",
+          switchMode: () => setMode("signin")
+        };
+      case "reset":
+        return {
+          title: "Set new password",
+          subtitle: "Enter your new password below",
+          icon: <Lock className="h-5 w-5 sm:h-6 sm:w-6" />,
+          primaryAction: "Update password",
+          secondaryAction: "Back to sign in",
+          switchMode: () => setMode("signin")
+        };
+    }
   };
 
+  const config = getModeConfig();
+
   return (
-    <main className="min-h-[60vh] flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>{mode === "signin" ? "Sign in" : mode === "signup" ? "Create your account" : mode === "forgot" ? "Reset your password" : "Set a new password"}</CardTitle>
-          <CardDescription>
-            {mode === "signin"
-              ? "Welcome back. Enter your credentials."
-              : mode === "signup"
-              ? "Sign up with email and password."
-              : mode === "forgot"
-              ? "Enter your email to receive a reset link."
-              : "Enter your new password."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {(mode === "signin" || mode === "signup" || mode === "forgot") && (
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+      <div className="w-full max-w-7xl grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8 xl:gap-12 items-center">
+        
+        {/* Left Side - Hero Section */}
+        <div className="hidden xl:block space-y-6 lg:space-y-8">
+          <div className="space-y-4 lg:space-y-6">
+            <div className="flex items-center space-x-2 lg:space-x-3">
+              <div className="p-2 lg:p-3 bg-primary/10 rounded-xl">
+                <Building2 className="h-6 w-6 lg:h-8 lg:w-8 text-primary" />
               </div>
-            )}
+              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Property Pro</h1>
+            </div>
+            
+            <h2 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 leading-tight">
+              Professional Property Investment Analysis
+            </h2>
+            
+            <p className="text-lg lg:text-xl text-gray-600 leading-relaxed max-w-lg">
+              Model cash flows, compare scenarios, and make informed investment decisions with our comprehensive analysis tools.
+            </p>
+          </div>
 
-            {(mode === "signin" || mode === "signup") && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
-                  {mode === "signin" && (
-                    <button
-                      type="button"
-                      className="text-sm underline underline-offset-4"
-                      onClick={() => setMode("forgot")}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2 lg:space-x-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Calculator className="h-4 w-4 lg:h-5 lg:w-5 text-green-600" />
+                </div>
+                <span className="font-medium text-gray-700 text-sm lg:text-base">Advanced Calculations</span>
+              </div>
+              <div className="flex items-center space-x-2 lg:space-x-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <TrendingUp className="h-4 w-4 lg:h-5 lg:w-5 text-blue-600" />
+                </div>
+                <span className="font-medium text-gray-700 text-sm lg:text-base">Growth Projections</span>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2 lg:space-x-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <BarChart3 className="h-4 w-4 lg:h-5 lg:w-5 text-purple-600" />
+                </div>
+                <span className="font-medium text-gray-700 text-sm lg:text-base">Scenario Analysis</span>
+              </div>
+              <div className="flex items-center space-x-2 lg:space-x-3">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <CheckCircle className="h-4 w-4 lg:h-5 lg:w-5 text-orange-600" />
+                </div>
+                <span className="font-medium text-gray-700 text-sm lg:text-base">Tax Optimization</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Hero Section */}
+        <div className="xl:hidden text-center space-y-4 mb-6">
+          <div className="flex items-center justify-center space-x-2">
+            <div className="p-2 bg-primary/10 rounded-xl">
+              <Building2 className="h-6 w-6 text-primary" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900">Property Pro</h1>
+          </div>
+          <h2 className="text-xl font-semibold text-gray-700">
+            Professional Property Investment Analysis
+          </h2>
+        </div>
+
+        {/* Right Side - Auth Form */}
+        <div className="flex justify-center w-full">
+          <Card className="w-full max-w-sm sm:max-w-md border-0 shadow-xl lg:shadow-2xl bg-white/90 lg:bg-white/80 backdrop-blur-sm">
+            <CardHeader className="space-y-2 text-center pb-4 sm:pb-6">
+              <div className="mx-auto p-2 sm:p-3 bg-primary/10 rounded-full w-fit">
+                {config?.icon}
+              </div>
+              <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">
+                {config?.title}
+              </CardTitle>
+              <CardDescription className="text-sm sm:text-base text-gray-600 px-2">
+                {config?.subtitle}
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6 pb-6">
+              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+                {(mode === "signin" || mode === "signup" || mode === "forgot") && (
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                      Email address
+                    </Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        placeholder="you@example.com"
+                        autoComplete="email"
+                        className="pl-10 h-11 sm:h-12 border-gray-200 focus:border-primary focus:ring-primary text-sm sm:text-base"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {(mode === "signin" || mode === "signup") && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                        Password
+                      </Label>
+                      {mode === "signin" && (
+                        <button
+                          type="button"
+                          className="text-xs sm:text-sm text-primary hover:text-primary/80 font-medium"
+                          onClick={() => setMode("forgot")}
+                        >
+                          Forgot password?
+                        </button>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <PasswordInput
+                        id="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        placeholder="••••••••"
+                        autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                        className="pl-10 h-11 sm:h-12 border-gray-200 focus:border-primary focus:ring-primary text-sm sm:text-base"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {mode === "reset" && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="newPassword" className="text-sm font-medium text-gray-700">
+                        New password
+                      </Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <PasswordInput
+                          id="newPassword"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          required
+                          placeholder="••••••••"
+                          autoComplete="new-password"
+                          className="pl-10 h-11 sm:h-12 border-gray-200 focus:border-primary focus:ring-primary text-sm sm:text-base"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
+                        Confirm new password
+                      </Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <PasswordInput
+                          id="confirmPassword"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          required
+                          placeholder="••••••••"
+                          autoComplete="new-password"
+                          className="pl-10 h-11 sm:h-12 border-gray-200 focus:border-primary focus:ring-primary text-sm sm:text-base"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <div className="space-y-3 sm:space-y-4 pt-2">
+                  <Button 
+                    type="submit" 
+                    disabled={loading}
+                    className="w-full h-11 sm:h-12 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg transition-all duration-200 transform hover:scale-[1.02] text-sm sm:text-base"
+                  >
+                    {loading ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                        <span>Please wait...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center space-x-2">
+                        <span>{config?.primaryAction}</span>
+                        <ArrowRight className="h-4 w-4" />
+                      </div>
+                    )}
+                  </Button>
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={config?.switchMode}
+                    className="w-full h-11 sm:h-12 border-gray-200 hover:border-gray-300 hover:bg-gray-50 font-medium rounded-lg transition-all duration-200 text-sm sm:text-base"
+                  >
+                    {config?.secondaryAction}
+                  </Button>
+                </div>
+
+                {mode === "signin" && (
+                  <div className="text-center pt-2">
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      onClick={resendConfirmation}
+                      className="text-xs sm:text-sm text-gray-600 hover:text-primary hover:bg-transparent"
                     >
-                      Forgot password?
-                    </button>
-                  )}
-                </div>
-                <PasswordInput
-                  id="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  placeholder="••••••••"
-                  autoComplete={mode === "signin" ? "current-password" : "new-password"}
-                />
-              </div>
-            )}
-
-            {mode === "reset" && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="newPassword">New password</Label>
-                  <PasswordInput
-                    id="newPassword"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    required
-                    placeholder="••••••••"
-                    autoComplete="new-password"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm new password</Label>
-                  <PasswordInput
-                    id="confirmPassword"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    placeholder="••••••••"
-                    autoComplete="new-password"
-                  />
-                </div>
-              </>
-            )}
-
-            <div className="flex items-center justify-between gap-2">
-              <Button type="submit" disabled={loading}>
-                {loading
-                  ? "Please wait..."
-                  : mode === "signin"
-                  ? "Sign in"
-                  : mode === "signup"
-                  ? "Sign up"
-                  : mode === "forgot"
-                  ? "Send reset link"
-                  : "Update password"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() =>
-                  setMode(
-                    mode === "signin"
-                      ? "signup"
-                      : mode === "signup"
-                      ? "signin"
-                      : "signin"
-                  )
-                }
-              >
-                {mode === "signin"
-                  ? "Create account"
-                  : mode === "signup"
-                  ? "Have an account? Sign in"
-                  : "Back to sign in"}
-              </Button>
-            </div>
-
-            {mode === "signin" && (
-              <div className="pt-1">
-                <Button type="button" variant="ghost" onClick={resendConfirmation}>
-                  Resend confirmation email
-                </Button>
-              </div>
-            )}
-
-            <div className="pt-2">
-              <Button type="button" variant="ghost" onClick={handleSignOut}>
-                Sign out
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </main>
+                      Resend confirmation email
+                    </Button>
+                  </div>
+                )}
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
   );
 };
 
