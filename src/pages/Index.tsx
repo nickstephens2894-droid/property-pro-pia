@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import PropertyAnalysis from "@/components/PropertyAnalysis";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-
+import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
+  const { user, loading } = useAuth();
   const [authed] = useState(true);
-
 
   useEffect(() => {
     // SEO
@@ -30,21 +30,20 @@ const Index = () => {
     link.href = `${window.location.origin}/`;
   }, [authed]);
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <main className="space-y-8">
-      <header className="flex justify-end">
-        {authed ? (
-          <Button variant="outline" size="sm" asChild>
-            <Link to="/projections">Open dashboard</Link>
-          </Button>
-        ) : (
-          <Button variant="outline" size="sm" asChild>
-            <Link to="/auth">Login / Sign up</Link>
-          </Button>
-        )}
-      </header>
-
-      {authed ? (
+      {user ? (
         <PropertyAnalysis />
       ) : (
         <section className="max-w-3xl mx-auto text-center space-y-4">

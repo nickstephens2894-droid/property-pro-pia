@@ -1,7 +1,7 @@
 import { PropertyData } from "@/contexts/PropertyDataContext";
 
 export type PropertyMethod = 'house-land-construction' | 'built-first-owner' | 'built-second-owner';
-export type FundingMethod = 'loan-cash' | 'loan-equity' | 'custom-lvr';
+export type FundingMethod = 'loan-cash' | 'loan-equity' | 'full-equity';
 
 export interface PresetConfig {
   propertyMethod: PropertyMethod;
@@ -35,9 +35,9 @@ export const FUNDING_METHODS = {
     name: '80% Loan + Equity',
     description: '80% loan with equity-funded deposit'
   },
-  'custom-lvr': {
-    name: 'Custom LVR',
-    description: 'Set your own LVR for main loan and equity'
+  'full-equity': {
+    name: 'Full Equity Funding',
+    description: '100% funding through property equity'
   }
 } as const;
 
@@ -238,18 +238,18 @@ export const getFundingMethodData = (method: FundingMethod, propertyValue: numbe
         holdingCostCashPercentage: 0
       };
 
-    case 'custom-lvr':
+    case 'full-equity':
       return {
         useEquityFunding: true,
-        // Start with current defaults; user can adjust LVR and amounts after applying
-        // Leave existing loanAmount/lvr as-is where possible
-        depositAmount: 0,
+        loanAmount: 0, // No main loan
+        lvr: 0,
+        depositAmount: 0, // All covered by equity
         minimumDepositRequired: totalCosts,
-        interestRate: 6.8,
+        interestRate: 6.8, // Consistent with other presets
         loanTerm: 30,
         mainLoanType: 'io' as const,
         ioTermYears: 5,
-        // Equity property defaults (user can adjust)
+        // Larger equity property
         primaryPropertyValue: 1500000,
         existingDebt: 300000,
         maxLVR: 80,

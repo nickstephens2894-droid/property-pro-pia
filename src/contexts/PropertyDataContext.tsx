@@ -86,7 +86,6 @@ export interface PropertyData {
   stampDuty: number;
   legalFees: number;
   inspectionFees: number;
-  PropertyState: 'ACT'|'NSW'|'NT'|'QLD'|'SA'|'TAS'|'VIC'|'WA';
   
   // Construction Costs
   councilFees: number;
@@ -118,6 +117,7 @@ interface PropertyDataContextType {
     onConfirm?: () => void
   ) => void;
   applyPreset: (presetData: Partial<PropertyData>, propertyMethod?: PropertyMethod, fundingMethod?: FundingMethod) => void;
+  loadScenario: (scenarioData: PropertyData) => void;
   calculateEquityLoanAmount: () => number;
   calculateTotalProjectCost: () => number;
   calculateAvailableEquity: () => number;
@@ -131,7 +131,6 @@ interface PropertyDataContextType {
     monthlyBreakdown: any[];
   };
   calculateMinimumDeposit: () => number;
-  resetData: () => void;
 }
 
 const PropertyDataContext = createContext<PropertyDataContextType | undefined>(undefined);
@@ -223,7 +222,6 @@ const defaultPropertyData: PropertyData = {
   totalHoldingCosts: 0,
   
   // Purchase Costs - Current market rates
-  PropertyState: 'VIC',
   stampDuty: 42000, // Realistic VIC stamp duty for $750k
   legalFees: 2000,
   inspectionFees: 600,
@@ -383,7 +381,9 @@ export const PropertyDataProvider: React.FC<{ children: ReactNode }> = ({ childr
     }));
   };
 
-  const resetData = () => setPropertyData(defaultPropertyData);
+  const loadScenario = (scenarioData: PropertyData) => {
+    setPropertyData(scenarioData);
+  };
 
   return (
     <PropertyDataContext.Provider value={{ 
@@ -392,12 +392,12 @@ export const PropertyDataProvider: React.FC<{ children: ReactNode }> = ({ childr
       updateField, 
       updateFieldWithConfirmation,
       applyPreset,
+      loadScenario,
       calculateEquityLoanAmount,
       calculateTotalProjectCost,
       calculateAvailableEquity,
       calculateHoldingCosts,
-      calculateMinimumDeposit,
-      resetData
+      calculateMinimumDeposit
     }}>
       {children}
     </PropertyDataContext.Provider>
