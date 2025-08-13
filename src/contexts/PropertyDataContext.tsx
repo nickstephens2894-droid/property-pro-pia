@@ -270,14 +270,57 @@ export const PropertyDataProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const calculateHoldingCosts = () => {
-    // Placeholder: actual implementation exists elsewhere in the file
+    // Only calculate for construction projects
+    if (!propertyData.isConstructionProject || propertyData.constructionPeriod === 0 || propertyData.constructionInterestRate === 0) {
+      return {
+        landInterest: 0,
+        stampDutyInterest: 0,
+        constructionInterest: 0,
+        developmentCostsInterest: 0,
+        transactionCostsInterest: 0,
+        total: 0,
+        monthlyBreakdown: []
+      };
+    }
+
+    const periodYears = propertyData.constructionPeriod / 12;
+    const interestMultiplier = Math.pow(1 + propertyData.constructionInterestRate / 100, periodYears) - 1;
+
+    // Land Interest (Non-deductible): Interest on land value over construction period
+    const landInterest = propertyData.landValue * interestMultiplier;
+
+    // Stamp Duty Interest: Interest on stamp duty over construction period
+    const stampDutyInterest = propertyData.stampDuty * interestMultiplier;
+
+    // Construction Interest (Deductible): Interest on construction progress payments
+    let constructionInterest = 0;
+    for (const payment of propertyData.constructionProgressPayments) {
+      const paymentAmount = (payment.percentage / 100) * propertyData.constructionValue;
+      const monthsRemaining = propertyData.constructionPeriod - payment.month;
+      if (monthsRemaining > 0) {
+        const paymentPeriodYears = monthsRemaining / 12;
+        const paymentInterestMultiplier = Math.pow(1 + propertyData.constructionInterestRate / 100, paymentPeriodYears) - 1;
+        constructionInterest += paymentAmount * paymentInterestMultiplier;
+      }
+    }
+
+    // Development Costs Interest: Interest on upfront development costs
+    const developmentCosts = propertyData.councilFees + propertyData.architectFees + propertyData.siteCosts;
+    const developmentCostsInterest = developmentCosts * interestMultiplier;
+
+    // Transaction Costs Interest: Interest on legal and inspection fees
+    const transactionCosts = propertyData.legalFees + propertyData.inspectionFees;
+    const transactionCostsInterest = transactionCosts * interestMultiplier;
+
+    const total = landInterest + stampDutyInterest + constructionInterest + developmentCostsInterest + transactionCostsInterest;
+
     return {
-      landInterest: 0,
-      stampDutyInterest: 0,
-      constructionInterest: 0,
-      developmentCostsInterest: 0,
-      transactionCostsInterest: 0,
-      total: propertyData.totalHoldingCosts,
+      landInterest: Math.round(landInterest),
+      stampDutyInterest: Math.round(stampDutyInterest),
+      constructionInterest: Math.round(constructionInterest),
+      developmentCostsInterest: Math.round(developmentCostsInterest),
+      transactionCostsInterest: Math.round(transactionCostsInterest),
+      total: Math.round(total),
       monthlyBreakdown: []
     };
   };
