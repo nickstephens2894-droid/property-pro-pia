@@ -25,9 +25,10 @@ import {
   validateAnnualExpenses,
   validateTaxOptimization
 } from "@/utils/validationUtils";
-import { Users, Home, Receipt, Calculator, Building2, Hammer, CreditCard, Clock, DollarSign, TrendingUp, Percent, X, Plus, AlertTriangle } from "lucide-react";
+import { Users, Home, Receipt, Calculator, Building2, Hammer, CreditCard, Clock, DollarSign, TrendingUp, Percent, X, Plus, AlertTriangle, Info } from "lucide-react";
 import { PROPERTY_METHODS, type PropertyMethod } from "@/types/presets";
 import { calculateStampDuty, type Jurisdiction } from "@/utils/stampDuty";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 
 const JURISDICTIONS: Jurisdiction[] = ["ACT", "NSW", "NT", "QLD", "SA", "TAS", "VIC", "WA"];
 
@@ -930,12 +931,39 @@ export const PropertyInputForm = ({
                 <CreditCard className="h-4 w-4 text-primary" />
                 <span className="font-medium">Funding & Finance Structure</span>
                 <div className="ml-auto">
-                  <AccordionCompletionIndicator status={financingStatus} />
+                  <AccordionCompletionIndicator status={financingStatus} sectionKey="funding-finance" />
                 </div>
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-6 pb-6">
               <div className="space-y-6">
+                {/* Cash Deposit - Always show regardless of funding method */}
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm">Cash Deposit Requirements</h4>
+                  <div>
+                    <Label htmlFor="depositAmount" className="text-sm font-medium">Cash Deposit Amount</Label>
+                    <CurrencyInput
+                      id="depositAmount"
+                      value={propertyData.depositAmount}
+                      onChange={(value) => updateFieldWithCascade('depositAmount', value)}
+                      className="mt-1"
+                      placeholder="Enter deposit amount"
+                    />
+                    {propertyData.useEquityFunding && propertyData.depositAmount > 0 && (
+                      <div className="flex items-center gap-2 mt-2 text-blue-600 text-sm">
+                        <AlertTriangle className="h-4 w-4" />
+                        Additional cash deposit on top of equity funding
+                      </div>
+                    )}
+                    {!propertyData.useEquityFunding && propertyData.depositAmount < propertyData.minimumDepositRequired && (
+                      <div className="flex items-center gap-2 mt-2 text-warning text-sm">
+                        <AlertTriangle className="h-4 w-4" />
+                        Shortfall of ${(propertyData.minimumDepositRequired - propertyData.depositAmount).toLocaleString()} - require additional cash or equity financing
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
@@ -944,9 +972,9 @@ export const PropertyInputForm = ({
                     onChange={(e) => updateField('useEquityFunding', e.target.checked)}
                     className="rounded border-border"
                   />
-                  <Label htmlFor="useEquityFunding" className="text-sm font-medium">
-                    Use Equity from Existing Property
-                  </Label>
+                 <Label htmlFor="useEquityFunding" className="text-sm font-medium">
+                   Use Equity from Existing Property
+                 </Label>
                 </div>
 
                 {/* Main Loan Structure */}
@@ -974,17 +1002,15 @@ export const PropertyInputForm = ({
                           max={50}
                         />
                       </div>
-                      {!propertyData.useEquityFunding && (
-                        <div>
-                          <Label htmlFor="lvr" className="text-sm font-medium">Loan to Value Ratio (LVR)</Label>
-                          <PercentageInput
-                            id="lvr"
-                            value={propertyData.lvr}
-                            onChange={(value) => updateField('lvr', value)}
-                            className="mt-1"
-                          />
-                        </div>
-                      )}
+                      <div>
+                        <Label htmlFor="lvr" className="text-sm font-medium">Loan to Value Ratio (LVR)</Label>
+                        <PercentageInput
+                          id="lvr"
+                          value={propertyData.lvr}
+                          onChange={(value) => updateField('lvr', value)}
+                          className="mt-1"
+                        />
+                      </div>
                     </div>
 
                     {/* Loan Type Selection */}
@@ -1166,34 +1192,7 @@ export const PropertyInputForm = ({
                     </div>
                   </div>
                 )}
-
-                {/* Cash Deposit - Always show regardless of funding method */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-sm">Cash Deposit Requirements</h4>
-                  <div>
-                    <Label htmlFor="depositAmount" className="text-sm font-medium">Cash Deposit Amount</Label>
-                    <CurrencyInput
-                      id="depositAmount"
-                      value={propertyData.depositAmount}
-                      onChange={(value) => updateFieldWithCascade('depositAmount', value)}
-                      className="mt-1"
-                      placeholder="Enter deposit amount"
-                    />
-                    {propertyData.useEquityFunding && propertyData.depositAmount > 0 && (
-                      <div className="flex items-center gap-2 mt-2 text-blue-600 text-sm">
-                        <AlertTriangle className="h-4 w-4" />
-                        Additional cash deposit on top of equity funding
-                      </div>
-                    )}
-                    {!propertyData.useEquityFunding && propertyData.depositAmount < propertyData.minimumDepositRequired && (
-                      <div className="flex items-center gap-2 mt-2 text-warning text-sm">
-                        <AlertTriangle className="h-4 w-4" />
-                        Shortfall of ${(propertyData.minimumDepositRequired - propertyData.depositAmount).toLocaleString()} - require additional cash or equity financing
-                      </div>
-                    )}
-                  </div>
-                </div>
-
+                
                 {propertyData.isConstructionProject && (
                   <div className="space-y-4">
                     <h4 className="font-medium text-sm">Construction Holding Costs Funding</h4>
@@ -1409,34 +1408,6 @@ export const PropertyInputForm = ({
             </AccordionTrigger>
            <AccordionContent className="px-6 pb-6">
               <div className="space-y-6">
-                {/* Property Ownership Allocation - Moved from Personal Profile */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-sm">Property Ownership Allocation</h4>
-                  <div className="text-xs text-muted-foreground mb-3">
-                    Configure ownership percentages to optimize tax outcomes across multiple investors.
-                  </div>
-                  {propertyData.clients.map((client) => {
-                    const allocation = propertyData.ownershipAllocations.find(a => a.clientId === client.id);
-                    return (
-                      <div key={client.id} className="grid grid-cols-2 gap-4 items-center">
-                        <Label className="text-sm">{client.name}</Label>
-                        <PercentageInput
-                          id={`ownership-${client.id}`}
-                          value={allocation?.ownershipPercentage || 0}
-                          onChange={(value) => updateOwnershipAllocation(client.id, value)}
-                          step="1"
-                        />
-                      </div>
-                    );
-                  })}
-                  <div className="text-sm text-muted-foreground">
-                    Total: {totalOwnership}% 
-                    {totalOwnership !== 100 && (
-                      <span className="text-warning ml-2">⚠️ Should total 100%</span>
-                    )}
-                  </div>
-                </div>
-
                 {/* Depreciation Settings */}
                 <div className="space-y-4">
                   <h4 className="font-medium text-sm">Depreciation Strategy</h4>
@@ -1471,9 +1442,88 @@ export const PropertyInputForm = ({
                   </div>
                 </div>
 
+                {/* Property Ownership Allocation */}
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm">Property Ownership Allocation</h4>
+                  <div className="text-xs text-muted-foreground mb-3">
+                    Configure ownership percentages to optimize tax outcomes across multiple investors.
+                  </div>
+                  {propertyData.clients.map((client) => {
+                    const allocation = propertyData.ownershipAllocations.find(a => a.clientId === client.id);
+                    return (
+                      <div key={client.id} className="grid grid-cols-2 gap-4 items-center">
+                        <Label className="text-sm">{client.name}</Label>
+                        <PercentageInput
+                          id={`ownership-${client.id}`}
+                          value={allocation?.ownershipPercentage || 0}
+                          onChange={(value) => updateOwnershipAllocation(client.id, value)}
+                          step="1"
+                        />
+                      </div>
+                    );
+                  })}
+                  <div className="text-sm text-muted-foreground">
+                    Total: {totalOwnership}% 
+                    {totalOwnership !== 100 && (
+                      <span className="text-warning ml-2">⚠️ Should total 100%</span>
+                    )}
+                  </div>
+                </div>
+
                 {/* Multi-Client Tax Summary */}
                 <div className="space-y-4">
-                  <h4 className="font-medium text-sm">Tax Impact by Client</h4>
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium text-sm">Tax Impact by Client</h4>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Total Tax Impact</span>
+                      <HoverCard openDelay={150}>
+                        <HoverCardTrigger asChild>
+                          <button type="button" className="inline-flex items-center text-muted-foreground hover:text-foreground">
+                            <Info className="h-4 w-4" aria-label="Ownership split helper" />
+                          </button>
+                        </HoverCardTrigger>
+                        <HoverCardContent className="w-80">
+                          <div className="space-y-2">
+                            <div className="font-medium">Ownership Split Guide</div>
+                            {propertyData.clients.length === 2 ? (
+                              (() => {
+                                const resultsByClient = propertyData.clients.map(c => clientTaxResults.find(r => r.client.id === c.id));
+                                const [a, b] = resultsByClient;
+                                const totalPropertyTaxable = clientTaxResults.reduce((sum, r) => sum + r.propertyTaxableIncome, 0);
+                                const fmt = (n: number) => `${n < 0 ? '-' : ''}$${Math.abs(Math.round(n)).toLocaleString()}`;
+                                const estimate = (shareA: number) => {
+                                  const shareB = 1 - shareA;
+                                  const mA = a?.marginalTaxRate ?? 0;
+                                  const mB = b?.marginalTaxRate ?? 0;
+                                  return totalPropertyTaxable * (mA * shareA + mB * shareB);
+                                };
+                                const rows = [
+                                  { label: '10% / 90%', value: estimate(0.10) },
+                                  { label: '50% / 50%', value: estimate(0.50) },
+                                  { label: '90% / 10%', value: estimate(0.90) },
+                                ];
+                                return (
+                                  <div className="text-sm">
+                                    <div className="text-xs text-muted-foreground mb-2">Approximate using current marginal rates. Actual results may differ.</div>
+                                    <div className="space-y-1">
+                                      {rows.map(r => (
+                                        <div key={r.label} className="flex items-center justify-between">
+                                          <span>{r.label}</span>
+                                          <span className={r.value < 0 ? 'text-success' : 'text-destructive'}>{fmt(r.value)}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              })()
+                            ) : (
+                              <div className="text-xs text-muted-foreground">Helper available when there are exactly two investors.</div>
+                            )}
+                          </div>
+                        </HoverCardContent>
+                      </HoverCard>
+                    </div>
+                  </div>
                   <div className="space-y-3">
                     {clientTaxResults.map((result) => (
                       <div key={result.client.id} className="bg-muted/30 rounded-lg p-4 space-y-2">
@@ -1501,6 +1551,14 @@ export const PropertyInputForm = ({
                         </div>
                       </div>
                     ))}
+
+                    {/* Total Tax Impact row */}
+                    <div className="flex items-center justify-between bg-primary/5 rounded-lg p-3 text-sm">
+                      <span className="font-medium">Total Tax Impact</span>
+                      <span className={`font-semibold ${clientTaxResults.reduce((s, r) => s + r.taxDifference, 0) < 0 ? 'text-success' : 'text-destructive'}`}>
+                        ${clientTaxResults.reduce((s, r) => s + r.taxDifference, 0).toLocaleString()}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -1514,7 +1572,12 @@ export const PropertyInputForm = ({
                     </div>
                     <div>
                       <span className="text-muted-foreground">Highest Marginal Rate:</span>
-                      <div className="font-medium">{(marginalTaxRate * 100).toFixed(0)}%</div>
+                      <div className="font-medium">
+                        {(marginalTaxRate * 100).toFixed(0)}%
+                        {propertyData.clients.some(c => c.hasMedicareLevy) && (
+                          <span className="text-muted-foreground"> +2% Medicare</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

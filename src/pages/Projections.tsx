@@ -15,6 +15,7 @@ import { PresetSelector } from "@/components/PresetSelector";
 import { resolve, Triplet } from "@/utils/overrides";
 import { OverrideField } from "@/components/OverrideField";
 import { totalTaxAU, marginalRateAU } from "@/utils/tax";
+import { InvestmentResultsDetailed } from "@/components/InvestmentResultsDetailed";
 interface YearProjection {
   year: number;
   rentalIncome: number;
@@ -663,6 +664,16 @@ Tax Rate: {formatPercentage(investmentSummary.marginalTaxRateSummary * 100)} (hi
           </Card>
         )}
  
+        <InvestmentResultsDetailed
+          projections={projections}
+          yearTo={validatedYearRange[1]}
+          initialPropertyValue={assumptions.initialPropertyValue}
+          totalProjectCost={calculateTotalProjectCost()}
+          cpiRate={assumptions.expenseInflationRate}
+          formatCurrency={formatCurrency}
+          formatPercentage={formatPercentage}
+        />
+        
         {/* Client Income & Tax Optimization */}
         <Card>
           <Collapsible open={clientAccordionOpen} onOpenChange={setClientAccordionOpen}>
@@ -699,7 +710,7 @@ Tax Rate: {formatPercentage(investmentSummary.marginalTaxRateSummary * 100)} (hi
                         if (client.hasMedicareLevy && income > 24276) rate += 2;
                         return rate;
                       })();
-
+ 
                       // Calculate this client's share of first year tax benefit
                       const firstYearTaxBenefit = projections[0]?.taxBenefit || 0;
                       const clientTaxBenefit = firstYearTaxBenefit * (ownershipPercentage / 100);

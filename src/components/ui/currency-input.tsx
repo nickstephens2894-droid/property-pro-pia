@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +31,14 @@ export const CurrencyInput = ({
     value === 0 ? "" : formatNumber(value)
   );
   const [isFocused, setIsFocused] = useState(false);
+
+  // Keep display value in sync with external prop updates when not actively editing
+  useEffect(() => {
+    if (!isFocused) {
+      setDisplayValue(value === 0 ? "" : formatNumber(value));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, isFocused]);
 
   const handleFocus = () => {
     setIsFocused(true);
