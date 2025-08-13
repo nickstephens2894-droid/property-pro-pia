@@ -132,6 +132,19 @@ interface PropertyDataContextType {
     monthlyBreakdown: any[];
   };
   calculateMinimumDeposit: () => number;
+  calculateFundingAnalysis: () => {
+    totalProjectCost: number;
+    mainLoanAmount: number;
+    equityLoanAmount: number;
+    availableEquity: number;
+    minimumCashRequired: number;
+    actualCashDeposit: number;
+    fundingShortfall: number;
+    fundingSurplus: number;
+    isEquityEnabled: boolean;
+    equitySurplus: number;
+    offsetAccountBalance: number;
+  };
 }
 
 const PropertyDataContext = createContext<PropertyDataContextType | undefined>(undefined);
@@ -252,8 +265,14 @@ export const PropertyDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Centralized calculations (existing code omitted for brevity)
   const calculateEquityLoanAmount = () => {
-    const equityAvailable = Math.max(0, propertyData.primaryPropertyValue * (propertyData.maxLVR / 100) - propertyData.existingDebt);
-    return propertyData.useEquityFunding ? Math.min(equityAvailable, propertyData.depositAmount) : 0;
+    if (!propertyData.useEquityFunding) return 0;
+    
+    const totalProjectCost = calculateTotalProjectCost();
+    const shortfallAfterMainLoan = Math.max(0, totalProjectCost - propertyData.loanAmount);
+    const availableEquity = Math.max(0, propertyData.primaryPropertyValue * (propertyData.maxLVR / 100) - propertyData.existingDebt);
+    
+    // Use equity to cover shortfall up to available equity
+    return Math.min(shortfallAfterMainLoan, availableEquity);
   };
 
   const calculateTotalProjectCost = () => {
@@ -270,21 +289,96 @@ export const PropertyDataProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const calculateHoldingCosts = () => {
-    // Placeholder: actual implementation exists elsewhere in the file
+    // Only calculate for construction projects
+    if (!propertyData.isConstructionProject || propertyData.constructionPeriod === 0 || propertyData.constructionInterestRate === 0) {
+      return {
+        landInterest: 0,
+        stampDutyInterest: 0,
+        constructionInterest: 0,
+        developmentCostsInterest: 0,
+        transactionCostsInterest: 0,
+        total: 0,
+        monthlyBreakdown: []
+      };
+    }
+
+    const periodYears = propertyData.constructionPeriod / 12;
+    const interestMultiplier = Math.pow(1 + propertyData.constructionInterestRate / 100, periodYears) - 1;
+
+    // Land Interest (Non-deductible): Interest on land value over construction period
+    const landInterest = propertyData.landValue * interestMultiplier;
+
+    // Stamp Duty Interest: Interest on stamp duty over construction period
+    const stampDutyInterest = propertyData.stampDuty * interestMultiplier;
+
+    // Construction Interest (Deductible): Interest on construction progress payments
+    let constructionInterest = 0;
+    for (const payment of propertyData.constructionProgressPayments) {
+      const paymentAmount = (payment.percentage / 100) * propertyData.constructionValue;
+      const monthsRemaining = propertyData.constructionPeriod - payment.month;
+      if (monthsRemaining > 0) {
+        const paymentPeriodYears = monthsRemaining / 12;
+        const paymentInterestMultiplier = Math.pow(1 + propertyData.constructionInterestRate / 100, paymentPeriodYears) - 1;
+        constructionInterest += paymentAmount * paymentInterestMultiplier;
+      }
+    }
+
+    // Development Costs Interest: Interest on upfront development costs
+    const developmentCosts = propertyData.councilFees + propertyData.architectFees + propertyData.siteCosts;
+    const developmentCostsInterest = developmentCosts * interestMultiplier;
+
+    // Transaction Costs Interest: Interest on legal and inspection fees
+    const transactionCosts = propertyData.legalFees + propertyData.inspectionFees;
+    const transactionCostsInterest = transactionCosts * interestMultiplier;
+
+    const total = landInterest + stampDutyInterest + constructionInterest + developmentCostsInterest + transactionCostsInterest;
+
     return {
-      landInterest: 0,
-      stampDutyInterest: 0,
-      constructionInterest: 0,
-      developmentCostsInterest: 0,
-      transactionCostsInterest: 0,
-      total: propertyData.totalHoldingCosts,
+      landInterest: Math.round(landInterest),
+      stampDutyInterest: Math.round(stampDutyInterest),
+      constructionInterest: Math.round(constructionInterest),
+      developmentCostsInterest: Math.round(developmentCostsInterest),
+      transactionCostsInterest: Math.round(transactionCostsInterest),
+      total: Math.round(total),
       monthlyBreakdown: []
     };
   };
 
   const calculateMinimumDeposit = () => {
-    // Placeholder for minimum deposit calculation
-    return propertyData.minimumDepositRequired;
+    const fundingAnalysis = calculateFundingAnalysis();
+    return fundingAnalysis.minimumCashRequired;
+  };
+
+  const calculateFundingAnalysis = () => {
+    const totalProjectCost = calculateTotalProjectCost();
+    const availableEquity = calculateAvailableEquity();
+    
+    // Calculate equity loan amount first (without circular dependency)
+    const shortfallAfterMainLoan = Math.max(0, totalProjectCost - propertyData.loanAmount);
+    const equityLoanAmount = propertyData.useEquityFunding 
+      ? Math.min(shortfallAfterMainLoan, availableEquity)
+      : 0;
+    
+    // Calculate what's needed after main loan and equity
+    const shortfallAfterLoans = Math.max(0, totalProjectCost - propertyData.loanAmount - equityLoanAmount);
+    const actualCashDeposit = propertyData.depositAmount || 0;
+    
+    // Total funding provided
+    const totalFunding = propertyData.loanAmount + equityLoanAmount + actualCashDeposit;
+    
+    return {
+      totalProjectCost,
+      mainLoanAmount: propertyData.loanAmount,
+      equityLoanAmount,
+      availableEquity,
+      minimumCashRequired: shortfallAfterLoans,
+      actualCashDeposit,
+      fundingShortfall: Math.max(0, totalProjectCost - totalFunding),
+      fundingSurplus: Math.max(0, totalFunding - totalProjectCost),
+      isEquityEnabled: propertyData.useEquityFunding,
+      equitySurplus: Math.max(0, availableEquity - equityLoanAmount),
+      offsetAccountBalance: Math.max(0, totalFunding - totalProjectCost),
+    };
   };
 
   const updateField = (field: keyof PropertyData, value: number | boolean | string) => {
@@ -332,7 +426,8 @@ export const PropertyDataProvider = ({ children }: { children: ReactNode }) => {
       calculateTotalProjectCost,
       calculateAvailableEquity,
       calculateHoldingCosts,
-      calculateMinimumDeposit
+      calculateMinimumDeposit,
+      calculateFundingAnalysis
     }}>
       {children}
     </PropertyDataContext.Provider>

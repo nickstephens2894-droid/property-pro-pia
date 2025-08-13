@@ -12,20 +12,14 @@ export interface Property {
   location?: string;
   notes?: string;
   status: 'current' | 'new';
-  clients: Array<{
-    client_id: string;
+  client_id: string;
+  investors: Array<{
+    id: string;
+    name: string;
     ownership_percentage: number;
   }>;
   created_at: string;
   updated_at: string;
-}
-
-export interface PropertyClient {
-  id: string;
-  property_id: string;
-  client_id: string;
-  ownership_percentage: number;
-  created_at: string;
 }
 
 export function useProperties() {
@@ -53,37 +47,39 @@ export function useProperties() {
 
       const clientIds = clients.map(c => c.id);
       
-      // Get properties linked to these clients through property_clients junction table
-      const { data: propertyClients, error: pcError } = await supabase
-        .from('property_clients')
+      // Get properties linked to these clients
+      const { data: propertiesData, error: propertiesError } = await supabase
+        .from('properties')
         .select(`
-          property_id,
+          id,
+          name,
+          type,
+          purchase_price,
+          weekly_rent,
+          location,
+          notes,
+          status,
           client_id,
-          ownership_percentage,
-          properties (
-            id,
-            name,
-            type,
-            purchase_price,
-            weekly_rent,
-            location,
-            notes,
-            status,
-            created_at,
-            updated_at
-          )
+          created_at,
+          updated_at
         `)
         .in('client_id', clientIds);
 
-      if (pcError) throw pcError;
-      
-      // Group properties by property_id and map to Property interface
-      const propertyMap = new Map<string, Property>();
-      
-      propertyClients?.forEach(pc => {
-        const prop = pc.properties;
-        if (prop && !propertyMap.has(prop.id)) {
-          propertyMap.set(prop.id, {
+      if (propertiesError) throw propertiesError;
+
+      // For each property, get the investors
+      const propertiesWithInvestors = await Promise.all(
+        (propertiesData || []).map(async (prop) => {
+          const { data: investors, error: investorsError } = await supabase
+            .from('investors')
+            .select('id, name, ownership_percentage')
+            .eq('client_id', prop.client_id);
+
+          if (investorsError) {
+            console.error('Error loading investors for property:', investorsError);
+          }
+
+          return {
             id: prop.id,
             name: prop.name,
             type: prop.type,
@@ -92,26 +88,19 @@ export function useProperties() {
             location: prop.location || '',
             notes: prop.notes || '',
             status: prop.status,
-            clients: [],
+            client_id: prop.client_id,
+            investors: investors || [],
             created_at: prop.created_at,
             updated_at: prop.updated_at
-          });
-        }
-        
-        if (prop && propertyMap.has(prop.id)) {
-          const property = propertyMap.get(prop.id)!;
-          property.clients.push({
-            client_id: pc.client_id,
-            ownership_percentage: Number(pc.ownership_percentage) || 100
-          });
-        }
-      });
+          } as Property;
+        })
+      );
       
-      const mappedProperties = Array.from(propertyMap.values()).sort((a, b) => 
+      const sortedProperties = propertiesWithInvestors.sort((a, b) => 
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
       
-      setProperties(mappedProperties);
+      setProperties(sortedProperties);
     } catch (error) {
       console.error('Error loading properties:', error);
       toast.error('Failed to load properties');
@@ -120,17 +109,13 @@ export function useProperties() {
     }
   };
 
-  const createProperty = async (propertyData: Omit<Property, 'id' | 'created_at' | 'updated_at' | 'clients'> & { clientIds: string[] }) => {
+  const createProperty = async (propertyData: Omit<Property, 'id' | 'created_at' | 'updated_at' | 'investors'> & { clientId: string }) => {
     try {
-      if (!propertyData.clientIds || propertyData.clientIds.length === 0) {
-        throw new Error('At least one client must be selected');
+      if (!propertyData.clientId) {
+        throw new Error('A client must be selected');
       }
 
-      if (propertyData.clientIds.length > 4) {
-        throw new Error('Maximum 4 clients allowed per property');
-      }
-
-      // Start a transaction
+      // Create the property
       const { data: property, error: propertyError } = await supabase
         .from('properties')
         .insert({
@@ -140,26 +125,13 @@ export function useProperties() {
           weekly_rent: propertyData.weeklyRent,
           location: propertyData.location,
           notes: propertyData.notes,
-          status: propertyData.status
+          status: propertyData.status,
+          client_id: propertyData.clientId
         })
         .select()
         .single();
 
       if (propertyError) throw propertyError;
-
-      // Create property-client relationships
-      const ownershipPercentage = 100 / propertyData.clientIds.length;
-      const propertyClients = propertyData.clientIds.map(clientId => ({
-        property_id: property.id,
-        client_id: clientId,
-        ownership_percentage: ownershipPercentage
-      }));
-
-      const { error: pcError } = await supabase
-        .from('property_clients')
-        .insert(propertyClients);
-
-      if (pcError) throw pcError;
 
       toast.success('Property created successfully');
       await loadProperties();
@@ -171,7 +143,7 @@ export function useProperties() {
     }
   };
 
-  const updateProperty = async (id: string, updates: Partial<Property> & { clientIds?: string[] }) => {
+  const updateProperty = async (id: string, updates: Partial<Property> & { clientId?: string }) => {
     try {
       // Map frontend fields to database fields
       const dbUpdates: any = {};
@@ -182,6 +154,7 @@ export function useProperties() {
       if (updates.location !== undefined) dbUpdates.location = updates.location;
       if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
       if (updates.status !== undefined) dbUpdates.status = updates.status;
+      if (updates.clientId !== undefined) dbUpdates.client_id = updates.clientId;
       
       // Add updated_at timestamp
       dbUpdates.updated_at = new Date().toISOString();
@@ -193,35 +166,6 @@ export function useProperties() {
         .eq('id', id);
 
       if (propertyError) throw propertyError;
-
-      // Update client relationships if provided
-      if (updates.clientIds) {
-        if (updates.clientIds.length > 4) {
-          throw new Error('Maximum 4 clients allowed per property');
-        }
-
-        // Delete existing relationships
-        await supabase
-          .from('property_clients')
-          .delete()
-          .eq('property_id', id);
-
-        // Create new relationships
-        if (updates.clientIds.length > 0) {
-          const ownershipPercentage = 100 / updates.clientIds.length;
-          const propertyClients = updates.clientIds.map(clientId => ({
-            property_id: id,
-            client_id: clientId,
-            ownership_percentage: ownershipPercentage
-          }));
-
-          const { error: pcError } = await supabase
-            .from('property_clients')
-            .insert(propertyClients);
-
-          if (pcError) throw pcError;
-        }
-      }
 
       toast.success('Property updated successfully');
       await loadProperties();
@@ -235,7 +179,7 @@ export function useProperties() {
 
   const deleteProperty = async (id: string) => {
     try {
-      // Delete property (property_clients will be deleted via CASCADE)
+      // Delete property
       const { error } = await supabase
         .from('properties')
         .delete()
@@ -266,4 +210,4 @@ export function useProperties() {
     updateProperty,
     deleteProperty
   };
-} 
+}

@@ -26,6 +26,8 @@ import {
   validateTaxOptimization
 } from "@/utils/validationUtils";
 import { Users, Home, Receipt, Calculator, Building2, Hammer, CreditCard, Clock, DollarSign, TrendingUp, Percent, X, Plus, AlertTriangle, Info } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { formatFinancialValue } from "@/utils/calculationUtils";
 import { PROPERTY_METHODS, type PropertyMethod } from "@/types/presets";
 import { calculateStampDuty, type Jurisdiction } from "@/utils/stampDuty";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
@@ -117,7 +119,7 @@ export const PropertyInputForm = ({
 }: PropertyInputFormProps) => {
   const [openSections, setOpenSections] = useState<string[]>(["personal-profile"]);
   const { confirmations, updateConfirmation } = useFieldConfirmations();
-  const { applyPreset, calculateEquityLoanAmount, calculateAvailableEquity, calculateHoldingCosts: ctxCalculateHoldingCosts } = usePropertyData();
+  const { applyPreset, calculateEquityLoanAmount, calculateAvailableEquity, calculateHoldingCosts: ctxCalculateHoldingCosts, calculateFundingAnalysis } = usePropertyData();
   const [pendingUpdate, setPendingUpdate] = useState<{
     field: keyof PropertyData;
     value: any;
@@ -975,7 +977,86 @@ export const PropertyInputForm = ({
                  <Label htmlFor="useEquityFunding" className="text-sm font-medium">
                    Use Equity from Existing Property
                  </Label>
-                </div>
+                 </div>
+
+                {/* Funding Analysis Alerts */}
+                {(() => {
+                  const fundingAnalysis = calculateFundingAnalysis();
+                  
+                  // Scenario 1: No equity funding + shortfall
+                  if (!propertyData.useEquityFunding && fundingAnalysis.fundingShortfall > 0) {
+                    return (
+                      <Alert variant="warning" className="mt-4">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle>Funding Shortfall</AlertTitle>
+                        <AlertDescription>
+                          {formatFinancialValue(fundingAnalysis.fundingShortfall)} additional funding required.
+                          <br />
+                          Consider: Increase cash deposit, enable equity funding, or reduce loan amount.
+                        </AlertDescription>
+                      </Alert>
+                    );
+                  }
+                  
+                  // Scenario 2: Equity enabled + sufficient equity + additional cash
+                  if (propertyData.useEquityFunding && fundingAnalysis.equitySurplus > 0 && propertyData.depositAmount > 0) {
+                    return (
+                      <Alert variant="info" className="mt-4">
+                        <Info className="h-4 w-4" />
+                        <AlertTitle>Additional Cash Deposit</AlertTitle>
+                        <AlertDescription>
+                          You have {formatFinancialValue(fundingAnalysis.availableEquity)} available equity. Your {formatFinancialValue(propertyData.depositAmount)} cash deposit is additional funding.
+                          <br /><br />
+                          <strong>During construction:</strong> Additional cash will offset non-deductible land interest first for tax optimization.
+                          <br />
+                          <strong>After completion:</strong> Excess funds will be placed in offset account, reflected in 40-year projections.
+                        </AlertDescription>
+                      </Alert>
+                    );
+                  }
+                  
+                  // Scenario 3: Equity enabled + insufficient equity
+                  if (propertyData.useEquityFunding && fundingAnalysis.fundingShortfall > 0) {
+                    return (
+                      <Alert variant="warning" className="mt-4">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle>Partial Equity Funding</AlertTitle>
+                        <AlertDescription>
+                          Equity covers {formatFinancialValue(fundingAnalysis.equityLoanAmount)} of required {formatFinancialValue(fundingAnalysis.minimumCashRequired + fundingAnalysis.equityLoanAmount)} deposit. 
+                          Additional {formatFinancialValue(fundingAnalysis.fundingShortfall)} cash needed.
+                        </AlertDescription>
+                      </Alert>
+                    );
+                  }
+                  
+                  // Scenario 4: Equity enabled + surplus funds
+                  if (propertyData.useEquityFunding && fundingAnalysis.offsetAccountBalance > 0) {
+                    return (
+                      <Alert variant="info" className="mt-4">
+                        <DollarSign className="h-4 w-4" />
+                        <AlertTitle>Surplus Funding - Offset Account</AlertTitle>
+                        <AlertDescription>
+                          Total funding ({formatFinancialValue(fundingAnalysis.mainLoanAmount + fundingAnalysis.equityLoanAmount + fundingAnalysis.actualCashDeposit)}) exceeds project cost ({formatFinancialValue(fundingAnalysis.totalProjectCost)}).
+                          <br />
+                          Surplus {formatFinancialValue(fundingAnalysis.offsetAccountBalance)} will be allocated to offset account for ongoing tax benefits.
+                        </AlertDescription>
+                      </Alert>
+                    );
+                  }
+                  
+                  return null;
+                })()}
+
+                {/* Construction Interest Optimization Note */}
+                {propertyData.isConstructionProject && propertyData.depositAmount > 0 && (
+                  <Alert variant="info" className="mt-4">
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>Tax Optimization</AlertTitle>
+                    <AlertDescription>
+                      Additional cash funds during construction will be applied to offset non-deductible land holding costs first, then deductible construction interest, maximizing your tax position.
+                    </AlertDescription>
+                  </Alert>
+                )}
 
                 {/* Main Loan Structure */}
                 <div className="space-y-4">

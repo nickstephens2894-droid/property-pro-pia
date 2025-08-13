@@ -41,7 +41,7 @@ export default function Properties() {
     weeklyRent: 0,
     location: "",
     notes: "",
-    clientIds: [] as string[],
+    clientId: "" as string,
     status: 'current' as Property['status']
   });
 
@@ -53,7 +53,7 @@ export default function Properties() {
       weeklyRent: 0,
       location: "",
       notes: "",
-      clientIds: [],
+      clientId: "",
       status: 'current'
     });
     setEditingProperty(null);
@@ -74,7 +74,7 @@ export default function Properties() {
       weeklyRent: property.weeklyRent,
       location: property.location || "",
       notes: property.notes || "",
-      clientIds: property.clients.map(c => c.client_id),
+      clientId: property.client_id,
       status: property.status
     });
     setIsDialogOpen(true);
@@ -83,7 +83,7 @@ export default function Properties() {
   const handlePropertySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!propertyForm.name.trim() || propertyForm.clientIds.length === 0) {
+    if (!propertyForm.name.trim() || !propertyForm.clientId) {
       return;
     }
 
@@ -96,7 +96,7 @@ export default function Properties() {
           weeklyRent: propertyForm.weeklyRent,
           location: propertyForm.location.trim(),
           notes: propertyForm.notes.trim() || null,
-          clientIds: propertyForm.clientIds,
+          clientId: propertyForm.clientId,
           status: propertyForm.status
         });
       } else {
@@ -107,8 +107,9 @@ export default function Properties() {
           weeklyRent: propertyForm.weeklyRent,
           location: propertyForm.location.trim(),
           notes: propertyForm.notes.trim() || null,
-          clientIds: propertyForm.clientIds,
-          status: propertyForm.status
+          status: propertyForm.status,
+          client_id: propertyForm.clientId,
+          clientId: propertyForm.clientId
         });
       }
 
@@ -309,51 +310,26 @@ export default function Properties() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="property-clients" className="text-sm font-medium">
-                Clients <span className="text-destructive">*</span>
-                <span className="text-xs text-muted-foreground ml-2">
-                  (Select up to 4 clients)
-                </span>
+              <Label htmlFor="property-client" className="text-sm font-medium">
+                Client <span className="text-destructive">*</span>
               </Label>
-              <div className="space-y-2 max-h-32 overflow-y-auto border rounded-md p-3">
-                {clients.map((client) => (
-                  <div key={client.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`client-${client.id}`}
-                      checked={propertyForm.clientIds.includes(client.id)}
-                      onCheckedChange={(checked) => {
-                        if (checked && propertyForm.clientIds.length < 4) {
-                          setPropertyForm(prev => ({
-                            ...prev,
-                            clientIds: [...prev.clientIds, client.id]
-                          }));
-                        } else if (!checked) {
-                          setPropertyForm(prev => ({
-                            ...prev,
-                            clientIds: prev.clientIds.filter(id => id !== client.id)
-                          }));
-                        }
-                      }}
-                      disabled={!propertyForm.clientIds.includes(client.id) && propertyForm.clientIds.length >= 4}
-                    />
-                    <Label
-                      htmlFor={`client-${client.id}`}
-                      className="text-sm font-normal cursor-pointer"
-                    >
+              <Select
+                value={propertyForm.clientId}
+                onValueChange={(value) => setPropertyForm(prev => ({ ...prev, clientId: value }))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a client..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
                       {client.name}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-              {propertyForm.clientIds.length === 0 && (
-                <p className="text-sm text-destructive">Please select at least one client</p>
-              )}
-              {propertyForm.clientIds.length > 0 && (
-                <p className="text-sm text-muted-foreground">
-                  Selected: {propertyForm.clientIds.map(id => 
-                    clients.find(c => c.id === id)?.name
-                  ).join(', ')}
-                </p>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {!propertyForm.clientId && (
+                <p className="text-sm text-destructive">Please select a client</p>
               )}
             </div>
 
@@ -393,7 +369,7 @@ export default function Properties() {
               </Button>
               <Button
                 type="submit"
-                disabled={!propertyForm.name.trim() || propertyForm.clientIds.length === 0}
+                disabled={!propertyForm.name.trim() || !propertyForm.clientId}
                 className="transition-all duration-200 hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed order-1 sm:order-2 w-full sm:w-auto"
               >
                 {editingProperty ? 'Update Property' : 'Create Property'}
@@ -492,11 +468,11 @@ export default function Properties() {
                         </div>
                         <div className="flex items-center gap-1 text-sm">
                           <Building2 className="h-3 w-3" />
-                          {property.clients.map((client, index) => (
-                            <span key={client.client_id}>
-                              {getClientName(client.client_id)}
-                              {client.ownership_percentage < 100 && ` (${client.ownership_percentage}%)`}
-                              {index < property.clients.length - 1 ? ', ' : ''}
+                          {property.investors.map((investor, index) => (
+                            <span key={investor.id}>
+                              {investor.name}
+                              {investor.ownership_percentage < 100 && ` (${investor.ownership_percentage}%)`}
+                              {index < property.investors.length - 1 ? ', ' : ''}
                             </span>
                           ))}
                         </div>

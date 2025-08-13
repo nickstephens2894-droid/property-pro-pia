@@ -31,7 +31,14 @@ class UserDataService {
         .single();
 
       if (existingProfile) {
-        return existingProfile;
+        return {
+          id: existingProfile.id,
+          displayName: existingProfile.display_name,
+          email: existingProfile.email,
+          role: existingProfile.role,
+          createdAt: existingProfile.created_at,
+          updatedAt: existingProfile.updated_at
+        };
       }
 
       // If no profile exists, create one
@@ -51,7 +58,14 @@ class UserDataService {
         return null;
       }
 
-      return newProfile;
+      return {
+        id: newProfile.id,
+        displayName: newProfile.display_name,
+        email: newProfile.email,
+        role: newProfile.role,
+        createdAt: newProfile.created_at,
+        updatedAt: newProfile.updated_at
+      };
     } catch (error) {
       console.error('Error in getUserProfile:', error);
       return null;
@@ -84,10 +98,10 @@ class UserDataService {
       const { data, error } = await supabase
         .from('scenarios')
         .insert({
-          client_id: userId, // Using client_id field for user_id
+          client_id: userId,
           name: scenario.name,
           is_core: scenario.isPrimary,
-          snapshot: scenario.propertyData
+          snapshot: scenario.propertyData as any
         })
         .select('id')
         .single();
@@ -122,7 +136,7 @@ class UserDataService {
         id: scenario.id,
         name: scenario.name,
         isPrimary: scenario.is_core,
-        propertyData: scenario.snapshot as PropertyData,
+        propertyData: scenario.snapshot as any as PropertyData,
         createdAt: scenario.created_at,
         updatedAt: scenario.updated_at
       }));
@@ -140,7 +154,7 @@ class UserDataService {
         .update({
           name: updates.name,
           is_core: updates.isPrimary,
-          snapshot: updates.propertyData,
+          snapshot: updates.propertyData as any,
           updated_at: new Date().toISOString()
         })
         .eq('id', scenarioId);
@@ -195,7 +209,7 @@ class UserDataService {
         id: data.id,
         name: data.name,
         isPrimary: data.is_core,
-        propertyData: data.snapshot as PropertyData,
+        propertyData: data.snapshot as any as PropertyData,
         createdAt: data.created_at,
         updatedAt: data.updated_at
       };
@@ -233,4 +247,4 @@ class UserDataService {
   }
 }
 
-export const userDataService = new UserDataService(); 
+export const userDataService = new UserDataService();
