@@ -24,6 +24,7 @@ interface DesktopLayoutProps {
   marginalTaxRate: number;
   calculationProps: any;
   applyPreset: (dataToApply: any, propertyMethod?: any, fundingMethod?: any) => void;
+  onClearAll: () => void;
 }
 
 const DesktopLayout = ({ 
@@ -33,10 +34,17 @@ const DesktopLayout = ({
   totalTaxableIncome, 
   marginalTaxRate, 
   calculationProps,
-  applyPreset
+  applyPreset,
+  onClearAll
 }: DesktopLayoutProps) => {
   return (
     <div className="space-y-6 p-6 max-w-full">
+      {/* Actions */}
+      <div className="flex items-center justify-end gap-3">
+        <Button variant="outline" onClick={() => downloadInputsCsv(propertyData)}>Export inputs CSV</Button>
+        <Button variant="secondary" onClick={onClearAll}>Clear all</Button>
+      </div>
+
       {/* Quick Setup Presets - Collapsible at top */}
       <div className="w-full">
         <PresetSelector 
@@ -79,7 +87,8 @@ const DesktopLayout = ({
 
 const PropertyAnalysis = () => {
   
-  const { propertyData, updateField, calculateTotalProjectCost, calculateEquityLoanAmount, applyPreset } = usePropertyData();
+  const { propertyData, updateField, calculateTotalProjectCost, calculateEquityLoanAmount, applyPreset, resetToDefaults } = usePropertyData();
+  const handleClearAll = () => resetToDefaults();
 
   // Tax calculations
   const calculateTax = (income: number) => {
@@ -361,6 +370,11 @@ const PropertyAnalysis = () => {
         {isMobile ? (
           <div className="px-4 sm:px-6 py-6">
             <div className="space-y-6">
+              {/* Actions (mobile) */}
+              <div className="flex items-center justify-end gap-3">
+                <Button variant="outline" size="sm" onClick={() => downloadInputsCsv(propertyData)}>Export inputs CSV</Button>
+                <Button variant="secondary" size="sm" onClick={handleClearAll}>Clear all</Button>
+              </div>
               {/* Quick Setup Presets - Mobile */}
               <div className="w-full">
                 <PresetSelector 
@@ -424,6 +438,7 @@ const PropertyAnalysis = () => {
             totalTaxableIncome={totalTaxableIncome}
             marginalTaxRate={marginalTaxRate}
             applyPreset={applyPreset}
+            onClearAll={handleClearAll}
             calculationProps={{
               monthlyRepayment: totalWeeklyLoanPayments * 52 / 12,
               annualRepayment: totalAnnualLoanPayments,

@@ -12,7 +12,6 @@ import ConstructionPeriodTable from "@/components/ConstructionPeriodTable";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PropertySummaryDashboard } from "@/components/PropertySummaryDashboard";
 import { PresetSelector } from "@/components/PresetSelector";
-import AppNav from "@/components/AppNav";
 import { PropertyCalculationDetails } from "@/components/PropertyCalculationDetails";
 import { InvestmentResultsDetailed } from "@/components/InvestmentResultsDetailed";
 import { resolve, Triplet } from "@/utils/overrides";
@@ -669,7 +668,6 @@ const [inputValues, setInputValues] = useState({
               <h1 className="text-3xl font-bold tracking-tight">40-Year Investment Projections</h1>
               <p className="text-muted-foreground">Year-over-year growth and cashflow analysis</p>
             </div>
-            <AppNav />
           </div>
           <Button variant="outline" className="flex items-center gap-2">
             <Download className="h-4 w-4" />

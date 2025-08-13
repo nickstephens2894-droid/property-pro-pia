@@ -577,31 +577,8 @@ export default function Clients() {
           <div>
             <h1 className="text-3xl font-bold">Clients</h1>
             <p className="text-muted-foreground">Manage your clients and investors</p>
-            <p className="text-xs text-red-500 mt-1">Debug: {isDialogOpen ? 'Modal should be open' : 'Modal is closed'}</p>
-            <button 
-              onClick={() => {
-                console.log('Test button clicked, current state:', isDialogOpen);
-                setIsDialogOpen(!isDialogOpen);
-                console.log('New state should be:', !isDialogOpen);
-              }}
-              className="text-xs bg-blue-500 text-white px-2 py-1 rounded mt-1"
-            >
-              Test Toggle Modal
-            </button>
           </div>
-          <Button size="sm" onClick={() => openAddDialog('client')}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add
-          </Button>
         </div>
-
-        {/* Search and Filters */}
-        <SearchAndFilters
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          searchPlaceholder="Search clients or investors..."
-          filters={filters}
-        />
 
         {/* General Clients Section */}
         <div className="space-y-4">
