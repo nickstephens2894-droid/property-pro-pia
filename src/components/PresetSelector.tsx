@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import type { PropertyData } from "@/contexts/PropertyDataContext";
 import { 
   PropertyMethod, 
   FundingMethod, 
@@ -11,8 +12,14 @@ import {
 import { Settings, Home, CreditCard } from "lucide-react";
 import { QuickSetupWizard } from "@/components/QuickSetupWizard";
 
+// Payload type for applying presets from the wizard
+type PresetPayload = Partial<PropertyData> & {
+  propertyMethod?: PropertyMethod;
+  fundingMethod?: FundingMethod;
+};
+
 interface PresetSelectorProps {
-  onApplyPreset: (presetData: any) => void;
+  onApplyPreset: (presetData: PresetPayload) => void;
   currentPropertyMethod?: PropertyMethod;
   currentFundingMethod?: FundingMethod;
 }
@@ -66,7 +73,7 @@ export const PresetSelector = ({
       <QuickSetupWizard 
         open={open} 
         onOpenChange={setOpen} 
-        onApplyPreset={(presetData: any) => {
+        onApplyPreset={(presetData: PresetPayload) => {
           onApplyPreset(presetData);
           setOpen(false);
         }}

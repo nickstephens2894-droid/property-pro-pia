@@ -7,6 +7,7 @@ import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose 
 } from "@/components/ui/drawer";
 import { Badge } from "@/components/ui/badge";
+import type { PropertyData } from "@/contexts/PropertyDataContext";
 import { 
   PropertyMethod, FundingMethod, PROPERTY_METHODS, FUNDING_METHODS, 
   generatePreset, getPropertyMethodData, getFundingMethodData 
@@ -15,10 +16,15 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { usePropertyData } from "@/contexts/PropertyDataContext";
 import { Home, CreditCard, Check, X } from "lucide-react";
 
+type PresetPayload = Partial<PropertyData> & {
+  propertyMethod?: PropertyMethod;
+  fundingMethod?: FundingMethod;
+};
+
 interface QuickSetupWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onApplyPreset: (presetData: any) => void;
+  onApplyPreset: (presetData: PresetPayload) => void;
   currentPropertyMethod?: PropertyMethod;
   currentFundingMethod?: FundingMethod;
 }
