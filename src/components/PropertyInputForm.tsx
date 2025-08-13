@@ -116,7 +116,7 @@ export const PropertyInputForm = ({
 }: PropertyInputFormProps) => {
   const [openSections, setOpenSections] = useState<string[]>(["personal-profile"]);
   const { confirmations, updateConfirmation } = useFieldConfirmations();
-  const { applyPreset, calculateEquityLoanAmount, calculateAvailableEquity } = usePropertyData();
+  const { applyPreset, calculateEquityLoanAmount, calculateAvailableEquity, calculateHoldingCosts: ctxCalculateHoldingCosts } = usePropertyData();
   const [pendingUpdate, setPendingUpdate] = useState<{
     field: keyof PropertyData;
     value: any;
@@ -129,7 +129,7 @@ export const PropertyInputForm = ({
 
   // Calculate holding costs during construction
   const calculateHoldingCosts = () => {
-    const costs = usePropertyData().calculateHoldingCosts();
+    const costs = ctxCalculateHoldingCosts();
     return {
       landHoldingInterest: costs.landInterest,
       constructionHoldingInterest: costs.constructionInterest,
@@ -291,7 +291,7 @@ export const PropertyInputForm = ({
                 <Users className="h-4 w-4 text-primary" />
                 <span className="font-medium">Personal Financial Profile</span>
                 <div className="ml-auto">
-                  <AccordionCompletionIndicator status={personalProfileStatus} />
+                  <AccordionCompletionIndicator status={personalProfileStatus} sectionKey="personal-profile" />
                 </div>
               </div>
             </AccordionTrigger>
@@ -379,6 +379,9 @@ export const PropertyInputForm = ({
                             <span className="text-muted-foreground">Marginal Rate:</span>
                             <span className="ml-1 font-medium">
                               {(clientTaxResults.find(r => r.client.id === client.id)?.marginalTaxRate * 100).toFixed(0)}%
+                              {client.hasMedicareLevy && (
+                                <span className="text-muted-foreground"> +2% Medicare</span>
+                              )}
                             </span>
                           </div>
                           <div>
@@ -435,10 +438,10 @@ export const PropertyInputForm = ({
   <div className="space-y-2">
     <Label className="text-sm font-medium">State</Label>
     <Select
-      value={propertyData.PropertyState ?? 'VIC'}
+      value={(propertyData as any).PropertyState ?? 'VIC'}
       onValueChange={(value) => {
         const v = value as Jurisdiction;
-        updateField('PropertyState' as keyof PropertyData, v);
+        updateField('PropertyState' as any, v);
         const dutiableValue = propertyData.isConstructionProject ? propertyData.landValue : propertyData.purchasePrice;
         const duty = calculateStampDuty(dutiableValue, v);
         updateFieldWithCascade('stampDuty', duty);
