@@ -265,8 +265,14 @@ export const PropertyDataProvider = ({ children }: { children: ReactNode }) => {
 
   // Centralized calculations (existing code omitted for brevity)
   const calculateEquityLoanAmount = () => {
-    const equityAvailable = Math.max(0, propertyData.primaryPropertyValue * (propertyData.maxLVR / 100) - propertyData.existingDebt);
-    return propertyData.useEquityFunding ? Math.min(equityAvailable, propertyData.depositAmount) : 0;
+    if (!propertyData.useEquityFunding) return 0;
+    
+    const totalProjectCost = calculateTotalProjectCost();
+    const shortfallAfterMainLoan = Math.max(0, totalProjectCost - propertyData.loanAmount);
+    const availableEquity = Math.max(0, propertyData.primaryPropertyValue * (propertyData.maxLVR / 100) - propertyData.existingDebt);
+    
+    // Use equity to cover shortfall up to available equity
+    return Math.min(shortfallAfterMainLoan, availableEquity);
   };
 
   const calculateTotalProjectCost = () => {
@@ -339,33 +345,39 @@ export const PropertyDataProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const calculateMinimumDeposit = () => {
-    const totalProjectCost = calculateTotalProjectCost();
-    return Math.max(0, totalProjectCost - propertyData.loanAmount);
+    const fundingAnalysis = calculateFundingAnalysis();
+    return fundingAnalysis.minimumCashRequired;
   };
 
   const calculateFundingAnalysis = () => {
     const totalProjectCost = calculateTotalProjectCost();
-    const equityLoanAmount = calculateEquityLoanAmount();
     const availableEquity = calculateAvailableEquity();
-    const minimumCashRequired = Math.max(0, totalProjectCost - propertyData.loanAmount - equityLoanAmount);
+    
+    // Calculate equity loan amount first (without circular dependency)
+    const shortfallAfterMainLoan = Math.max(0, totalProjectCost - propertyData.loanAmount);
+    const equityLoanAmount = propertyData.useEquityFunding 
+      ? Math.min(shortfallAfterMainLoan, availableEquity)
+      : 0;
+    
+    // Calculate what's needed after main loan and equity
+    const shortfallAfterLoans = Math.max(0, totalProjectCost - propertyData.loanAmount - equityLoanAmount);
     const actualCashDeposit = propertyData.depositAmount || 0;
+    
+    // Total funding provided
     const totalFunding = propertyData.loanAmount + equityLoanAmount + actualCashDeposit;
-    const fundingShortfall = Math.max(0, totalProjectCost - totalFunding);
-    const fundingSurplus = Math.max(0, totalFunding - totalProjectCost);
-    const equitySurplus = Math.max(0, availableEquity - equityLoanAmount);
     
     return {
       totalProjectCost,
       mainLoanAmount: propertyData.loanAmount,
       equityLoanAmount,
       availableEquity,
-      minimumCashRequired,
+      minimumCashRequired: shortfallAfterLoans,
       actualCashDeposit,
-      fundingShortfall,
-      fundingSurplus,
+      fundingShortfall: Math.max(0, totalProjectCost - totalFunding),
+      fundingSurplus: Math.max(0, totalFunding - totalProjectCost),
       isEquityEnabled: propertyData.useEquityFunding,
-      equitySurplus,
-      offsetAccountBalance: fundingSurplus,
+      equitySurplus: Math.max(0, availableEquity - equityLoanAmount),
+      offsetAccountBalance: Math.max(0, totalFunding - totalProjectCost),
     };
   };
 
