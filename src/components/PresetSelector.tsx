@@ -1,22 +1,15 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { 
   PropertyMethod, 
   FundingMethod, 
   PROPERTY_METHODS, 
-  FUNDING_METHODS, 
-  generatePreset, 
-  getPropertyMethodData, 
-  getFundingMethodData 
+  FUNDING_METHODS
 } from "@/types/presets";
-import { usePropertyData } from "@/contexts/PropertyDataContext";
-import { Settings, Home, CreditCard, RotateCcw, ChevronDown } from "lucide-react";
+import { Settings, Home, CreditCard } from "lucide-react";
+import { QuickSetupWizard } from "@/components/QuickSetupWizard";
 
 interface PresetSelectorProps {
   onApplyPreset: (presetData: any) => void;
@@ -29,197 +22,57 @@ export const PresetSelector = ({
   currentPropertyMethod, 
   currentFundingMethod 
 }: PresetSelectorProps) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [selectedPropertyMethod, setSelectedPropertyMethod] = useState<PropertyMethod | undefined>(currentPropertyMethod);
-  const [selectedFundingMethod, setSelectedFundingMethod] = useState<FundingMethod | undefined>(currentFundingMethod);
-  const { propertyData } = usePropertyData();
+  const [open, setOpen] = useState(false);
 
-  // Apply both methods together (existing behavior)
-  const handleApplyPreset = () => {
-    if (selectedPropertyMethod && selectedFundingMethod) {
-      const presetData = generatePreset(selectedPropertyMethod, selectedFundingMethod);
-      onApplyPreset(presetData);
-    }
-  };
-
-  // Apply only the property method
-  const handleApplyPropertyPreset = () => {
-    if (selectedPropertyMethod) {
-      const data = getPropertyMethodData(selectedPropertyMethod);
-      onApplyPreset({ ...data, propertyMethod: selectedPropertyMethod });
-    }
-  };
-
-  // Apply only the funding method
-  const handleApplyFundingPreset = () => {
-    if (selectedFundingMethod) {
-      const propertyValue = propertyData.isConstructionProject
-        ? (propertyData.landValue + propertyData.constructionValue)
-        : propertyData.purchasePrice;
-      const data = getFundingMethodData(selectedFundingMethod, propertyValue);
-      onApplyPreset({ ...data, fundingMethod: selectedFundingMethod });
-    }
-  };
-
-  const handleReset = () => {
-    setSelectedPropertyMethod(undefined);
-    setSelectedFundingMethod(undefined);
-  };
-
-  const canApply = selectedPropertyMethod && selectedFundingMethod;
   const hasCurrentPreset = currentPropertyMethod && currentFundingMethod;
 
   return (
-    <Card className="mb-6 border-primary/20 shadow-sm">
-      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <CollapsibleTrigger asChild>
-          <CardHeader className="pb-4 cursor-pointer hover:bg-muted/30 transition-colors">
-            <CardTitle className="flex items-center justify-between text-lg">
-              <div className="flex items-center gap-2">
-                <Settings className="h-5 w-5 text-primary" />
-                Quick Setup Presets
-                {hasCurrentPreset && (
-                  <Badge variant="default" className="ml-2">
-                    Active
-                  </Badge>
-                )}
-              </div>
-              <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Choose common property and funding scenarios to populate realistic defaults. You can modify any values after applying.
-            </p>
-          </CardHeader>
-        </CollapsibleTrigger>
-        
-        <CollapsibleContent>
-          <CardContent className="space-y-4">
-            {/* Current Preset Display */}
+    <Card className="mb-4 border-primary/20 shadow-sm">
+      <CardContent className="py-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <Settings className="h-5 w-5 text-primary" />
+            <span className="font-medium">Quick setup</span>
             {hasCurrentPreset && (
-              <div className="flex items-center gap-2 p-3 bg-primary/5 border border-primary/20 rounded-lg">
-                <span className="text-sm font-medium">Current Preset:</span>
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  <Home className="h-3 w-3" />
-                  {PROPERTY_METHODS[currentPropertyMethod].name}
-                </Badge>
-                <Badge variant="outline" className="flex items-center gap-1">
-                  <CreditCard className="h-3 w-3" />
-                  {FUNDING_METHODS[currentFundingMethod].name}
-                </Badge>
-              </div>
+              <span className="ml-1 text-xs text-muted-foreground">Current</span>
             )}
+          </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
-              {/* Property Method Selection */}
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Home className="h-4 w-4" />
-                  Property Method
-                </Label>
-                <Select 
-                  value={selectedPropertyMethod} 
-                  onValueChange={(value) => setSelectedPropertyMethod(value as PropertyMethod)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select property type..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border border-border z-50">
-                    {Object.entries(PROPERTY_METHODS).map(([key, method]) => (
-                      <SelectItem key={key} value={key}>
-                        <div className="space-y-1">
-                          <div className="font-medium">{method.name}</div>
-                          <div className="text-xs text-muted-foreground">{method.description}</div>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Funding Method Selection */}
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <CreditCard className="h-4 w-4" />
-                  Funding Method
-                </Label>
-                <Select 
-                  value={selectedFundingMethod} 
-                  onValueChange={(value) => setSelectedFundingMethod(value as FundingMethod)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select funding type..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border border-border z-50">
-                    {Object.entries(FUNDING_METHODS).map(([key, method]) => (
-                      <SelectItem key={key} value={key}>
-                        <div className="space-y-1">
-                          <div className="font-medium">{method.name}</div>
-                          <div className="text-xs text-muted-foreground">{method.description}</div>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Action Buttons */}
-            <div className="flex gap-2">
-              <Button 
-                onClick={handleApplyPropertyPreset}
-                disabled={!selectedPropertyMethod}
-                size="sm"
-                variant="outline"
-                className="flex-1"
-              >
-                Apply Property
-              </Button>
-              <Button 
-                onClick={handleApplyFundingPreset}
-                disabled={!selectedFundingMethod}
-                size="sm"
-                variant="outline"
-                className="flex-1"
-              >
-                Apply Funding
-              </Button>
-              <Button 
-                onClick={handleApplyPreset} 
-                disabled={!canApply}
-                size="sm"
-                className="flex-1"
-              >
-                Apply Both
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={handleReset}
-                className="flex items-center gap-2"
-              >
-                <RotateCcw className="h-4 w-4" />
-                Reset
-              </Button>
-            </div>
-
-            {/* Description of selected combination */}
-            {selectedPropertyMethod && selectedFundingMethod && (
-              <div className="p-3 bg-muted/30 rounded-lg text-sm">
-                <strong>This preset will configure:</strong>
-                <ul className="mt-2 space-y-1 list-disc list-inside text-muted-foreground">
-                  <li>{PROPERTY_METHODS[selectedPropertyMethod].description}</li>
-                  <li>{FUNDING_METHODS[selectedFundingMethod].description}</li>
-                  <li>Optimized tax settings with high/low income split</li>
-                  <li>Realistic market values and holding costs</li>
-                  <li>Appropriate depreciation strategy</li>
-                </ul>
-              </div>
+          {/* Current selection badges (ellipsis on small screens) */}
+          <div className="hidden sm:flex items-center gap-2 min-w-0 flex-1">
+            {currentPropertyMethod && (
+              <Badge variant="secondary" className="flex items-center gap-1 truncate max-w-[40%]">
+                <Home className="h-3 w-3" />
+                <span className="truncate">{PROPERTY_METHODS[currentPropertyMethod].name}</span>
+              </Badge>
             )}
-          </CardContent>
-        </CollapsibleContent>
-      </Collapsible>
+            {currentFundingMethod && (
+              <Badge variant="outline" className="flex items-center gap-1 truncate max-w-[40%]">
+                <CreditCard className="h-3 w-3" />
+                <span className="truncate">{FUNDING_METHODS[currentFundingMethod].name}</span>
+              </Badge>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="default" onClick={() => setOpen(true)} aria-label="Open quick setup">
+              Quick setup
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+
+      {/* Wizard (Dialog on desktop, Drawer on mobile) */}
+      <QuickSetupWizard 
+        open={open} 
+        onOpenChange={setOpen} 
+        onApplyPreset={(presetData: any) => {
+          onApplyPreset(presetData);
+          setOpen(false);
+        }}
+        currentPropertyMethod={currentPropertyMethod}
+        currentFundingMethod={currentFundingMethod}
+      />
     </Card>
   );
 };
