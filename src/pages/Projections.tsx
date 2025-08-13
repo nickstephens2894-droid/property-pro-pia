@@ -17,6 +17,7 @@ import { InvestmentResultsDetailed } from "@/components/InvestmentResultsDetaile
 import { resolve, Triplet } from "@/utils/overrides";
 import { OverrideField } from "@/components/OverrideField";
 import { totalTaxAU, marginalRateAU } from "@/utils/tax";
+import { downloadInputsCsv } from "@/utils/csvExport";
 interface YearProjection {
   year: number;
   rentalIncome: number;
@@ -669,7 +670,7 @@ const [inputValues, setInputValues] = useState({
               <p className="text-muted-foreground">Year-over-year growth and cashflow analysis</p>
             </div>
           </div>
-          <Button variant="outline" className="flex items-center gap-2">
+          <Button variant="outline" className="flex items-center gap-2" onClick={() => downloadInputsCsv(propertyData)}>
             <Download className="h-4 w-4" />
             Export to CSV
           </Button>
