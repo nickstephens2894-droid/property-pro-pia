@@ -132,6 +132,19 @@ interface PropertyDataContextType {
     monthlyBreakdown: any[];
   };
   calculateMinimumDeposit: () => number;
+  calculateFundingAnalysis: () => {
+    totalProjectCost: number;
+    mainLoanAmount: number;
+    equityLoanAmount: number;
+    availableEquity: number;
+    minimumCashRequired: number;
+    actualCashDeposit: number;
+    fundingShortfall: number;
+    fundingSurplus: number;
+    isEquityEnabled: boolean;
+    equitySurplus: number;
+    offsetAccountBalance: number;
+  };
 }
 
 const PropertyDataContext = createContext<PropertyDataContextType | undefined>(undefined);
@@ -326,8 +339,34 @@ export const PropertyDataProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const calculateMinimumDeposit = () => {
-    // Placeholder for minimum deposit calculation
-    return propertyData.minimumDepositRequired;
+    const totalProjectCost = calculateTotalProjectCost();
+    return Math.max(0, totalProjectCost - propertyData.loanAmount);
+  };
+
+  const calculateFundingAnalysis = () => {
+    const totalProjectCost = calculateTotalProjectCost();
+    const equityLoanAmount = calculateEquityLoanAmount();
+    const availableEquity = calculateAvailableEquity();
+    const minimumCashRequired = Math.max(0, totalProjectCost - propertyData.loanAmount - equityLoanAmount);
+    const actualCashDeposit = propertyData.depositAmount || 0;
+    const totalFunding = propertyData.loanAmount + equityLoanAmount + actualCashDeposit;
+    const fundingShortfall = Math.max(0, totalProjectCost - totalFunding);
+    const fundingSurplus = Math.max(0, totalFunding - totalProjectCost);
+    const equitySurplus = Math.max(0, availableEquity - equityLoanAmount);
+    
+    return {
+      totalProjectCost,
+      mainLoanAmount: propertyData.loanAmount,
+      equityLoanAmount,
+      availableEquity,
+      minimumCashRequired,
+      actualCashDeposit,
+      fundingShortfall,
+      fundingSurplus,
+      isEquityEnabled: propertyData.useEquityFunding,
+      equitySurplus,
+      offsetAccountBalance: fundingSurplus,
+    };
   };
 
   const updateField = (field: keyof PropertyData, value: number | boolean | string) => {
@@ -375,7 +414,8 @@ export const PropertyDataProvider = ({ children }: { children: ReactNode }) => {
       calculateTotalProjectCost,
       calculateAvailableEquity,
       calculateHoldingCosts,
-      calculateMinimumDeposit
+      calculateMinimumDeposit,
+      calculateFundingAnalysis
     }}>
       {children}
     </PropertyDataContext.Provider>
