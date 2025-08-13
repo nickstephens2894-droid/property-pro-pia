@@ -73,10 +73,6 @@ const DesktopLayout = ({
         </div>
       </div>
 
-      {/* Detailed Calculations - Full Width Below */}
-      <div className="w-full">
-        <PropertyCalculationDetails {...calculationProps} />
-      </div>
     </div>
   );
 };

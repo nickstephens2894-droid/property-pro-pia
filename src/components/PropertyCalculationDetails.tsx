@@ -115,12 +115,6 @@ export const PropertyCalculationDetails = ({
 
   return (
     <Card className="w-full">
-      <CardHeader className="bg-gradient-to-r from-card to-accent border-b">
-        <CardTitle className="flex items-center gap-2 text-card-foreground">
-          <Calculator className="h-5 w-5" />
-          Detailed Calculations
-        </CardTitle>
-      </CardHeader>
       <CardContent className="p-0">
         <Accordion type="multiple" className="w-full">
           

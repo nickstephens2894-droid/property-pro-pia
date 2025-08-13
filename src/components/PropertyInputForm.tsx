@@ -26,6 +26,9 @@ import {
 } from "@/utils/validationUtils";
 import { Users, Home, Receipt, Calculator, Building2, Hammer, CreditCard, Clock, DollarSign, TrendingUp, Percent, X, Plus, AlertTriangle } from "lucide-react";
 import { PROPERTY_METHODS, type PropertyMethod } from "@/types/presets";
+import { calculateStampDuty, type Jurisdiction } from "@/utils/stampDuty";
+
+const JURISDICTIONS: Jurisdiction[] = ["ACT", "NSW", "NT", "QLD", "SA", "TAS", "VIC", "WA"];
 
 interface Client {
   id: string;
@@ -124,24 +127,11 @@ export const PropertyInputForm = ({
 
   // Calculate holding costs during construction
   const calculateHoldingCosts = () => {
-    const months = propertyData.constructionPeriod || 12;
-    const annualRate = propertyData.constructionInterestRate / 100;
-    const monthlyRate = annualRate / 12;
-    
-    // Calculate monthly progress payments (simplified)
-    const totalValue = propertyData.landValue + propertyData.constructionValue;
-    const landPortion = propertyData.landValue / totalValue;
-    const constructionPortion = propertyData.constructionValue / totalValue;
-    
-    // Assume land is paid upfront, construction paid progressively
-    const avgConstructionBalance = propertyData.constructionValue * 0.5; // Average balance during construction
-    const landInterest = propertyData.landValue * monthlyRate * months;
-    const constructionInterest = avgConstructionBalance * monthlyRate * months;
-    
+    const costs = usePropertyData().calculateHoldingCosts();
     return {
-      landHoldingInterest: landInterest,
-      constructionHoldingInterest: constructionInterest,
-      totalHoldingCosts: landInterest + constructionInterest
+      landHoldingInterest: costs.landInterest,
+      constructionHoldingInterest: costs.constructionInterest,
+      totalHoldingCosts: costs.total
     };
   };
 
@@ -439,6 +429,30 @@ export const PropertyInputForm = ({
     </SelectContent>
   </Select>
 </div>
+
+  <div className="space-y-2">
+    <Label className="text-sm font-medium">State</Label>
+    <Select
+      value={propertyData.PropertyState ?? 'VIC'}
+      onValueChange={(value) => {
+        const v = value as Jurisdiction;
+        updateField('PropertyState' as keyof PropertyData, v);
+        const dutiableValue = propertyData.isConstructionProject ? propertyData.landValue : propertyData.purchasePrice;
+        const duty = calculateStampDuty(dutiableValue, v);
+        updateFieldWithCascade('stampDuty', duty);
+      }}
+    >
+      <SelectTrigger>
+        <SelectValue placeholder="Select state" />
+      </SelectTrigger>
+      <SelectContent className="bg-background border border-border">
+        {JURISDICTIONS.map((j) => (
+          <SelectItem key={j} value={j}>{j}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+    <div className="text-[11px] text-muted-foreground">Used for stamp duty calculations</div>
+  </div>
 
                 {propertyData.isConstructionProject ? (
                   <div className="space-y-4">
