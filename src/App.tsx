@@ -9,8 +9,9 @@ import AppNav from "./components/AppNav";
 import Index from "./pages/Index";
 import Projections from "./pages/Projections";
 import NotFound from "./pages/NotFound";
-import Clients from "./pages/Clients";
+import Investors from "./pages/Investors";
 import Properties from "./pages/Properties";
+import Funds from "./pages/Funds";
 import Scenarios from "./pages/Scenarios";
 import Auth from "./pages/Auth";
 import SpecPage from "./pages/SpecPage";
@@ -32,8 +33,9 @@ function AppLayout() {
           <Route path="/auth" element={<Auth />} />
           <Route path="/" element={<RequireAuth><Index /></RequireAuth>} />
           <Route path="/projections" element={<RequireAuth><Projections /></RequireAuth>} />
-          <Route path="/clients" element={<RequireAuth><Clients /></RequireAuth>} />
+          <Route path="/investors" element={<RequireAuth><Investors /></RequireAuth>} />
           <Route path="/properties" element={<RequireAuth><Properties /></RequireAuth>} />
+          <Route path="/funds" element={<RequireAuth><Funds /></RequireAuth>} />
           <Route path="/scenarios" element={<RequireAuth><Scenarios /></RequireAuth>} />
           <Route path="/spec" element={<SpecPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

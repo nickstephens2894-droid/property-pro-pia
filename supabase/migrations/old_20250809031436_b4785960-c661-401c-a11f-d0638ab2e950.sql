@@ -155,22 +155,25 @@ ALTER TABLE public.properties ENABLE ROW LEVEL SECURITY;
 
 -- New policy: Properties are accessible if user owns any of the clients linked to it
 DO $$ BEGIN
-  CREATE POLICY "Owners can CRUD properties via client ownership" ON public.properties
-  FOR ALL TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.property_clients pc
-      JOIN public.clients c ON c.id = pc.client_id
-      WHERE pc.property_id = properties.id AND c.owner_user_id = auth.uid()
+  -- Only create this policy if the property_clients table exists
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'property_clients') THEN
+    CREATE POLICY "Owners can CRUD properties via client ownership" ON public.properties
+    FOR ALL TO authenticated
+    USING (
+      EXISTS (
+        SELECT 1 FROM public.property_clients pc
+        JOIN public.clients c ON c.id = pc.client_id
+        WHERE pc.property_id = properties.id AND c.owner_user_id = auth.uid()
+      )
     )
-  )
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.property_clients pc
-      JOIN public.clients c ON c.id = pc.client_id
-      WHERE pc.property_id = properties.id AND c.owner_user_id = auth.uid()
-    )
-  );
+    WITH CHECK (
+      EXISTS (
+        SELECT 1 FROM public.property_clients pc
+        JOIN public.clients c ON c.id = pc.client_id
+        WHERE pc.property_id = properties.id AND c.owner_user_id = auth.uid()
+      )
+    );
+  END IF;
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN

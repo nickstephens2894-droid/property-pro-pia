@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS public.property_clients (
 ALTER TABLE public.property_clients ENABLE ROW LEVEL SECURITY;
 
 -- 3. Create RLS policy for property_clients
+DROP POLICY IF EXISTS "Owners can CRUD property_clients via client ownership" ON public.property_clients;
+
 CREATE POLICY "Owners can CRUD property_clients via client ownership" ON public.property_clients
   FOR ALL TO authenticated
   USING (public.is_owner_client(client_id))
