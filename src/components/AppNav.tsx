@@ -15,7 +15,7 @@ export default function AppNav({ className = "" }: { className?: string }) {
   const items = [
     { to: "/", label: "Analysis", icon: Home },
     { to: "/projections", label: "Projections", icon: BarChart3 },
-    { to: "/clients", label: "Investors", icon: Users },
+    { to: "/investors", label: "Investors", icon: Users },
     { to: "/properties", label: "Properties", icon: Building2 },
     { to: "/funds", label: "Funds", icon: PiggyBank },
     { to: "/scenarios", label: "Scenarios", icon: FileText },
