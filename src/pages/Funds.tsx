@@ -6,13 +6,20 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Building2, DollarSign, Plus, X } from 'lucide-react';
+import { Building2, DollarSign, Plus, X, Edit, Trash2 } from 'lucide-react';
+import { useLoanFunds, type LoanFund, type CreateLoanFundData } from '@/hooks/useLoanFunds';
+import { formatCurrency } from '@/utils/formatters';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 export default function Funds() {
+  const { loanFunds, loading, createLoanFund, updateLoanFund, deleteLoanFund } = useLoanFunds();
+  
   const [activeTab, setActiveTab] = useState('loans');
   const [isLoanDialogOpen, setIsLoanDialogOpen] = useState(false);
   const [isCashDialogOpen, setIsCashDialogOpen] = useState(false);
-  const [loanForm, setLoanForm] = useState({
+  const [editingLoanFund, setEditingLoanFund] = useState<LoanFund | null>(null);
+  
+  const [loanForm, setLoanForm] = useState<CreateLoanFundData>({
     name: 'Home Loan',
     
     // Construction Details
@@ -35,6 +42,7 @@ export default function Funds() {
     fundAmount: 50000,
     fundReturn: 5
   });
+
   const [cashForm, setCashForm] = useState({
     name: 'Emergency Savings',
     fundType: 'Savings',
@@ -42,11 +50,7 @@ export default function Funds() {
     returnRate: ''
   });
 
-  const handleLoanSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Loan form submitted:', loanForm);
-    // TODO: Implement loan creation logic
-    setIsLoanDialogOpen(false);
+  const resetLoanForm = () => {
     setLoanForm({
       name: 'Home Loan',
       constructionPeriod: 9,
@@ -66,6 +70,61 @@ export default function Funds() {
       fundAmount: 50000,
       fundReturn: 5
     });
+    setEditingLoanFund(null);
+  };
+
+  const openAddLoanDialog = () => {
+    resetLoanForm();
+    setIsLoanDialogOpen(true);
+  };
+
+  const openEditLoanDialog = (loanFund: LoanFund) => {
+    setLoanForm({
+      name: loanFund.name,
+      constructionPeriod: loanFund.constructionPeriod,
+      constructionInterestRate: loanFund.constructionInterestRate,
+      progressPayment: loanFund.progressPayment,
+      loanBalance: loanFund.loanBalance,
+      interestRate: loanFund.interestRate,
+      loanTerm: loanFund.loanTerm,
+      loanType: loanFund.loanType,
+      ioTerm: loanFund.ioTerm,
+      loanPurpose: loanFund.loanPurpose,
+      fundsType: loanFund.fundsType,
+      fundAmount: loanFund.fundAmount,
+      fundReturn: loanFund.fundReturn
+    });
+    setEditingLoanFund(loanFund);
+    setIsLoanDialogOpen(true);
+  };
+
+  const handleLoanSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      if (editingLoanFund) {
+        await updateLoanFund(editingLoanFund.id, loanForm);
+      } else {
+        await createLoanFund(loanForm);
+      }
+      
+      setIsLoanDialogOpen(false);
+      resetLoanForm();
+    } catch (error) {
+      console.error('Error submitting loan fund:', error);
+    }
+  };
+
+  const handleDeleteLoanFund = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this loan fund?')) {
+      return;
+    }
+    
+    try {
+      await deleteLoanFund(id);
+    } catch (error) {
+      console.error('Error deleting loan fund:', error);
+    }
   };
 
   const handleCashSubmit = (e: React.FormEvent) => {
@@ -80,6 +139,10 @@ export default function Funds() {
       returnRate: ''
     });
   };
+
+  if (loading) {
+    return <LoadingSpinner message="Loading loan funds..." />;
+  }
 
   return (
     <div className="container mx-auto px-6 py-8">
@@ -111,7 +174,7 @@ export default function Funds() {
               </div>
               <Button 
                 className="bg-primary hover:bg-primary/90"
-                onClick={() => setIsLoanDialogOpen(true)}
+                onClick={openAddLoanDialog}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Loan Fund
@@ -120,22 +183,74 @@ export default function Funds() {
 
             {/* Loan Funds Content */}
             <div className="grid gap-4">
-              <Card>
-                <CardContent className="p-6">
-                  <div className="text-center py-8">
-                    <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Loan Funds Yet</h3>
-                    <p className="text-gray-600 mb-4">Get started by creating your first loan fund</p>
-                    <Button 
-                      className="bg-primary hover:bg-primary/90"
-                      onClick={() => setIsLoanDialogOpen(true)}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Loan Fund
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              {loanFunds.length === 0 ? (
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="text-center py-8">
+                      <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No Loan Funds Yet</h3>
+                      <p className="text-gray-600 mb-4">Get started by creating your first loan fund</p>
+                      <Button 
+                        className="bg-primary hover:bg-primary/90"
+                        onClick={openAddLoanDialog}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Loan Fund
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                loanFunds.map((loanFund) => (
+                  <Card key={loanFund.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">{loanFund.name}</h3>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div>
+                              <span className="text-gray-600">Loan Balance:</span>
+                              <p className="font-medium">{formatCurrency(loanFund.loanBalance)}</p>
+                            </div>
+                            <div>
+                              <span className="text-gray-600">Interest Rate:</span>
+                              <p className="font-medium">{loanFund.interestRate}%</p>
+                            </div>
+                            <div>
+                              <span className="text-gray-600">Loan Term:</span>
+                              <p className="font-medium">{loanFund.loanTerm} years</p>
+                            </div>
+                            <div>
+                              <span className="text-gray-600">Loan Type:</span>
+                              <p className="font-medium">{loanFund.loanType}</p>
+                            </div>
+                          </div>
+                          <div className="mt-3 text-sm text-gray-600">
+                            <span>Progress Payment: {loanFund.progressPayment.weeks} weeks - {loanFund.progressPayment.percentage}%</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEditLoanDialog(loanFund)}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteLoanFund(loanFund.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </div>
           </div>
         </TabsContent>
@@ -181,11 +296,11 @@ export default function Funds() {
         </TabsContent>
       </Tabs>
 
-      {/* Add Loan Dialog */}
+      {/* Add/Edit Loan Dialog */}
       <Dialog open={isLoanDialogOpen} onOpenChange={setIsLoanDialogOpen}>
         <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-hidden">
           <DialogHeader>
-            <DialogTitle>Add New Loan Fund</DialogTitle>
+            <DialogTitle>{editingLoanFund ? 'Edit Loan Fund' : 'Add New Loan Fund'}</DialogTitle>
             <DialogDescription>
               Enter the loan details below. Fill in the construction details and financing information.
             </DialogDescription>
@@ -209,6 +324,7 @@ export default function Funds() {
                   <Label htmlFor="loanBalance">Loan Balance</Label>
                   <Input
                     id="loanBalance"
+                    type="number"
                     value={loanForm.loanBalance}
                     onChange={(e) => setLoanForm({ ...loanForm, loanBalance: Number(e.target.value) })}
                     placeholder="Enter loan balance"
@@ -219,6 +335,7 @@ export default function Funds() {
                   <Label htmlFor="originalAmount">Loan Amount</Label>
                   <Input
                     id="originalAmount"
+                    type="number"
                     value={loanForm.fundAmount}
                     onChange={(e) => setLoanForm({ ...loanForm, fundAmount: Number(e.target.value) })}
                     placeholder="Enter loan amount"
@@ -231,6 +348,7 @@ export default function Funds() {
                   <Label htmlFor="interestRate">Interest Rate (%)</Label>
                   <Input
                     id="interestRate"
+                    type="number"
                     value={loanForm.interestRate}
                     onChange={(e) => setLoanForm({ ...loanForm, interestRate: Number(e.target.value) })}
                     placeholder="Enter interest rate"
@@ -241,6 +359,7 @@ export default function Funds() {
                   <Label htmlFor="term">Loan Term (Years)</Label>
                   <Input
                     id="term"
+                    type="number"
                     value={loanForm.loanTerm}
                     onChange={(e) => setLoanForm({ ...loanForm, loanTerm: Number(e.target.value) })}
                     placeholder="Enter loan term"
@@ -415,7 +534,7 @@ export default function Funds() {
 
               <DialogFooter>
                 <Button type="submit" className="bg-primary hover:bg-primary/90">
-                  Create Loan
+                  {editingLoanFund ? 'Update Loan Fund' : 'Create Loan Fund'}
                 </Button>
               </DialogFooter>
             </form>

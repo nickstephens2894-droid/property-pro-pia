@@ -76,6 +76,72 @@ export type Database = {
         }
         Relationships: []
       }
+      loan_funds: {
+        Row: {
+          construction_interest_rate: number
+          construction_period: number
+          created_at: string
+          fund_amount: number
+          fund_return: number
+          funds_type: string
+          id: string
+          interest_rate: number
+          io_term: number
+          loan_balance: number
+          loan_purpose: string
+          loan_term: number
+          loan_type: string
+          name: string
+          owner_user_id: string
+          progress_payment_description: string
+          progress_payment_percentage: number
+          progress_payment_weeks: number
+          updated_at: string
+        }
+        Insert: {
+          construction_interest_rate?: number
+          construction_period?: number
+          created_at?: string
+          fund_amount?: number
+          fund_return?: number
+          funds_type?: string
+          id?: string
+          interest_rate?: number
+          io_term?: number
+          loan_balance?: number
+          loan_purpose?: string
+          loan_term?: number
+          loan_type?: string
+          name: string
+          owner_user_id: string
+          progress_payment_description?: string
+          progress_payment_percentage?: number
+          progress_payment_weeks?: number
+          updated_at?: string
+        }
+        Update: {
+          construction_interest_rate?: number
+          construction_period?: number
+          created_at?: string
+          fund_amount?: number
+          fund_return?: number
+          funds_type?: string
+          id?: string
+          interest_rate?: number
+          io_term?: number
+          loan_balance?: number
+          loan_purpose?: string
+          loan_term?: number
+          loan_type?: string
+          name?: string
+          owner_user_id?: string
+          progress_payment_description?: string
+          progress_payment_percentage?: number
+          progress_payment_weeks?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
