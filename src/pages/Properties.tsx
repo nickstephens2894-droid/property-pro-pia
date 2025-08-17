@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2, Building2, MapPin, DollarSign, Home, X } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useProperties, type Property } from "@/hooks/useProperties";
-import { useClients } from "@/hooks/useClients";
+import { useClients, type Investor } from "@/hooks/useClients";
 import { SearchAndFilters } from "@/components/ui/search-and-filters";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { formatCurrency } from "@/utils/formatters";
@@ -23,7 +23,7 @@ export default function Properties() {
     deleteProperty
   } = useProperties();
 
-  const { clients } = useClients();
+  const { investors } = useClients();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<"all" | "current" | "new">("all");
@@ -37,25 +37,98 @@ export default function Properties() {
   const [propertyForm, setPropertyForm] = useState({
     name: "",
     type: 'House' as Property['type'],
+    status: 'current' as Property['status'],
+    
+    // Property Meta
+    ownedOrPotential: 'Owned' as 'Owned' | 'Potential',
+    isConstructionProject: false,
+    constructionYear: new Date().getFullYear(),
+    
+    // Property Basics
+    buildingValue: 0,
+    landValue: 0,
+    constructionValue: 0,
     purchasePrice: 0,
+    plantEquipmentValue: 0,
+    currentPropertyValue: 0,
     weeklyRent: 0,
+    
+    // Investment Details
+    investmentStatus: 'Investment' as 'Investment' | 'Home' | 'Holiday',
+    rentalGrowthRate: 5,
+    capitalGrowthRate: 7,
+    vacancyRate: 2,
+    
+    // Purchase Costs
+    stampDuty: 0,
+    legalFees: 0,
+    inspectionFees: 0,
+    
+    // Construction Costs
+    councilApprovalFees: 0,
+    siteCosts: 0,
+    
+    // Annual Expenses
+    propertyManagementPercentage: 7,
+    councilRates: 0,
+    insurance: 0,
+    maintenanceRepairs: 0,
+    smokeAlarmInspection: 0,
+    pestTreatment: 0,
+    
+    // Depreciation & Tax
+    depreciationMethod: 'Prime Cost' as 'Prime Cost' | 'Diminishing Value',
+    isNewProperty: false,
+    
+    // Location & Notes
     location: "",
     notes: "",
-    clientId: "" as string,
-    status: 'current' as Property['status']
   });
+
+  // Investor assignment form
+  const [investorAssignments, setInvestorAssignments] = useState<Array<{
+    investorId: string;
+    ownershipPercentage: number;
+    cashContribution: number;
+    notes: string;
+  }>>([]);
 
   const resetPropertyForm = () => {
     setPropertyForm({
       name: "",
       type: 'House',
+      status: 'current',
+      ownedOrPotential: 'Owned',
+      isConstructionProject: false,
+      constructionYear: new Date().getFullYear(),
+      buildingValue: 0,
+      landValue: 0,
+      constructionValue: 0,
       purchasePrice: 0,
+      plantEquipmentValue: 0,
+      currentPropertyValue: 0,
       weeklyRent: 0,
+      investmentStatus: 'Investment',
+      rentalGrowthRate: 5,
+      capitalGrowthRate: 7,
+      vacancyRate: 2,
+      stampDuty: 0,
+      legalFees: 0,
+      inspectionFees: 0,
+      councilApprovalFees: 0,
+      siteCosts: 0,
+      propertyManagementPercentage: 7,
+      councilRates: 0,
+      insurance: 0,
+      maintenanceRepairs: 0,
+      smokeAlarmInspection: 0,
+      pestTreatment: 0,
+      depreciationMethod: 'Prime Cost',
+      isNewProperty: false,
       location: "",
       notes: "",
-      clientId: "",
-      status: 'current'
     });
+    setInvestorAssignments([]);
     setEditingProperty(null);
   };
 
@@ -70,20 +143,67 @@ export default function Properties() {
     setPropertyForm({
       name: property.name,
       type: property.type,
+      status: property.status,
+      ownedOrPotential: 'Owned', // TODO: Map from property data
+      isConstructionProject: false, // TODO: Map from property data
+      constructionYear: new Date().getFullYear(), // TODO: Map from property data
+      buildingValue: 0, // TODO: Map from property data
+      landValue: 0, // TODO: Map from property data
+      constructionValue: 0, // TODO: Map from property data
       purchasePrice: property.purchasePrice,
+      plantEquipmentValue: 0, // TODO: Map from property data
+      currentPropertyValue: property.purchasePrice, // TODO: Map from property data
       weeklyRent: property.weeklyRent,
+      investmentStatus: 'Investment', // TODO: Map from property data
+      rentalGrowthRate: 5, // TODO: Map from property data
+      capitalGrowthRate: 7, // TODO: Map from property data
+      vacancyRate: 2, // TODO: Map from property data
+      stampDuty: 0, // TODO: Map from property data
+      legalFees: 0, // TODO: Map from property data
+      inspectionFees: 0, // TODO: Map from property data
+      councilApprovalFees: 0, // TODO: Map from property data
+      siteCosts: 0, // TODO: Map from property data
+      propertyManagementPercentage: 7, // TODO: Map from property data
+      councilRates: 0, // TODO: Map from property data
+      insurance: 0, // TODO: Map from property data
+      maintenanceRepairs: 0, // TODO: Map from property data
+      smokeAlarmInspection: 0, // TODO: Map from property data
+      pestTreatment: 0, // TODO: Map from property data
+      depreciationMethod: 'Prime Cost', // TODO: Map from property data
+      isNewProperty: false, // TODO: Map from property data
       location: property.location || "",
       notes: property.notes || "",
-      clientId: property.client_id,
-      status: property.status
     });
+    // TODO: Load existing investor assignments
+    setInvestorAssignments([]);
     setIsDialogOpen(true);
+  };
+
+  const addInvestorAssignment = () => {
+    if (investorAssignments.length >= 4) return;
+    
+    setInvestorAssignments(prev => [...prev, {
+      investorId: "",
+      ownershipPercentage: 0,
+      cashContribution: 0,
+      notes: ""
+    }]);
+  };
+
+  const removeInvestorAssignment = (index: number) => {
+    setInvestorAssignments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const updateInvestorAssignment = (index: number, field: string, value: any) => {
+    setInvestorAssignments(prev => prev.map((assignment, i) => 
+      i === index ? { ...assignment, [field]: value } : assignment
+    ));
   };
 
   const handlePropertySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!propertyForm.name.trim() || !propertyForm.clientId) {
+    if (!propertyForm.name.trim()) {
       return;
     }
 
@@ -96,7 +216,6 @@ export default function Properties() {
           weeklyRent: propertyForm.weeklyRent,
           location: propertyForm.location.trim(),
           notes: propertyForm.notes.trim() || null,
-          clientId: propertyForm.clientId,
           status: propertyForm.status
         });
       } else {
@@ -107,9 +226,7 @@ export default function Properties() {
           weeklyRent: propertyForm.weeklyRent,
           location: propertyForm.location.trim(),
           notes: propertyForm.notes.trim() || null,
-          status: propertyForm.status,
-          client_id: propertyForm.clientId,
-          clientId: propertyForm.clientId
+          status: propertyForm.status
         });
       }
 
@@ -169,9 +286,9 @@ export default function Properties() {
     }
   ];
 
-  const getClientName = (clientId: string) => {
-    const client = clients.find(c => c.id === clientId);
-    return client ? client.name : "Unknown Client";
+  const getInvestorName = (investorId: string) => {
+    const investor = investors.find(i => i.id === investorId);
+    return investor ? investor.name : "Unknown Investor";
   };
 
   const getPropertyTypeIcon = (type: Property['type']) => {
@@ -201,7 +318,7 @@ export default function Properties() {
                 {editingProperty ? 'Edit Property' : 'Add New Property'}
               </h2>
               <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                {editingProperty ? 'Update property information' : 'Create a new property for your portfolio'}
+                Enter the property details and assign investors below
               </p>
             </div>
             <Button
@@ -216,145 +333,729 @@ export default function Properties() {
         </div>
 
         {/* Modal Content */}
-        <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto max-h-[calc(95vh-120px)] sm:max-h-[calc(90vh-120px)]">
-          <form onSubmit={handlePropertySubmit} className="space-y-4 sm:space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="property-name" className="text-sm font-medium">
-                Property Name <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="property-name"
-                type="text"
-                value={propertyForm.name}
-                onChange={(e) => setPropertyForm(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Enter property name"
-                className="transition-all duration-200 focus:ring-2 focus:ring-primary/20 w-full"
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+        <div className="p-4 sm:p-6 space-y-6 overflow-y-auto max-h-[calc(95vh-120px)] sm:max-h-[calc(90vh-120px)]">
+          <form onSubmit={handlePropertySubmit} className="space-y-6">
+            {/* Basic Information Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-foreground">Basic Information</h3>
+              
               <div className="space-y-2">
-                <Label htmlFor="property-type" className="text-sm font-medium">
-                  Property Type <span className="text-destructive">*</span>
-                </Label>
-                <Select
-                  value={propertyForm.type}
-                  onValueChange={(value) => setPropertyForm(prev => ({ ...prev, type: value as Property['type'] }))}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select property type..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="House">House</SelectItem>
-                    <SelectItem value="Apartment">Apartment</SelectItem>
-                    <SelectItem value="Townhouse">Townhouse</SelectItem>
-                    <SelectItem value="Unit">Unit</SelectItem>
-                    <SelectItem value="Land">Land</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="property-status" className="text-sm font-medium">
-                  Status <span className="text-destructive">*</span>
-                </Label>
-                <Select
-                  value={propertyForm.status}
-                  onValueChange={(value) => setPropertyForm(prev => ({ ...prev, status: value as Property['status'] }))}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select status..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="current">Current</SelectItem>
-                    <SelectItem value="new">New</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="property-purchase-price" className="text-sm font-medium">
-                  Purchase Price (AUD) <span className="text-destructive">*</span>
+                <Label htmlFor="property-name" className="text-sm font-medium">
+                  Property Name <span className="text-destructive">*</span>
                 </Label>
                 <Input
-                  id="property-purchase-price"
-                  type="number"
-                  min="0"
-                  step="1000"
-                  value={propertyForm.purchasePrice}
-                  onChange={(e) => setPropertyForm(prev => ({ ...prev, purchasePrice: Number(e.target.value) }))}
-                  placeholder="0"
+                  id="property-name"
+                  type="text"
+                  value={propertyForm.name}
+                  onChange={(e) => setPropertyForm(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="e.g., Main Street Apartment"
                   className="transition-all duration-200 focus:ring-2 focus:ring-primary/20 w-full"
                   required
                 />
               </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="property-type" className="text-sm font-medium">
+                    Property Type
+                  </Label>
+                  <Select
+                    value={propertyForm.type}
+                    onValueChange={(value) => setPropertyForm(prev => ({ ...prev, type: value as Property['type'] }))}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select property type..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="House">🏠 House</SelectItem>
+                      <SelectItem value="Apartment">🏢 Apartment</SelectItem>
+                      <SelectItem value="Townhouse">🏘️ Townhouse</SelectItem>
+                      <SelectItem value="Unit">🏢 Unit</SelectItem>
+                      <SelectItem value="Land">📍 Land</SelectItem>
+                      <SelectItem value="Other">🏗️ Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="property-status" className="text-sm font-medium">
+                    Status
+                  </Label>
+                  <Select
+                    value={propertyForm.status}
+                    onValueChange={(value) => setPropertyForm(prev => ({ ...prev, status: value as Property['status'] }))}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select status..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="current">Current</SelectItem>
+                      <SelectItem value="new">New</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="property-owned-or-potential" className="text-sm font-medium">
+                    Owned or Potential
+                  </Label>
+                  <Select
+                    value={propertyForm.ownedOrPotential}
+                    onValueChange={(value) => setPropertyForm(prev => ({ ...prev, ownedOrPotential: value as 'Owned' | 'Potential' }))}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Owned">Owned / Current</SelectItem>
+                      <SelectItem value="Potential">Potential</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="property-investment-status" className="text-sm font-medium">
+                    Investment Status
+                  </Label>
+                  <Select
+                    value={propertyForm.investmentStatus}
+                    onValueChange={(value) => setPropertyForm(prev => ({ ...prev, investmentStatus: value as 'Investment' | 'Home' | 'Holiday' }))}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Investment">Investment</SelectItem>
+                      <SelectItem value="Home">Home</SelectItem>
+                      <SelectItem value="Holiday">Holiday / 2nd Home</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="property-construction-year" className="text-sm font-medium">
+                    Construction Year
+                  </Label>
+                  <Input
+                    id="property-construction-year"
+                    type="number"
+                    min="1800"
+                    max={new Date().getFullYear() + 5}
+                    value={propertyForm.constructionYear}
+                    onChange={(e) => setPropertyForm(prev => ({ ...prev, constructionYear: Number(e.target.value) }))}
+                    placeholder="2022"
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="property-is-construction" className="text-sm font-medium">
+                    Is Construction Project
+                  </Label>
+                  <div className="flex items-center space-x-2 pt-2">
+                    <Checkbox
+                      id="property-is-construction"
+                      checked={propertyForm.isConstructionProject}
+                      onCheckedChange={(checked) => setPropertyForm(prev => ({ ...prev, isConstructionProject: checked as boolean }))}
+                    />
+                    <Label htmlFor="property-is-construction" className="text-sm">Yes, this is a construction project</Label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Property Values Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-foreground">Property Values</h3>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="property-land-value" className="text-sm font-medium">
+                    Land Value
+                  </Label>
+                  <Input
+                    id="property-land-value"
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value={propertyForm.landValue}
+                    onChange={(e) => setPropertyForm(prev => ({ ...prev, landValue: Number(e.target.value) }))}
+                    placeholder="300000"
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="property-building-value" className="text-sm font-medium">
+                    Building Value
+                  </Label>
+                  <Input
+                    id="property-building-value"
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value={propertyForm.buildingValue}
+                    onChange={(e) => setPropertyForm(prev => ({ ...prev, buildingValue: Number(e.target.value) }))}
+                    placeholder="450000"
+                    className="h-9"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="property-construction-value" className="text-sm font-medium">
+                    Construction Value
+                  </Label>
+                  <Input
+                    id="property-construction-value"
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value={propertyForm.constructionValue}
+                    onChange={(e) => setPropertyForm(prev => ({ ...prev, constructionValue: Number(e.target.value) }))}
+                    placeholder="500000"
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="property-plant-equipment" className="text-sm font-medium">
+                    Plant & Equipment Value
+                  </Label>
+                  <Input
+                    id="property-plant-equipment"
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value={propertyForm.plantEquipmentValue}
+                    onChange={(e) => setPropertyForm(prev => ({ ...prev, plantEquipmentValue: Number(e.target.value) }))}
+                    placeholder="50000"
+                    className="h-9"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="property-purchase-price" className="text-sm font-medium">
+                    Purchase Price
+                  </Label>
+                  <Input
+                    id="property-purchase-price"
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value={propertyForm.purchasePrice}
+                    onChange={(e) => setPropertyForm(prev => ({ ...prev, purchasePrice: Number(e.target.value) }))}
+                    placeholder="800000"
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="property-current-value" className="text-sm font-medium">
+                    Current Property Value
+                  </Label>
+                  <Input
+                    id="property-current-value"
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value={propertyForm.currentPropertyValue}
+                    onChange={(e) => setPropertyForm(prev => ({ ...prev, currentPropertyValue: Number(e.target.value) }))}
+                    placeholder="850000"
+                    className="h-9"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Purchase & Construction Costs Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-foreground">Purchase & Construction Costs</h3>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="property-stamp-duty" className="text-sm font-medium">
+                    Stamp Duty
+                  </Label>
+                  <Input
+                    id="property-stamp-duty"
+                    type="number"
+                    min="0"
+                    step="100"
+                    value={propertyForm.stampDuty}
+                    onChange={(e) => setPropertyForm(prev => ({ ...prev, stampDuty: Number(e.target.value) }))}
+                    placeholder="24000"
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="property-legal-fees" className="text-sm font-medium">
+                    Legal Fees
+                  </Label>
+                  <Input
+                    id="property-legal-fees"
+                    type="number"
+                    min="0"
+                    step="100"
+                    value={propertyForm.legalFees}
+                    onChange={(e) => setPropertyForm(prev => ({ ...prev, legalFees: Number(e.target.value) }))}
+                    placeholder="1500"
+                    className="h-9"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="property-inspection-fees" className="text-sm font-medium">
+                    Inspection Fees
+                  </Label>
+                  <Input
+                    id="property-inspection-fees"
+                    type="number"
+                    min="0"
+                    step="100"
+                    value={propertyForm.inspectionFees}
+                    onChange={(e) => setPropertyForm(prev => ({ ...prev, inspectionFees: Number(e.target.value) }))}
+                    placeholder="600"
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="property-council-approval" className="text-sm font-medium">
+                    Council Approval Fees
+                  </Label>
+                  <Input
+                    id="property-council-approval"
+                    type="number"
+                    min="0"
+                    step="100"
+                    value={propertyForm.councilApprovalFees}
+                    onChange={(e) => setPropertyForm(prev => ({ ...prev, councilApprovalFees: Number(e.target.value) }))}
+                    placeholder="20000"
+                    className="h-9"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
-                <Label htmlFor="property-weekly-rent" className="text-sm font-medium">
-                  Weekly Rent (AUD) <span className="text-destructive">*</span>
+                <Label htmlFor="property-site-costs" className="text-sm font-medium">
+                  Site Costs
                 </Label>
                 <Input
-                  id="property-weekly-rent"
+                  id="property-site-costs"
                   type="number"
                   min="0"
-                  step="50"
-                  value={propertyForm.weeklyRent}
-                  onChange={(e) => setPropertyForm(prev => ({ ...prev, weeklyRent: Number(e.target.value) }))}
-                  placeholder="0"
-                  className="transition-all duration-200 focus:ring-2 focus:ring-primary/20 w-full"
-                  required
+                  step="100"
+                  value={propertyForm.siteCosts}
+                  onChange={(e) => setPropertyForm(prev => ({ ...prev, siteCosts: Number(e.target.value) }))}
+                  placeholder="5000"
+                  className="h-9"
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="property-client" className="text-sm font-medium">
-                Client <span className="text-destructive">*</span>
-              </Label>
-              <Select
-                value={propertyForm.clientId}
-                onValueChange={(value) => setPropertyForm(prev => ({ ...prev, clientId: value }))}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a client..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {!propertyForm.clientId && (
-                <p className="text-sm text-destructive">Please select a client</p>
+            {/* Annual Expenses Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-foreground">Annual Expenses</h3>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="property-management-percentage" className="text-sm font-medium">
+                    Property Management (%)
+                  </Label>
+                  <Input
+                    id="property-management-percentage"
+                    type="number"
+                    min="0"
+                    max="20"
+                    step="0.1"
+                    value={propertyForm.propertyManagementPercentage}
+                    onChange={(e) => setPropertyForm(prev => ({ ...prev, propertyManagementPercentage: Number(e.target.value) }))}
+                    placeholder="7"
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="property-council-rates" className="text-sm font-medium">
+                    Council Rates
+                  </Label>
+                  <Input
+                    id="property-council-rates"
+                    type="number"
+                    min="0"
+                    step="100"
+                    value={propertyForm.councilRates}
+                    onChange={(e) => setPropertyForm(prev => ({ ...prev, councilRates: Number(e.target.value) }))}
+                    placeholder="2500"
+                    className="h-9"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="property-insurance" className="text-sm font-medium">
+                    Insurance
+                  </Label>
+                  <Input
+                    id="property-insurance"
+                    type="number"
+                    min="0"
+                    step="100"
+                    value={propertyForm.insurance}
+                    onChange={(e) => setPropertyForm(prev => ({ ...prev, insurance: Number(e.target.value) }))}
+                    placeholder="1300"
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="property-maintenance" className="text-sm font-medium">
+                    Maintenance & Repairs
+                  </Label>
+                  <Input
+                    id="property-maintenance"
+                    type="number"
+                    min="0"
+                    step="100"
+                    value={propertyForm.maintenanceRepairs}
+                    onChange={(e) => setPropertyForm(prev => ({ ...prev, maintenanceRepairs: Number(e.target.value) }))}
+                    placeholder="2000"
+                    className="h-9"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="property-smoke-alarm" className="text-sm font-medium">
+                    Smoke Alarm Inspection
+                  </Label>
+                  <Input
+                    id="property-smoke-alarm"
+                    type="number"
+                    min="0"
+                    step="50"
+                    value={propertyForm.smokeAlarmInspection}
+                    onChange={(e) => setPropertyForm(prev => ({ ...prev, smokeAlarmInspection: Number(e.target.value) }))}
+                    placeholder="150"
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="property-pest-treatment" className="text-sm font-medium">
+                    Pest Treatment
+                  </Label>
+                  <Input
+                    id="property-pest-treatment"
+                    type="number"
+                    min="0"
+                    step="50"
+                    value={propertyForm.pestTreatment}
+                    onChange={(e) => setPropertyForm(prev => ({ ...prev, pestTreatment: Number(e.target.value) }))}
+                    placeholder="150"
+                    className="h-9"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Investment Performance Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-foreground">Investment Performance</h3>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="property-weekly-rent" className="text-sm font-medium">
+                    Weekly Rent
+                  </Label>
+                  <Input
+                    id="property-weekly-rent"
+                    type="number"
+                    min="0"
+                    step="50"
+                    value={propertyForm.weeklyRent}
+                    onChange={(e) => setPropertyForm(prev => ({ ...prev, weeklyRent: Number(e.target.value) }))}
+                    placeholder="650"
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="property-rental-growth" className="text-sm font-medium">
+                    Rental Growth Rate (%)
+                  </Label>
+                  <Input
+                    id="property-rental-growth"
+                    type="number"
+                    min="0"
+                    max="20"
+                    step="0.1"
+                    value={propertyForm.rentalGrowthRate}
+                    onChange={(e) => setPropertyForm(prev => ({ ...prev, rentalGrowthRate: Number(e.target.value) }))}
+                    placeholder="5"
+                    className="h-9"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="property-capital-growth" className="text-sm font-medium">
+                    Capital Growth Rate (%)
+                  </Label>
+                  <Input
+                    id="property-capital-growth"
+                    type="number"
+                    min="0"
+                    max="20"
+                    step="0.1"
+                    value={propertyForm.capitalGrowthRate}
+                    onChange={(e) => setPropertyForm(prev => ({ ...prev, capitalGrowthRate: Number(e.target.value) }))}
+                    placeholder="7"
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="property-vacancy-rate" className="text-sm font-medium">
+                    Vacancy Rate (%)
+                  </Label>
+                  <Input
+                    id="property-vacancy-rate"
+                    type="number"
+                    min="0"
+                    max="20"
+                    step="0.1"
+                    value={propertyForm.vacancyRate}
+                    onChange={(e) => setPropertyForm(prev => ({ ...prev, vacancyRate: Number(e.target.value) }))}
+                    placeholder="2"
+                    className="h-9"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Depreciation & Tax Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-foreground">Depreciation & Tax</h3>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="property-depreciation-method" className="text-sm font-medium">
+                    Depreciation Method
+                  </Label>
+                  <Select
+                    value={propertyForm.depreciationMethod}
+                    onValueChange={(value) => setPropertyForm(prev => ({ ...prev, depreciationMethod: value as 'Prime Cost' | 'Diminishing Value' }))}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select method..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Prime Cost">Prime Cost</SelectItem>
+                      <SelectItem value="Diminishing Value">Diminishing Value</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="property-is-new" className="text-sm font-medium">
+                    Is New Property
+                  </Label>
+                  <div className="flex items-center space-x-2 pt-2">
+                    <Checkbox
+                      id="property-is-new"
+                      checked={propertyForm.isNewProperty}
+                      onCheckedChange={(checked) => setPropertyForm(prev => ({ ...prev, isNewProperty: checked as boolean }))}
+                    />
+                    <Label htmlFor="property-is-new" className="text-sm">Yes, this is a new property</Label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Location & Notes Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-foreground">Location & Notes</h3>
+              
+              <div className="space-y-2">
+                <Label htmlFor="property-location" className="text-sm font-medium">Location</Label>
+                <Input
+                  id="property-location"
+                  type="text"
+                  value={propertyForm.location}
+                  onChange={(e) => setPropertyForm(prev => ({ ...prev, location: e.target.value }))}
+                  placeholder="Sydney, NSW"
+                  className="transition-all duration-200 focus:ring-2 focus:ring-primary/20 w-full"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="property-notes" className="text-sm font-medium">Notes</Label>
+                <Textarea
+                  id="property-notes"
+                  value={propertyForm.notes}
+                  onChange={(e) => setPropertyForm(prev => ({ ...prev, notes: e.target.value }))}
+                  placeholder="Additional notes about the property..."
+                  rows={3}
+                  className="transition-all duration-200 focus:ring-2 focus:ring-primary/20 resize-none"
+                />
+              </div>
+            </div>
+
+            {/* Investor Assignment Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-foreground">Investor Assignment</h3>
+              
+              {investors.length === 0 ? (
+                <div className="bg-muted/50 rounded-lg p-4 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    No investors found. Please add investors first from the Investors page.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="property-client" className="text-sm font-medium">
+                      Primary Client
+                    </Label>
+                    <Select
+                      value={propertyForm.clientId}
+                      onValueChange={(value) => setPropertyForm(prev => ({ ...prev, clientId: value }))}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select a client..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {investors.map((investor) => (
+                          <SelectItem key={investor.id} value={investor.id}>
+                            {investor.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm font-medium">Investor Details</Label>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={addInvestorAssignment}
+                        disabled={investorAssignments.length >= 4}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Investor
+                      </Button>
+                    </div>
+
+                    {investorAssignments.length === 0 ? (
+                      <div className="bg-muted/30 rounded-lg p-4 text-center">
+                        <p className="text-sm text-muted-foreground">
+                          No investors assigned yet. Click "Add Investor" to assign investors to this property.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {investorAssignments.map((assignment, index) => (
+                          <div key={index} className="bg-muted/30 rounded-lg p-4 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <h4 className="text-sm font-medium">Investor {index + 1}</h4>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => removeInvestorAssignment(index)}
+                              >
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                Remove
+                              </Button>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div className="space-y-2">
+                                <Label htmlFor={`investor-${index}-name`} className="text-sm font-medium">
+                                  Investor
+                                </Label>
+                                <Select
+                                  value={assignment.investorId}
+                                  onValueChange={(value) => updateInvestorAssignment(index, 'investorId', value)}
+                                >
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Select an investor..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {investors.map((investor) => (
+                                      <SelectItem key={investor.id} value={investor.id}>
+                                        {investor.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor={`investor-${index}-ownership`} className="text-sm font-medium">
+                                  Ownership %
+                                </Label>
+                                <Input
+                                  id={`investor-${index}-ownership`}
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  step="1"
+                                  value={assignment.ownershipPercentage}
+                                  onChange={(e) => updateInvestorAssignment(index, 'ownershipPercentage', Number(e.target.value))}
+                                  placeholder="100"
+                                  className="h-9"
+                                />
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div className="space-y-2">
+                                <Label htmlFor={`investor-${index}-contribution`} className="text-sm font-medium">
+                                  Cash Contribution
+                                </Label>
+                                <Input
+                                  id={`investor-${index}-contribution`}
+                                  type="number"
+                                  min="0"
+                                  step="1000"
+                                  value={assignment.cashContribution}
+                                  onChange={(e) => updateInvestorAssignment(index, 'cashContribution', Number(e.target.value))}
+                                  placeholder="0"
+                                  className="h-9"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor={`investor-${index}-notes`} className="text-sm font-medium">
+                                  Notes
+                                </Label>
+                                <Input
+                                  id={`investor-${index}-notes`}
+                                  value={assignment.notes}
+                                  onChange={(e) => updateInvestorAssignment(index, 'notes', e.target.value)}
+                                  placeholder="Additional notes..."
+                                  className="h-9"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        
+                        {investorAssignments.length >= 4 && (
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <p className="text-sm text-blue-800">
+                              Maximum of 4 investors reached for this property.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="property-location" className="text-sm font-medium">Location</Label>
-              <Input
-                id="property-location"
-                type="text"
-                value={propertyForm.location}
-                onChange={(e) => setPropertyForm(prev => ({ ...prev, location: e.target.value }))}
-                placeholder="Enter property location"
-                className="transition-all duration-200 focus:ring-2 focus:ring-primary/20 w-full"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="property-notes" className="text-sm font-medium">Notes</Label>
-              <Textarea
-                id="property-notes"
-                value={propertyForm.notes}
-                onChange={(e) => setPropertyForm(prev => ({ ...prev, notes: e.target.value }))}
-                placeholder="Additional notes about this property"
-                rows={3}
-                className="transition-all duration-200 focus:ring-2 focus:ring-primary/20 resize-none"
-              />
             </div>
 
             {/* Form Actions */}
@@ -369,7 +1070,7 @@ export default function Properties() {
               </Button>
               <Button
                 type="submit"
-                disabled={!propertyForm.name.trim() || !propertyForm.clientId}
+                disabled={!propertyForm.name.trim()}
                 className="transition-all duration-200 hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed order-1 sm:order-2 w-full sm:w-auto"
               >
                 {editingProperty ? 'Update Property' : 'Create Property'}

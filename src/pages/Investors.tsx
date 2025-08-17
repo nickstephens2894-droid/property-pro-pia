@@ -1,165 +1,83 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Users, User, Building2, X } from "lucide-react";
+import { Plus, Edit, Trash2, Building2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { useClients, type Client, type Investor } from "@/hooks/useClients";
-import { SearchAndFilters } from "@/components/ui/search-and-filters";
-import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { formatCurrency } from "@/utils/formatters";
-import { Checkbox } from "@/components/ui/checkbox";
-
-type EntityType = 'client' | 'investor';
 
 export default function Investors() {
   const {
     clients,
     investors,
     loading,
-    createClient,
-    updateClient,
-    deleteClient,
     createInvestor,
     updateInvestor,
-    deleteInvestor,
-    getInvestorsForClient
+    deleteInvestor
   } = useClients();
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState<"all" | "active" | "archived">("all");
-  
-  // Form states
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<Client | Investor | null>(null);
-  const [editingType, setEditingType] = useState<'client' | 'investor'>('client');
-  const [clientForm, setClientForm] = useState({
-    name: ''
-  });
+  const [editingItem, setEditingItem] = useState<Investor | null>(null);
   const [investorForm, setInvestorForm] = useState({
     name: '',
     client_id: '',
     annualIncome: 0,
     otherIncome: 0,
+    nonTaxableIncome: 0,
     ownershipPercentage: 0,
     loanSharePercentage: 0,
     cashContribution: 0,
     hasMedicareLevy: false
   });
 
-  // Debug: Track when isDialogOpen changes
-  const prevDialogOpen = useRef(isDialogOpen);
-  useEffect(() => {
-    if (prevDialogOpen.current !== isDialogOpen) {
-      console.log('🔍 isDialogOpen changed from', prevDialogOpen.current, 'to', isDialogOpen);
-      prevDialogOpen.current = isDialogOpen;
-    }
-  }, [isDialogOpen]);
-
-  // Debug: Track all state changes
-  useEffect(() => {
-    console.log('🔄 Component re-rendered with state:', { isDialogOpen, editingType, editingItem });
-  });
-
   const resetForms = () => {
-    setClientForm({
-      name: ''
-    });
     setInvestorForm({
       name: '',
       client_id: '',
       annualIncome: 0,
       otherIncome: 0,
+      nonTaxableIncome: 0,
       ownershipPercentage: 0,
       loanSharePercentage: 0,
       cashContribution: 0,
       hasMedicareLevy: false
     });
     setEditingItem(null);
-    setEditingType('client');
   };
 
-  const openAddDialog = useCallback((type: 'client' | 'investor') => {
-    console.log('=== openAddDialog called ===');
-    console.log('Type:', type);
-    console.log('Current isDialogOpen:', isDialogOpen);
-    console.log('Current editingType:', editingType);
-    console.log('Current editingItem:', editingItem);
-    
-    setEditingType(type);
+  const openAddDialog = useCallback(() => {
     setEditingItem(null);
-    
-    if (type === 'client') {
-      setClientForm({ name: '' });
-    } else {
-      setInvestorForm({
-        name: '',
-        client_id: '',
-        annualIncome: 0,
-        otherIncome: 0,
-        ownershipPercentage: 0,
-        loanSharePercentage: 0,
-        cashContribution: 0,
-        hasMedicareLevy: false
-      });
-    }
-    
+    resetForms();
     setIsDialogOpen(true);
-  }, [isDialogOpen, editingType, editingItem]);
+  }, []);
 
-  const openEditDialog = useCallback((item: Client | Investor, type: 'client' | 'investor') => {
-    console.log('=== openEditDialog called ===');
-    console.log('Item:', item);
-    console.log('Type:', type);
-    console.log('Current isDialogOpen:', isDialogOpen);
-    
-    setEditingType(type);
-    setEditingItem(item);
-    
-    if (type === 'client') {
-      setClientForm({ name: item.name });
-    } else {
-      const investor = item as Investor;
-      setInvestorForm({
-        name: investor.name,
-        client_id: investor.client_id,
-        annualIncome: investor.annualIncome,
-        otherIncome: investor.otherIncome,
-        ownershipPercentage: investor.ownershipPercentage,
-        loanSharePercentage: investor.loanSharePercentage,
-        cashContribution: investor.cashContribution,
-        hasMedicareLevy: investor.hasMedicareLevy
-      });
-    }
-    
+  const openEditDialog = useCallback((investor: Investor) => {
+    setEditingItem(investor);
+    setInvestorForm({
+      name: investor.name,
+      client_id: investor.client_id,
+      annualIncome: investor.annualIncome || 0,
+      otherIncome: investor.otherIncome || 0,
+      nonTaxableIncome: investor.nonTaxableIncome || 0,
+      ownershipPercentage: investor.ownershipPercentage || 0,
+      loanSharePercentage: investor.loanSharePercentage || 0,
+      cashContribution: investor.cashContribution || 0,
+      hasMedicareLevy: investor.hasMedicareLevy || false
+    });
     setIsDialogOpen(true);
-  }, [isDialogOpen]);
+  }, []);
 
   const closeDialog = useCallback(() => {
-    console.log('=== closeDialog called ===');
     setIsDialogOpen(false);
     resetForms();
   }, []);
-
-  const handleClientSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    try {
-      if (editingItem) {
-        await updateClient(editingItem.id, clientForm);
-      } else {
-        await createClient(clientForm);
-      }
-      closeDialog();
-    } catch (error) {
-      console.error('Error saving client:', error);
-    }
-  };
 
   const handleInvestorSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,21 +94,13 @@ export default function Investors() {
     }
   };
 
-  const handleDelete = async (id: string, type: 'client' | 'investor') => {
+  const handleDelete = async (id: string) => {
     try {
-      if (type === 'client') {
-        await deleteClient(id);
-      } else {
-        await deleteInvestor(id);
-      }
+      await deleteInvestor(id);
     } catch (error) {
-      console.error('Error deleting item:', error);
+      console.error('Error deleting investor:', error);
     }
   };
-
-  const filteredClients = clients.filter(client =>
-    client.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   const filteredInvestors = investors.filter(investor => {
     const client = clients.find(c => c.id === investor.client_id);
@@ -204,45 +114,25 @@ export default function Investors() {
 
   const modalContent = (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>
-            {editingItem ? `Edit ${editingType === 'client' ? 'Client' : 'Investor'}` : `Add New ${editingType === 'client' ? 'Client' : 'Investor'}`}
+      <DialogContent className="max-w-md mx-auto">
+        <DialogHeader className="pb-4">
+          <DialogTitle className="text-lg">
+            {editingItem ? 'Edit Investor' : 'Add New Investor'}
           </DialogTitle>
-          <DialogDescription>
-            {editingType === 'client' 
-              ? 'Add a new client to your portfolio.' 
-              : 'Add a new investor with their financial details.'
-            }
+          <DialogDescription className="text-sm">
+            Enter the investor's information below
           </DialogDescription>
         </DialogHeader>
 
-        {editingType === 'client' ? (
-          <form onSubmit={handleClientSubmit} className="space-y-4 sm:space-y-5">
+        <form onSubmit={handleInvestorSubmit} className="space-y-6">
+          {/* Personal Profile Section */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-foreground">Personal Profile</h3>
+            
             <div className="space-y-2">
-              <Label htmlFor="clientName">Client Name</Label>
-              <Input
-                id="clientName"
-                value={clientForm.name}
-                onChange={(e) => setClientForm({ name: e.target.value })}
-                placeholder="Enter client name"
-                required
-              />
-            </div>
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={closeDialog}>
-                Cancel
-              </Button>
-              <Button type="submit">
-                {editingItem ? 'Update' : 'Create'} Client
-              </Button>
-            </DialogFooter>
-          </form>
-        ) : (
-          <form onSubmit={handleInvestorSubmit} className="space-y-4 sm:space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="investorName">Investor Name</Label>
+              <Label htmlFor="investorName" className="text-sm font-medium">
+                Name
+              </Label>
               <Input
                 id="investorName"
                 value={investorForm.name}
@@ -253,108 +143,75 @@ export default function Investors() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="clientSelect">Associated Client</Label>
-              <Select
-                value={investorForm.client_id}
-                onValueChange={(value) => setInvestorForm({ ...investorForm, client_id: value })}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a client" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="annualIncome" className="text-sm font-medium">
+                Annual Income
+              </Label>
+              <Input
+                id="annualIncome"
+                type="number"
+                value={investorForm.annualIncome}
+                onChange={(e) => setInvestorForm({ ...investorForm, annualIncome: Number(e.target.value) })}
+                placeholder="150000"
+              />
+              <p className="text-sm text-muted-foreground">Gross annual income from employment</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="annualIncome">Annual Income</Label>
-                <Input
-                  id="annualIncome"
-                  type="number"
-                  value={investorForm.annualIncome}
-                  onChange={(e) => setInvestorForm({ ...investorForm, annualIncome: Number(e.target.value) })}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="otherIncome">Other Income</Label>
-                <Input
-                  id="otherIncome"
-                  type="number"
-                  value={investorForm.otherIncome}
-                  onChange={(e) => setInvestorForm({ ...investorForm, otherIncome: Number(e.target.value) })}
-                  placeholder="0"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="otherIncome" className="text-sm font-medium">
+                Other Income
+              </Label>
+              <Input
+                id="otherIncome"
+                type="number"
+                value={investorForm.otherIncome}
+                onChange={(e) => setInvestorForm({ ...investorForm, otherIncome: Number(e.target.value) })}
+                placeholder="20000"
+              />
+              <p className="text-sm text-muted-foreground">Income from other sources (rental, dividends, etc.)</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="ownershipPercentage">Ownership %</Label>
-                <Input
-                  id="ownershipPercentage"
-                  type="number"
-                  value={investorForm.ownershipPercentage}
-                  onChange={(e) => setInvestorForm({ ...investorForm, ownershipPercentage: Number(e.target.value) })}
-                  placeholder="0"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-2">
-                  <Label htmlFor="loanSharePercentage">Loan Share %</Label>
-                  <Input
-                    id="loanSharePercentage"
-                    type="number"
-                    value={investorForm.loanSharePercentage}
-                    onChange={(e) => setInvestorForm({ ...investorForm, loanSharePercentage: Number(e.target.value) })}
-                    placeholder="0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="cashContribution">Cash Contribution</Label>
-                  <Input
-                    id="cashContribution"
-                    type="number"
-                    value={investorForm.cashContribution}
-                    onChange={(e) => setInvestorForm({ ...investorForm, cashContribution: Number(e.target.value) })}
-                    placeholder="0"
-                  />
-                </div>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="nonTaxableIncome" className="text-sm font-medium">
+                Non-taxable Income
+              </Label>
+              <Input
+                id="nonTaxableIncome"
+                type="number"
+                value={investorForm.nonTaxableIncome || 0}
+                onChange={(e) => setInvestorForm({ ...investorForm, nonTaxableIncome: Number(e.target.value) })}
+                placeholder="5000"
+              />
+              <p className="text-sm text-muted-foreground">Income that is not subject to tax</p>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <Checkbox
+            <div className="flex items-center justify-between py-2">
+              <div className="space-y-1">
+                <Label htmlFor="hasMedicareLevy" className="text-sm font-medium">Medicare Levy</Label>
+                <p className="text-sm text-muted-foreground">Is this investor subject to Medicare levy?</p>
+              </div>
+              <Switch
                 id="hasMedicareLevy"
                 checked={investorForm.hasMedicareLevy}
-                onCheckedChange={(checked) => setInvestorForm({ ...investorForm, hasMedicareLevy: checked as boolean })}
+                onCheckedChange={(checked) => setInvestorForm({ ...investorForm, hasMedicareLevy: checked })}
               />
-              <Label htmlFor="hasMedicareLevy">Subject to Medicare Levy Surcharge</Label>
             </div>
+          </div>
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={closeDialog}>
-                Cancel
-              </Button>
-              <Button type="submit">
-                {editingItem ? 'Update' : 'Create'} Investor
-              </Button>
-            </DialogFooter>
-          </form>
-        )}
+          <DialogFooter className="pt-4">
+            <Button type="button" variant="outline" size="sm" onClick={closeDialog}>
+              Cancel
+            </Button>
+            <Button type="submit" size="sm">
+              {editingItem ? 'Update' : 'Create'} Investor
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
 
-  // Show empty state if no data
-  if (clients.length === 0 && investors.length === 0) {
+  // Show empty state if no investors
+  if (investors.length === 0) {
     return (
       <>
         {modalContent}
@@ -362,57 +219,27 @@ export default function Investors() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold">Investors</h1>
-              <p className="text-muted-foreground">Manage your clients and investors</p>
+              <p className="text-muted-foreground">Manage your investment portfolio</p>
             </div>
+            <Button onClick={openAddDialog}>
+              <Plus className="h-4 w-4 mr-1" />
+              Add Investor
+            </Button>
           </div>
 
-          {/* General Clients Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <User className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold">General Clients</h2>
-                <Badge variant="secondary" className="text-xs">
-                  0 clients
-                </Badge>
-              </div>
-              <Button size="sm" onClick={() => openAddDialog('client')}>
-                <Plus className="h-4 w-4 mr-1" />
-                Add Client
-              </Button>
-            </div>
-
-            <Card>
-              <CardContent className="text-center py-8">
-                <User className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">No clients found</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Investors Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Building2 className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold">Investors</h2>
-                <Badge variant="secondary" className="text-xs">
-                  0 investors
-                </Badge>
-              </div>
-              <Button size="sm" onClick={() => openAddDialog('investor')}>
+          <Card>
+            <CardContent className="text-center py-12">
+              <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No investors found</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Get started by adding your first investor to track their financial details and investment contributions.
+              </p>
+              <Button onClick={openAddDialog}>
                 <Plus className="h-4 w-4 mr-1" />
                 Add Investor
               </Button>
-            </div>
-
-            <Card>
-              <CardContent className="text-center py-8">
-                <Building2 className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">No investors found</p>
-              </CardContent>
-            </Card>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       </>
     );
@@ -426,70 +253,41 @@ export default function Investors() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Investors</h1>
-            <p className="text-muted-foreground">Manage your clients and investors</p>
+            <p className="text-muted-foreground">Manage your investment portfolio</p>
           </div>
+          <Button onClick={openAddDialog}>
+            <Plus className="h-4 w-4 mr-1" />
+            Add Investor
+          </Button>
         </div>
 
-        {/* General Clients Section */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <User className="h-5 w-5 text-primary" />
-              <h2 className="text-xl font-semibold">General Clients</h2>
-              <Badge variant="secondary" className="text-xs">
-                {filteredClients.length} clients
-              </Badge>
-            </div>
-            <Button size="sm" onClick={() => openAddDialog('client')}>
-              <Plus className="h-4 w-4 mr-1" />
-              Add Client
-            </Button>
-          </div>
-
-          <div className="grid gap-4">
-            {filteredClients.length === 0 ? (
-              <Card>
-                <CardContent className="text-center py-8">
-                  <User className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">No clients found</p>
-                </CardContent>
-              </Card>
-            ) : (
-              filteredClients.map((client) => (
-                <Card key={client.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <User className="h-5 w-5 text-primary" />
-                        <div>
-                          <h3 className="font-semibold">{client.name}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {investors.filter(inv => inv.client_id === client.id).length} investors
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => openEditDialog(client, 'client')}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDelete(client.id, 'client')}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </div>
+        {/* Summary Statistics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Investors</p>
+                  <p className="text-2xl font-bold">{investors.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Portfolio Value</p>
+                  <p className="text-2xl font-bold">
+                    ${formatCurrency(investors.reduce((sum, inv) => sum + (inv.cashContribution || 0), 0))}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Investors Section */}
@@ -502,10 +300,6 @@ export default function Investors() {
                 {filteredInvestors.length} investors
               </Badge>
             </div>
-            <Button size="sm" onClick={() => openAddDialog('investor')}>
-              <Plus className="h-4 w-4 mr-1" />
-              Add Investor
-            </Button>
           </div>
 
           <div className="grid gap-4">
@@ -513,7 +307,7 @@ export default function Investors() {
               <Card>
                 <CardContent className="text-center py-8">
                   <Building2 className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">No investors found</p>
+                  <p className="text-sm text-muted-foreground">No investors found matching your search</p>
                 </CardContent>
               </Card>
             ) : (
@@ -531,9 +325,13 @@ export default function Investors() {
                               {client ? `Client: ${client.name}` : 'No client assigned'}
                             </p>
                             <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
-                              <span>Income: ${formatCurrency(investor.annualIncome)}</span>
-                              <span>Ownership: {investor.ownershipPercentage}%</span>
-                              <span>Loan Share: {investor.loanSharePercentage}%</span>
+                              <span>Income: ${formatCurrency(investor.annualIncome || 0)}</span>
+                              <span>Ownership: {investor.ownershipPercentage || 0}%</span>
+                              <span>Loan Share: {investor.loanSharePercentage || 0}%</span>
+                            </div>
+                            <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                              <span>Other Income: ${formatCurrency(investor.otherIncome || 0)}</span>
+                              <span>Cash: ${formatCurrency(investor.cashContribution || 0)}</span>
                             </div>
                           </div>
                         </div>
@@ -541,14 +339,14 @@ export default function Investors() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => openEditDialog(investor, 'investor')}
+                            onClick={() => openEditDialog(investor)}
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleDelete(investor.id, 'investor')}
+                            onClick={() => handleDelete(investor.id)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

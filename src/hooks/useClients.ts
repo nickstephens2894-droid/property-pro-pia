@@ -15,6 +15,7 @@ export interface Investor {
   name: string;
   annualIncome: number;
   otherIncome: number;
+  nonTaxableIncome?: number;
   hasMedicareLevy: boolean;
   ownershipPercentage: number;
   loanSharePercentage: number;
@@ -161,6 +162,7 @@ export function useClients() {
           name: investorData.name,
           annual_income: investorData.annualIncome,
           other_income: investorData.otherIncome,
+          non_taxable_income: investorData.nonTaxableIncome,
           has_medicare_levy: investorData.hasMedicareLevy,
           ownership_percentage: investorData.ownershipPercentage,
           loan_share_percentage: investorData.loanSharePercentage,
@@ -188,6 +190,7 @@ export function useClients() {
       if (updates.name !== undefined) dbUpdates.name = updates.name;
       if (updates.annualIncome !== undefined) dbUpdates.annual_income = updates.annualIncome;
       if (updates.otherIncome !== undefined) dbUpdates.other_income = updates.otherIncome;
+      if (updates.nonTaxableIncome !== undefined) dbUpdates.non_taxable_income = updates.nonTaxableIncome;
       if (updates.hasMedicareLevy !== undefined) dbUpdates.has_medicare_levy = updates.hasMedicareLevy;
       if (updates.ownershipPercentage !== undefined) dbUpdates.ownership_percentage = updates.ownershipPercentage;
       if (updates.loanSharePercentage !== undefined) dbUpdates.loan_share_percentage = updates.loanSharePercentage;
