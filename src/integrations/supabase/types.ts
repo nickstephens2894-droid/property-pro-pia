@@ -1,3 +1,4 @@
+
 export type Json =
   | string
   | number
@@ -7,86 +8,73 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "13.0.4"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
-      clients: {
+      investors: {
         Row: {
+          annual_income: number
           created_at: string
+          has_medicare_levy: boolean
           id: string
           name: string
+          non_taxable_income: number
+          other_income: number
           owner_user_id: string
           updated_at: string
         }
         Insert: {
+          annual_income?: number
           created_at?: string
+          has_medicare_levy?: boolean
           id?: string
           name: string
+          non_taxable_income?: number
+          other_income?: number
           owner_user_id: string
           updated_at?: string
         }
         Update: {
+          annual_income?: number
           created_at?: string
+          has_medicare_levy?: boolean
           id?: string
           name?: string
+          non_taxable_income?: number
+          other_income?: number
           owner_user_id?: string
           updated_at?: string
         }
         Relationships: []
-      }
-      investors: {
-        Row: {
-          annual_income: number
-          cash_contribution: number | null
-          client_id: string
-          created_at: string
-          has_medicare_levy: boolean
-          id: string
-          loan_share_percentage: number | null
-          name: string
-          other_income: number
-          ownership_percentage: number | null
-          updated_at: string
-        }
-        Insert: {
-          annual_income?: number
-          cash_contribution?: number | null
-          client_id: string
-          created_at?: string
-          has_medicare_levy?: boolean
-          id?: string
-          loan_share_percentage?: number | null
-          name: string
-          other_income?: number
-          ownership_percentage?: number | null
-          updated_at?: string
-        }
-        Update: {
-          annual_income?: number
-          cash_contribution?: number | null
-          client_id?: string
-          created_at?: string
-          has_medicare_levy?: boolean
-          id?: string
-          loan_share_percentage?: number | null
-          name?: string
-          other_income?: number
-          ownership_percentage?: number | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "investors_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       profiles: {
         Row: {
@@ -94,7 +82,7 @@ export type Database = {
           display_name: string | null
           email: string | null
           id: string
-          role: Database["public"]["Enums"]["user_role"]
+          role: string
           updated_at: string
         }
         Insert: {
@@ -102,7 +90,7 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           id: string
-          role?: Database["public"]["Enums"]["user_role"]
+          role?: string
           updated_at?: string
         }
         Update: {
@@ -110,155 +98,215 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           id?: string
-          role?: Database["public"]["Enums"]["user_role"]
+          role?: string
           updated_at?: string
         }
         Relationships: []
       }
       properties: {
         Row: {
-          client_id: string
+          building_value: number
+          capital_growth_rate: number
+          construction_value: number
+          construction_year: number
+          council_approval_fees: number
+          council_rates: number
           created_at: string
+          current_property_value: number
+          depreciation_method: string
           id: string
+          inspection_fees: number
+          insurance: number
+          investment_status: string
+          is_construction_project: boolean
+          is_new_property: boolean
+          land_value: number
+          legal_fees: number
           location: string | null
+          maintenance_repairs: number
           name: string
           notes: string | null
+          owned_or_potential: string
+          owner_user_id: string
+          pest_treatment: number
+          plant_equipment_value: number
+          property_management_percentage: number
           purchase_price: number
-          status: Database["public"]["Enums"]["property_status"]
+          rental_growth_rate: number
+          site_costs: number
+          smoke_alarm_inspection: number
+          stamp_duty: number
+          status: string
           type: string
           updated_at: string
+          vacancy_rate: number
           weekly_rent: number
         }
         Insert: {
-          client_id: string
+          building_value?: number
+          capital_growth_rate?: number
+          construction_value?: number
+          construction_year?: number
+          council_approval_fees?: number
+          council_rates?: number
           created_at?: string
+          current_property_value?: number
+          depreciation_method?: string
           id?: string
+          inspection_fees?: number
+          insurance?: number
+          investment_status?: string
+          is_construction_project?: boolean
+          is_new_property?: boolean
+          land_value?: number
+          legal_fees?: number
           location?: string | null
+          maintenance_repairs?: number
           name: string
           notes?: string | null
+          owned_or_potential?: string
+          owner_user_id: string
+          pest_treatment?: number
+          plant_equipment_value?: number
+          property_management_percentage?: number
           purchase_price?: number
-          status?: Database["public"]["Enums"]["property_status"]
-          type: string
-          updated_at?: string
-          weekly_rent?: number
-        }
-        Update: {
-          client_id?: string
-          created_at?: string
-          id?: string
-          location?: string | null
-          name?: string
-          notes?: string | null
-          purchase_price?: number
-          status?: Database["public"]["Enums"]["property_status"]
+          rental_growth_rate?: number
+          site_costs?: number
+          smoke_alarm_inspection?: number
+          stamp_duty?: number
+          status?: string
           type?: string
           updated_at?: string
+          vacancy_rate?: number
           weekly_rent?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "properties_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-        ]
+        Update: {
+          building_value?: number
+          capital_growth_rate?: number
+          construction_value?: number
+          construction_year?: number
+          council_approval_fees?: number
+          council_rates?: number
+          created_at?: string
+          current_property_value?: number
+          depreciation_method?: string
+          id?: string
+          inspection_fees?: number
+          insurance?: number
+          investment_status?: string
+          is_construction_project?: boolean
+          is_new_property?: boolean
+          land_value?: number
+          legal_fees?: number
+          location?: string | null
+          maintenance_repairs?: number
+          name?: string
+          notes?: string | null
+          owned_or_potential?: string
+          owner_user_id?: string
+          pest_treatment?: number
+          plant_equipment_value?: number
+          property_management_percentage?: number
+          purchase_price?: number
+          rental_growth_rate?: number
+          site_costs?: number
+          smoke_alarm_inspection?: number
+          stamp_duty?: number
+          status?: string
+          type?: string
+          updated_at?: string
+          vacancy_rate?: number
+          weekly_rent?: number
+        }
+        Relationships: []
       }
-      scenario_properties: {
+      property_investors: {
         Row: {
+          cash_contribution: number
           created_at: string
           id: string
-          is_primary: boolean
+          investor_id: string
+          notes: string | null
+          ownership_percentage: number
           property_id: string
-          scenario_id: string
+          updated_at: string
         }
         Insert: {
+          cash_contribution?: number
           created_at?: string
           id?: string
-          is_primary?: boolean
+          investor_id: string
+          notes?: string | null
+          ownership_percentage?: number
           property_id: string
-          scenario_id: string
+          updated_at?: string
         }
         Update: {
+          cash_contribution?: number
           created_at?: string
           id?: string
-          is_primary?: boolean
+          investor_id?: string
+          notes?: string | null
+          ownership_percentage?: number
           property_id?: string
-          scenario_id?: string
+          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "scenario_properties_property_id_fkey"
+            foreignKeyName: "property_investors_investor_id_fkey"
+            columns: ["investor_id"]
+            isOneToOne: false
+            referencedRelation: "investors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_investors_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "scenario_properties_scenario_id_fkey"
-            columns: ["scenario_id"]
-            isOneToOne: false
-            referencedRelation: "scenarios"
             referencedColumns: ["id"]
           },
         ]
       }
       scenarios: {
         Row: {
-          client_id: string
           created_at: string
           id: string
           is_core: boolean
           name: string
+          owner_user_id: string
           snapshot: Json | null
           updated_at: string
         }
         Insert: {
-          client_id: string
           created_at?: string
           id?: string
           is_core?: boolean
           name: string
+          owner_user_id: string
           snapshot?: Json | null
           updated_at?: string
         }
         Update: {
-          client_id?: string
           created_at?: string
           id?: string
           is_core?: boolean
           name?: string
+          owner_user_id?: string
           snapshot?: Json | null
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "scenarios_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      is_owner_client: {
-        Args: { _client_id: string }
-        Returns: boolean
-      }
-      is_owner_scenario: {
-        Args: { _scenario_id: string }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
-      property_status: "current" | "new"
-      user_role: "individual" | "advisor"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -384,10 +432,10 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
-    Enums: {
-      property_status: ["current", "new"],
-      user_role: ["individual", "advisor"],
-    },
+    Enums: {},
   },
 } as const

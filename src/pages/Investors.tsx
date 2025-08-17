@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,40 +13,27 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { formatCurrency } from "@/utils/formatters";
 
 export default function Investors() {
-  const {
-    clients,
-    investors,
-    loading,
-    createInvestor,
-    updateInvestor,
-    deleteInvestor
-  } = useClients();
+  const { investors, loading, createInvestor, updateInvestor, deleteInvestor } = useClients();
 
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Form states
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Investor | null>(null);
   const [investorForm, setInvestorForm] = useState({
     name: '',
-    client_id: '',
     annualIncome: 0,
     otherIncome: 0,
     nonTaxableIncome: 0,
-    ownershipPercentage: 0,
-    loanSharePercentage: 0,
-    cashContribution: 0,
     hasMedicareLevy: false
   });
 
   const resetForms = () => {
     setInvestorForm({
       name: '',
-      client_id: '',
       annualIncome: 0,
       otherIncome: 0,
       nonTaxableIncome: 0,
-      ownershipPercentage: 0,
-      loanSharePercentage: 0,
-      cashContribution: 0,
       hasMedicareLevy: false
     });
     setEditingItem(null);
@@ -62,13 +49,9 @@ export default function Investors() {
     setEditingItem(investor);
     setInvestorForm({
       name: investor.name,
-      client_id: investor.client_id,
       annualIncome: investor.annualIncome || 0,
       otherIncome: investor.otherIncome || 0,
       nonTaxableIncome: investor.nonTaxableIncome || 0,
-      ownershipPercentage: investor.ownershipPercentage || 0,
-      loanSharePercentage: investor.loanSharePercentage || 0,
-      cashContribution: investor.cashContribution || 0,
       hasMedicareLevy: investor.hasMedicareLevy || false
     });
     setIsDialogOpen(true);
@@ -103,9 +86,7 @@ export default function Investors() {
   };
 
   const filteredInvestors = investors.filter(investor => {
-    const client = clients.find(c => c.id === investor.client_id);
-    return investor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           (client && client.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    return investor.name.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   if (loading) {
@@ -262,29 +243,34 @@ export default function Investors() {
         </div>
 
         {/* Summary Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Building2 className="h-5 w-5 text-primary" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Investors</p>
-                  <p className="text-2xl font-bold">{investors.length}</p>
-                </div>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Total Investors</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{investors.length}</div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Total Annual Income</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                ${formatCurrency(investors.reduce((sum, inv) => sum + (inv.annualIncome || 0), 0))}
               </div>
             </CardContent>
           </Card>
           
           <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Building2 className="h-5 w-5 text-primary" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Portfolio Value</p>
-                  <p className="text-2xl font-bold">
-                    ${formatCurrency(investors.reduce((sum, inv) => sum + (inv.cashContribution || 0), 0))}
-                  </p>
-                </div>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Total Other Income</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                ${formatCurrency(investors.reduce((sum, inv) => sum + (inv.otherIncome || 0), 0))}
               </div>
             </CardContent>
           </Card>
@@ -312,7 +298,6 @@ export default function Investors() {
               </Card>
             ) : (
               filteredInvestors.map((investor) => {
-                const client = clients.find(c => c.id === investor.client_id);
                 return (
                   <Card key={investor.id} className="hover:shadow-md transition-shadow">
                     <CardContent className="p-4">
@@ -321,17 +306,11 @@ export default function Investors() {
                           <Building2 className="h-5 w-5 text-primary" />
                           <div>
                             <h3 className="font-semibold">{investor.name}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              {client ? `Client: ${client.name}` : 'No client assigned'}
-                            </p>
                             <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
                               <span>Income: ${formatCurrency(investor.annualIncome || 0)}</span>
-                              <span>Ownership: {investor.ownershipPercentage || 0}%</span>
-                              <span>Loan Share: {investor.loanSharePercentage || 0}%</span>
-                            </div>
-                            <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
-                              <span>Other Income: ${formatCurrency(investor.otherIncome || 0)}</span>
-                              <span>Cash: ${formatCurrency(investor.cashContribution || 0)}</span>
+                              <span>Other: ${formatCurrency(investor.otherIncome || 0)}</span>
+                              <span>Non-taxable: ${formatCurrency(investor.nonTaxableIncome || 0)}</span>
+                              <span>Medicare: {investor.hasMedicareLevy ? 'Yes' : 'No'}</span>
                             </div>
                           </div>
                         </div>

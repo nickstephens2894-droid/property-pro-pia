@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 export interface Scenario {
   id: string;
   name: string;
-  client_id: string;
+  owner_user_id: string;
   is_core: boolean;
   snapshot: any;
   created_at: string;
@@ -23,26 +23,11 @@ export function useScenarios() {
     
     setLoading(true);
     try {
-      // First get all clients owned by this user
-      const { data: clients, error: clientsError } = await supabase
-        .from('clients')
-        .select('id')
-        .eq('owner_user_id', user.id);
-
-      if (clientsError) throw clientsError;
-      
-      if (!clients || clients.length === 0) {
-        setScenarios([]);
-        return;
-      }
-
-      const clientIds = clients.map(c => c.id);
-      
-      // Then get all scenarios for these clients
+      // Load all scenarios for the current user (no longer tied to clients)
       const { data, error } = await supabase
         .from('scenarios')
         .select('*')
-        .in('client_id', clientIds)
+        .eq('owner_user_id', user.id)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
@@ -57,9 +42,15 @@ export function useScenarios() {
 
   const createScenario = async (scenarioData: Omit<Scenario, 'id' | 'created_at' | 'updated_at'>) => {
     try {
+      // Add owner_user_id to the scenario data
+      const scenarioWithOwner = {
+        ...scenarioData,
+        owner_user_id: user.id
+      };
+
       const { data, error } = await supabase
         .from('scenarios')
-        .insert(scenarioData)
+        .insert(scenarioWithOwner)
         .select()
         .single();
 
@@ -119,7 +110,7 @@ export function useScenarios() {
         .from('scenarios')
         .insert({
           name: `${scenario.name} (Copy)`,
-          client_id: scenario.client_id,
+          owner_user_id: user.id,
           is_core: false,
           snapshot: scenario.snapshot
         });
@@ -137,21 +128,11 @@ export function useScenarios() {
 
   const setPrimaryScenario = async (scenarioId: string) => {
     try {
-      // First, get the scenario to find its client_id
-      const { data: scenario, error: fetchError } = await supabase
-        .from('scenarios')
-        .select('client_id')
-        .eq('id', scenarioId)
-        .single();
-
-      if (fetchError) throw fetchError;
-      if (!scenario) throw new Error('Scenario not found');
-
-      // First, unset all primary scenarios for this client
+      // First, unset all primary scenarios for this user
       await supabase
         .from('scenarios')
         .update({ is_core: false })
-        .eq('client_id', scenario.client_id);
+        .eq('owner_user_id', user.id);
 
       // Then set the selected scenario as primary
       const { error } = await supabase

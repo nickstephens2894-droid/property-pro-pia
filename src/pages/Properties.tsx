@@ -20,7 +20,8 @@ export default function Properties() {
     loading,
     createProperty,
     updateProperty,
-    deleteProperty
+    deleteProperty,
+    savePropertyInvestors
   } = useProperties();
 
   const { investors } = useClients();
@@ -194,7 +195,7 @@ export default function Properties() {
     setInvestorAssignments(prev => prev.filter((_, i) => i !== index));
   };
 
-  const updateInvestorAssignment = (index: number, field: string, value: any) => {
+  const updateInvestorAssignment = (index: number, field: string, value: string | number) => {
     setInvestorAssignments(prev => prev.map((assignment, i) => 
       i === index ? { ...assignment, [field]: value } : assignment
     ));
@@ -208,30 +209,60 @@ export default function Properties() {
     }
 
     try {
+      let propertyId: string;
+      
+      // Create the property data object with proper typing
+      const propertyData = {
+        name: propertyForm.name.trim(),
+        type: propertyForm.type,
+        status: propertyForm.status,
+        ownedOrPotential: propertyForm.ownedOrPotential,
+        isConstructionProject: propertyForm.isConstructionProject,
+        constructionYear: propertyForm.constructionYear,
+        buildingValue: propertyForm.buildingValue,
+        landValue: propertyForm.landValue,
+        constructionValue: propertyForm.constructionValue,
+        purchasePrice: propertyForm.purchasePrice,
+        plantEquipmentValue: propertyForm.plantEquipmentValue,
+        currentPropertyValue: propertyForm.currentPropertyValue,
+        weeklyRent: propertyForm.weeklyRent,
+        investmentStatus: propertyForm.investmentStatus,
+        rentalGrowthRate: propertyForm.rentalGrowthRate,
+        capitalGrowthRate: propertyForm.capitalGrowthRate,
+        vacancyRate: propertyForm.vacancyRate,
+        stampDuty: propertyForm.stampDuty,
+        legalFees: propertyForm.legalFees,
+        inspectionFees: propertyForm.inspectionFees,
+        councilApprovalFees: propertyForm.councilApprovalFees,
+        siteCosts: propertyForm.siteCosts,
+        propertyManagementPercentage: propertyForm.propertyManagementPercentage,
+        councilRates: propertyForm.councilRates,
+        insurance: propertyForm.insurance,
+        maintenanceRepairs: propertyForm.maintenanceRepairs,
+        smokeAlarmInspection: propertyForm.smokeAlarmInspection,
+        pestTreatment: propertyForm.pestTreatment,
+        depreciationMethod: propertyForm.depreciationMethod,
+        isNewProperty: propertyForm.isNewProperty,
+        location: propertyForm.location.trim(),
+        notes: propertyForm.notes.trim() || null
+      };
+      
       if (editingProperty) {
-        await updateProperty(editingProperty.id, {
-          name: propertyForm.name.trim(),
-          type: propertyForm.type,
-          purchasePrice: propertyForm.purchasePrice,
-          weeklyRent: propertyForm.weeklyRent,
-          location: propertyForm.location.trim(),
-          notes: propertyForm.notes.trim() || null,
-          status: propertyForm.status
-        });
+        await updateProperty(editingProperty.id, propertyData);
+        propertyId = editingProperty.id;
       } else {
-        await createProperty({
-          name: propertyForm.name.trim(),
-          type: propertyForm.type,
-          purchasePrice: propertyForm.purchasePrice,
-          weeklyRent: propertyForm.weeklyRent,
-          location: propertyForm.location.trim(),
-          notes: propertyForm.notes.trim() || null,
-          status: propertyForm.status
-        });
+        const newProperty = await createProperty(propertyData);
+        propertyId = newProperty?.id;
+      }
+
+      // Save investor assignments if we have a property ID
+      if (propertyId && investorAssignments.length > 0) {
+        await savePropertyInvestors(propertyId, investorAssignments);
       }
 
       setIsDialogOpen(false);
       resetPropertyForm();
+      setInvestorAssignments([]);
     } catch (error) {
       console.error('Error submitting property:', error);
     }
@@ -913,147 +944,124 @@ export default function Properties() {
                   </p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="property-client" className="text-sm font-medium">
-                      Primary Client
-                    </Label>
-                    <Select
-                      value={propertyForm.clientId}
-                      onValueChange={(value) => setPropertyForm(prev => ({ ...prev, clientId: value }))}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">Investor Details</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addInvestorAssignment}
+                      disabled={investorAssignments.length >= 4}
                     >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select a client..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {investors.map((investor) => (
-                          <SelectItem key={investor.id} value={investor.id}>
-                            {investor.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add Investor
+                    </Button>
                   </div>
 
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">Investor Details</Label>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={addInvestorAssignment}
-                        disabled={investorAssignments.length >= 4}
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Add Investor
-                      </Button>
+                  {investorAssignments.length === 0 ? (
+                    <div className="bg-muted/30 rounded-lg p-4 text-center">
+                      <p className="text-sm text-muted-foreground">
+                        No investors assigned yet. Click "Add Investor" to assign investors to this property.
+                      </p>
                     </div>
-
-                    {investorAssignments.length === 0 ? (
-                      <div className="bg-muted/30 rounded-lg p-4 text-center">
-                        <p className="text-sm text-muted-foreground">
-                          No investors assigned yet. Click "Add Investor" to assign investors to this property.
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {investorAssignments.map((assignment, index) => (
-                          <div key={index} className="bg-muted/30 rounded-lg p-4 space-y-3">
-                            <div className="flex items-center justify-between">
-                              <h4 className="text-sm font-medium">Investor {index + 1}</h4>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => removeInvestorAssignment(index)}
+                  ) : (
+                    <div className="space-y-4">
+                      {investorAssignments.map((assignment, index) => (
+                        <div key={index} className="bg-muted/30 rounded-lg p-4 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-medium">Investor {index + 1}</h4>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => removeInvestorAssignment(index)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Remove
+                            </Button>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                              <Label htmlFor={`investor-${index}-name`} className="text-sm font-medium">
+                                Investor
+                              </Label>
+                              <Select
+                                value={assignment.investorId}
+                                onValueChange={(value) => updateInvestorAssignment(index, 'investorId', value)}
                               >
-                                <Trash2 className="h-4 w-4 mr-1" />
-                                Remove
-                              </Button>
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select an investor..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {investors.map((investor) => (
+                                    <SelectItem key={investor.id} value={investor.id}>
+                                      {investor.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
-                            
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <div className="space-y-2">
-                                <Label htmlFor={`investor-${index}-name`} className="text-sm font-medium">
-                                  Investor
-                                </Label>
-                                <Select
-                                  value={assignment.investorId}
-                                  onValueChange={(value) => updateInvestorAssignment(index, 'investorId', value)}
-                                >
-                                  <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Select an investor..." />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {investors.map((investor) => (
-                                      <SelectItem key={investor.id} value={investor.id}>
-                                        {investor.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor={`investor-${index}-ownership`} className="text-sm font-medium">
-                                  Ownership %
-                                </Label>
-                                <Input
-                                  id={`investor-${index}-ownership`}
-                                  type="number"
-                                  min="0"
-                                  max="100"
-                                  step="1"
-                                  value={assignment.ownershipPercentage}
-                                  onChange={(e) => updateInvestorAssignment(index, 'ownershipPercentage', Number(e.target.value))}
-                                  placeholder="100"
-                                  className="h-9"
-                                />
-                              </div>
-                            </div>
-                            
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <div className="space-y-2">
-                                <Label htmlFor={`investor-${index}-contribution`} className="text-sm font-medium">
-                                  Cash Contribution
-                                </Label>
-                                <Input
-                                  id={`investor-${index}-contribution`}
-                                  type="number"
-                                  min="0"
-                                  step="1000"
-                                  value={assignment.cashContribution}
-                                  onChange={(e) => updateInvestorAssignment(index, 'cashContribution', Number(e.target.value))}
-                                  placeholder="0"
-                                  className="h-9"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor={`investor-${index}-notes`} className="text-sm font-medium">
-                                  Notes
-                                </Label>
-                                <Input
-                                  id={`investor-${index}-notes`}
-                                  value={assignment.notes}
-                                  onChange={(e) => updateInvestorAssignment(index, 'notes', e.target.value)}
-                                  placeholder="Additional notes..."
-                                  className="h-9"
-                                />
-                              </div>
+                            <div className="space-y-2">
+                              <Label htmlFor={`investor-${index}-ownership`} className="text-sm font-medium">
+                                Ownership %
+                              </Label>
+                              <Input
+                                id={`investor-${index}-ownership`}
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="1"
+                                value={assignment.ownershipPercentage}
+                                onChange={(e) => updateInvestorAssignment(index, 'ownershipPercentage', Number(e.target.value))}
+                                placeholder="100"
+                                className="h-9"
+                              />
                             </div>
                           </div>
-                        ))}
-                        
-                        {investorAssignments.length >= 4 && (
-                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                            <p className="text-sm text-blue-800">
-                              Maximum of 4 investors reached for this property.
-                            </p>
+                          
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                              <Label htmlFor={`investor-${index}-contribution`} className="text-sm font-medium">
+                                Cash Contribution
+                              </Label>
+                              <Input
+                                id={`investor-${index}-contribution`}
+                                type="number"
+                                min="0"
+                                step="1000"
+                                value={assignment.cashContribution}
+                                onChange={(e) => updateInvestorAssignment(index, 'cashContribution', Number(e.target.value))}
+                                placeholder="0"
+                                className="h-9"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor={`investor-${index}-notes`} className="text-sm font-medium">
+                                Notes
+                              </Label>
+                              <Input
+                                id={`investor-${index}-notes`}
+                                value={assignment.notes}
+                                onChange={(e) => updateInvestorAssignment(index, 'notes', e.target.value)}
+                                placeholder="Additional notes..."
+                                className="h-9"
+                              />
+                            </div>
                           </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                        </div>
+                      ))}
+                      
+                      {investorAssignments.length >= 4 && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <p className="text-sm text-blue-800">
+                            Maximum of 4 investors reached for this property.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1169,13 +1177,7 @@ export default function Properties() {
                         </div>
                         <div className="flex items-center gap-1 text-sm">
                           <Building2 className="h-3 w-3" />
-                          {property.investors.map((investor, index) => (
-                            <span key={investor.id}>
-                              {investor.name}
-                              {investor.ownership_percentage < 100 && ` (${investor.ownership_percentage}%)`}
-                              {index < property.investors.length - 1 ? ', ' : ''}
-                            </span>
-                          ))}
+                          <span>Investor assignments managed separately</span>
                         </div>
                       </CardDescription>
                       {property.weeklyRent > 0 && (
