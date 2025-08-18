@@ -47,7 +47,7 @@ const SeedDemo: React.FC = () => {
       annualIncome: 90000,
       otherIncome: 0,
       hasMedicareLevy: true,
-      ownershipPercentage: 60,
+      ownershipPercentage: 50,
       loanSharePercentage: 50,
       cashContribution: 80000,
     };
@@ -57,7 +57,7 @@ const SeedDemo: React.FC = () => {
       annualIncome: 65000,
       otherIncome: 5000,
       hasMedicareLevy: true,
-      ownershipPercentage: 40,
+      ownershipPercentage: 50,
       loanSharePercentage: 50,
       cashContribution: 40000,
     };
@@ -68,7 +68,7 @@ const SeedDemo: React.FC = () => {
       annualIncome: 120000,
       otherIncome: 15000,
       hasMedicareLevy: false,
-      ownershipPercentage: 50,
+      ownershipPercentage: 33.33,
       loanSharePercentage: 50,
       cashContribution: 120000,
     };
@@ -78,7 +78,7 @@ const SeedDemo: React.FC = () => {
       annualIncome: 45000,
       otherIncome: 2000,
       hasMedicareLevy: true,
-      ownershipPercentage: 30,
+      ownershipPercentage: 33.33,
       loanSharePercentage: 30,
       cashContribution: 30000,
     };
@@ -88,7 +88,7 @@ const SeedDemo: React.FC = () => {
       annualIncome: 30000,
       otherIncome: 0,
       hasMedicareLevy: false,
-      ownershipPercentage: 20,
+      ownershipPercentage: 33.34,
       loanSharePercentage: 20,
       cashContribution: 15000,
     };

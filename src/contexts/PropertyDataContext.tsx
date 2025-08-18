@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { PropertyMethod, FundingMethod } from '@/types/presets';
 
-interface Client {
+interface Investor {
   id: string;
   name: string;
   annualIncome: number;
@@ -10,13 +10,13 @@ interface Client {
 }
 
 interface OwnershipAllocation {
-  clientId: string;
+  investorId: string;
   ownershipPercentage: number;
 }
 
 export interface PropertyData {
-  // Multi-client structure
-  clients: Client[];
+  // Multi-investor structure
+  investors: Investor[];
   ownershipAllocations: OwnershipAllocation[];
   
   // Project Type
@@ -150,8 +150,8 @@ interface PropertyDataContextType {
 const PropertyDataContext = createContext<PropertyDataContextType | undefined>(undefined);
 
 const defaultPropertyData: PropertyData = {
-  // Multi-client structure
-  clients: [
+  // Multi-investor structure
+  investors: [
     {
       id: '1',
       name: 'Investor 1',
@@ -168,8 +168,8 @@ const defaultPropertyData: PropertyData = {
     }
   ],
   ownershipAllocations: [
-    { clientId: '1', ownershipPercentage: 70 }, // Optimized split
-    { clientId: '2', ownershipPercentage: 30 }
+    { investorId: '1', ownershipPercentage: 50 }, // Equal split
+    { investorId: '2', ownershipPercentage: 50 }
   ],
   
   // Project Type

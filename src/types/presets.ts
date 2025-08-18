@@ -43,7 +43,7 @@ export const FUNDING_METHODS = {
 
 // Base property configurations
 export const getPropertyMethodData = (method: PropertyMethod): Partial<PropertyData> => {
-  const baseClients = [
+  const baseInvestors = [
     {
       id: '1',
       name: 'Investor 1',
@@ -61,14 +61,14 @@ export const getPropertyMethodData = (method: PropertyMethod): Partial<PropertyD
   ];
 
   const baseOwnership = [
-    { clientId: '1', ownershipPercentage: 70 },
-    { clientId: '2', ownershipPercentage: 30 }
+    { investorId: '1', ownershipPercentage: 50 },
+    { investorId: '2', ownershipPercentage: 50 }
   ];
 
   switch (method) {
     case 'house-land-construction':
       return {
-        clients: baseClients,
+        investors: baseInvestors,
         ownershipAllocations: baseOwnership,
         isConstructionProject: true,
         purchasePrice: 750000,
@@ -106,7 +106,7 @@ export const getPropertyMethodData = (method: PropertyMethod): Partial<PropertyD
 
     case 'built-first-owner':
       return {
-        clients: baseClients,
+        investors: baseInvestors,
         ownershipAllocations: baseOwnership,
         isConstructionProject: false,
         purchasePrice: 750000,
@@ -145,7 +145,7 @@ export const getPropertyMethodData = (method: PropertyMethod): Partial<PropertyD
 
     case 'built-second-owner':
       return {
-        clients: baseClients,
+        investors: baseInvestors,
         ownershipAllocations: baseOwnership,
         isConstructionProject: false,
         purchasePrice: 750000,

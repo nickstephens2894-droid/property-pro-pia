@@ -2,7 +2,7 @@ import * as React from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Home, BarChart3, Users, Building2, FileText, PiggyBank } from "lucide-react";
+import { Home, BarChart3, Users, Building2, FileText, PiggyBank, Layers } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserProfile } from "./UserProfile";
@@ -13,10 +13,10 @@ export default function AppNav({ className = "" }: { className?: string }) {
   const { user } = useAuth();
 
   const items = [
-    { to: "/", label: "Analysis", icon: Home },
-    { to: "/projections", label: "Projections", icon: BarChart3 },
+    { to: "/", label: "Dashboard", icon: Home },
+    { to: "/instances", label: "Instances", icon: Layers },
     { to: "/investors", label: "Investors", icon: Users },
-    { to: "/properties", label: "Properties", icon: Building2 },
+    // { to: "/properties", label: "Properties", icon: Building2 }, // Commented out - functionality integrated into instances
     { to: "/funds", label: "Funds", icon: PiggyBank },
     { to: "/scenarios", label: "Scenarios", icon: FileText },
   ] as const;

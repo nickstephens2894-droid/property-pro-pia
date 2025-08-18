@@ -17,6 +17,7 @@ import { ValidationWarnings } from "@/components/ValidationWarnings";
 import StampDutyCalculator from "@/components/StampDutyCalculator";
 import { useFieldConfirmations } from "@/hooks/useFieldConfirmations";
 import { usePropertyData, PropertyData } from "@/contexts/PropertyDataContext";
+import { useClients, type Investor } from "@/hooks/useClients";
 import { 
   validatePersonalProfile, 
   validatePropertyBasics, 
@@ -25,16 +26,17 @@ import {
   validateAnnualExpenses,
   validateTaxOptimization
 } from "@/utils/validationUtils";
-import { Users, Home, Receipt, Calculator, Building2, Hammer, CreditCard, Clock, DollarSign, TrendingUp, Percent, X, Plus, AlertTriangle, Info } from "lucide-react";
+import { Users, Home, Receipt, Calculator, Building2, Hammer, CreditCard, Clock, DollarSign, TrendingUp, Percent, X, Plus, AlertTriangle, Info, Search } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { formatFinancialValue } from "@/utils/calculationUtils";
 import { PROPERTY_METHODS, type PropertyMethod } from "@/types/presets";
 import { calculateStampDuty, type Jurisdiction } from "@/utils/stampDuty";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const JURISDICTIONS: Jurisdiction[] = ["ACT", "NSW", "NT", "QLD", "SA", "TAS", "VIC", "WA"];
 
-interface Client {
+interface InvestorData {
   id: string;
   name: string;
   annualIncome: number;
@@ -43,13 +45,13 @@ interface Client {
 }
 
 interface OwnershipAllocation {
-  clientId: string;
+  investorId: string;
   ownershipPercentage: number;
 }
 
 
-interface ClientTaxResult {
-  client: Client;
+interface InvestorTaxResult {
+  investor: Investor;
   ownershipPercentage: number;
   taxWithoutProperty: number;
   taxWithProperty: number;
@@ -61,7 +63,7 @@ interface ClientTaxResult {
 interface PropertyInputFormProps {
   propertyData: PropertyData;
   updateField: (field: keyof PropertyData, value: any) => void;
-  clientTaxResults: ClientTaxResult[];
+  investorTaxResults: InvestorTaxResult[];
   totalTaxableIncome: number;
   marginalTaxRate: number;
 }
@@ -113,7 +115,7 @@ const PercentageInput = ({
 export const PropertyInputForm = ({ 
   propertyData, 
   updateField, 
-  clientTaxResults,
+  investorTaxResults,
   totalTaxableIncome, 
   marginalTaxRate 
 }: PropertyInputFormProps) => {
@@ -126,6 +128,11 @@ export const PropertyInputForm = ({
     confirmationType: 'construction' | 'building';
   } | null>(null);
   const [dutyCalcOpen, setDutyCalcOpen] = useState(false);
+  
+  // Investor selection dialog state
+  const [isInvestorDialogOpen, setIsInvestorDialogOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const { investors, loading: investorsLoading } = useClients();
 
   // Calculate total construction value
   const totalConstructionValue = propertyData.buildingValue + propertyData.plantEquipmentValue;
@@ -212,44 +219,80 @@ export const PropertyInputForm = ({
   const annualExpensesStatus = validateAnnualExpenses(propertyData);
   const taxOptimizationStatus = validateTaxOptimization(propertyData);
 
-  const addClient = () => {
-    const newClient: Client = {
-      id: Date.now().toString(),
-      name: `Client ${propertyData.clients.length + 1}`,
-      annualIncome: 0,
-      otherIncome: 0,
-      hasMedicareLevy: false,
-    };
+  // Helper function to calculate ownership percentages
+  const calculateOwnershipPercentages = (investors: InvestorData[]): OwnershipAllocation[] => {
+    const totalInvestors = investors.length;
     
-    const newAllocation: OwnershipAllocation = {
-      clientId: newClient.id,
-      ownershipPercentage: 0,
-    };
-
-    updateField('clients', [...propertyData.clients, newClient]);
-    updateField('ownershipAllocations', [...propertyData.ownershipAllocations, newAllocation]);
+    if (totalInvestors === 1) {
+      return [{ investorId: investors[0].id, ownershipPercentage: 100 }];
+    } else if (totalInvestors === 2) {
+      return [
+        { investorId: investors[0].id, ownershipPercentage: 50 },
+        { investorId: investors[1].id, ownershipPercentage: 50 }
+      ];
+    } else if (totalInvestors === 3) {
+      return [
+        { investorId: investors[0].id, ownershipPercentage: 33.33 },
+        { investorId: investors[1].id, ownershipPercentage: 33.33 },
+        { investorId: investors[2].id, ownershipPercentage: 33.34 }
+      ];
+    } else {
+      return [
+        { investorId: investors[0].id, ownershipPercentage: 25 },
+        { investorId: investors[1].id, ownershipPercentage: 25 },
+        { investorId: investors[2].id, ownershipPercentage: 25 },
+        { investorId: investors[3].id, ownershipPercentage: 25 }
+      ];
+    }
   };
 
-  const removeClient = (clientId: string) => {
-    if (propertyData.clients.length <= 1) return; // Keep at least one client
+  const addInvestor = () => {
+    setIsInvestorDialogOpen(true);
+  };
+
+  const selectInvestor = (investor: Investor) => {
+    const newInvestor: InvestorData = {
+      id: investor.id,
+      name: investor.name,
+      annualIncome: investor.annualIncome,
+      otherIncome: investor.otherIncome,
+      hasMedicareLevy: investor.hasMedicareLevy,
+    };
     
-    const updatedClients = propertyData.clients.filter(c => c.id !== clientId);
-    const updatedAllocations = propertyData.ownershipAllocations.filter(a => a.clientId !== clientId);
+    // Add the new investor
+    const updatedInvestors = [...propertyData.investors, newInvestor];
     
-    updateField('clients', updatedClients);
+    // Calculate ownership percentages automatically
+    const updatedAllocations = calculateOwnershipPercentages(updatedInvestors);
+
+    updateField('investors', updatedInvestors);
+    updateField('ownershipAllocations', updatedAllocations);
+    setIsInvestorDialogOpen(false);
+    setSearchTerm("");
+  };
+
+  const removeInvestor = (investorId: string) => {
+    if (propertyData.investors.length <= 1) return; // Keep at least one investor
+    
+    const updatedInvestors = propertyData.investors.filter(c => c.id !== investorId);
+    
+    // Recalculate ownership percentages after removal
+    const updatedAllocations = calculateOwnershipPercentages(updatedInvestors);
+    
+    updateField('investors', updatedInvestors);
     updateField('ownershipAllocations', updatedAllocations);
   };
 
-  const updateClient = (clientId: string, field: keyof Client, value: any) => {
-    const updatedClients = propertyData.clients.map(client =>
-      client.id === clientId ? { ...client, [field]: value } : client
+  const updateInvestor = (investorId: string, field: keyof Investor, value: any) => {
+    const updatedInvestors = propertyData.investors.map(investor =>
+      investor.id === investorId ? { ...investor, [field]: value } : investor
     );
-    updateField('clients', updatedClients);
+    updateField('investors', updatedInvestors);
   };
 
-  const updateOwnershipAllocation = (clientId: string, percentage: number) => {
+  const updateOwnershipAllocation = (investorId: string, percentage: number) => {
     const updatedAllocations = propertyData.ownershipAllocations.map(allocation =>
-      allocation.clientId === clientId ? { ...allocation, ownershipPercentage: percentage } : allocation
+      allocation.investorId === investorId ? { ...allocation, ownershipPercentage: percentage } : allocation
     );
     updateField('ownershipAllocations', updatedAllocations);
   };
@@ -301,30 +344,30 @@ export const PropertyInputForm = ({
             <AccordionContent className="px-6 pb-6">
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-medium text-sm">Clients</h4>
+                  <h4 className="font-medium text-sm">Investors</h4>
                   <Button 
-                    onClick={addClient}
+                    onClick={addInvestor}
                     size="sm"
                     variant="outline"
-                    disabled={propertyData.clients.length >= 4}
+                    disabled={propertyData.investors.length >= 4}
                   >
                     <Plus className="h-4 w-4 mr-1" />
-                    Add Client
+                    Add Investor
                   </Button>
                 </div>
 
-                {propertyData.clients.map((client) => (
-                  <div key={client.id} className="border rounded-lg p-4 space-y-4">
+                {propertyData.investors.map((investor) => (
+                  <div key={investor.id} className="border rounded-lg p-4 space-y-4">
                     <div className="flex items-center justify-between">
                       <Input
-                        value={client.name}
-                        onChange={(e) => updateClient(client.id, 'name', e.target.value)}
-                        placeholder="Client name"
+                        value={investor.name}
+                        onChange={(e) => updateInvestor(investor.id, 'name', e.target.value)}
+                        placeholder="Investor name"
                         className="max-w-[200px] font-medium"
                       />
-                      {propertyData.clients.length > 1 && (
+                      {propertyData.investors.length > 1 && (
                         <Button
-                          onClick={() => removeClient(client.id)}
+                          onClick={() => removeInvestor(investor.id)}
                           size="sm"
                           variant="ghost"
                         >
@@ -335,25 +378,25 @@ export const PropertyInputForm = ({
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor={`income-${client.id}`} className="text-sm font-medium">
+                        <Label htmlFor={`income-${investor.id}`} className="text-sm font-medium">
                           Annual Income
                         </Label>
                         <CurrencyInput
-                          id={`income-${client.id}`}
-                          value={client.annualIncome}
-                          onChange={(value) => updateClient(client.id, 'annualIncome', value)}
+                          id={`income-${investor.id}`}
+                          value={investor.annualIncome}
+                          onChange={(value) => updateInvestor(investor.id, 'annualIncome', value)}
                           className="mt-1"
                           placeholder="Enter annual income"
                         />
                       </div>
                       <div>
-                        <Label htmlFor={`other-income-${client.id}`} className="text-sm font-medium">
+                        <Label htmlFor={`other-income-${investor.id}`} className="text-sm font-medium">
                           Other Income
                         </Label>
                         <CurrencyInput
-                          id={`other-income-${client.id}`}
-                          value={client.otherIncome}
-                          onChange={(value) => updateClient(client.id, 'otherIncome', value)}
+                          id={`other-income-${investor.id}`}
+                          value={investor.otherIncome}
+                          onChange={(value) => updateInvestor(investor.id, 'otherIncome', value)}
                           className="mt-1"
                           placeholder="Enter other income"
                         />
@@ -363,26 +406,26 @@ export const PropertyInputForm = ({
                     <div className="flex items-center space-x-2">
                       <input
                         type="checkbox"
-                        id={`medicare-${client.id}`}
-                        checked={client.hasMedicareLevy}
-                        onChange={(e) => updateClient(client.id, 'hasMedicareLevy', e.target.checked)}
+                        id={`medicare-${investor.id}`}
+                        checked={investor.hasMedicareLevy}
+                        onChange={(e) => updateInvestor(investor.id, 'hasMedicareLevy', e.target.checked)}
                         className="rounded border-border"
                       />
-                      <Label htmlFor={`medicare-${client.id}`} className="text-sm">
+                      <Label htmlFor={`medicare-${investor.id}`} className="text-sm">
                         Subject to Medicare Levy
                       </Label>
                     </div>
 
-                    {/* Display tax summary for this client */}
-                    {clientTaxResults.find(r => r.client.id === client.id) && (
+                    {/* Display tax summary for this investor */}
+                    {investorTaxResults.find(r => r.investor.id === investor.id) && (
                       <div className="bg-muted/30 rounded-lg p-3 space-y-2">
                         <div className="text-sm font-medium">Tax Summary</div>
                         <div className="grid grid-cols-2 gap-2 text-xs">
                           <div>
                             <span className="text-muted-foreground">Marginal Rate:</span>
                             <span className="ml-1 font-medium">
-                              {(clientTaxResults.find(r => r.client.id === client.id)?.marginalTaxRate * 100).toFixed(0)}%
-                              {client.hasMedicareLevy && (
+                              {(investorTaxResults.find(r => r.investor.id === investor.id)?.marginalTaxRate * 100).toFixed(0)}%
+                              {investor.hasMedicareLevy && (
                                 <span className="text-muted-foreground"> +2% Medicare</span>
                               )}
                             </span>
@@ -390,7 +433,7 @@ export const PropertyInputForm = ({
                           <div>
                             <span className="text-muted-foreground">Current Tax:</span>
                             <span className="ml-1 font-medium">
-                              ${clientTaxResults.find(r => r.client.id === client.id)?.taxWithoutProperty.toLocaleString()}
+                              ${investorTaxResults.find(r => r.investor.id === investor.id)?.taxWithoutProperty.toLocaleString()}
                             </span>
                           </div>
                         </div>
@@ -1529,15 +1572,15 @@ export const PropertyInputForm = ({
                   <div className="text-xs text-muted-foreground mb-3">
                     Configure ownership percentages to optimize tax outcomes across multiple investors.
                   </div>
-                  {propertyData.clients.map((client) => {
-                    const allocation = propertyData.ownershipAllocations.find(a => a.clientId === client.id);
+                                    {propertyData.investors.map((investor) => {
+                    const allocation = propertyData.ownershipAllocations.find(a => a.investorId === investor.id);
                     return (
-                      <div key={client.id} className="grid grid-cols-2 gap-4 items-center">
-                        <Label className="text-sm">{client.name}</Label>
+                      <div key={investor.id} className="grid grid-cols-2 gap-4 items-center">
+                        <Label className="text-sm">{investor.name}</Label>
                         <PercentageInput
-                          id={`ownership-${client.id}`}
+                          id={`ownership-${investor.id}`}
                           value={allocation?.ownershipPercentage || 0}
-                          onChange={(value) => updateOwnershipAllocation(client.id, value)}
+                          onChange={(value) => updateOwnershipAllocation(investor.id, value)}
                           step="1"
                         />
                       </div>
@@ -1566,11 +1609,11 @@ export const PropertyInputForm = ({
                         <HoverCardContent className="w-80">
                           <div className="space-y-2">
                             <div className="font-medium">Ownership Split Guide</div>
-                            {propertyData.clients.length === 2 ? (
+                            {propertyData.investors.length === 2 ? (
                               (() => {
-                                const resultsByClient = propertyData.clients.map(c => clientTaxResults.find(r => r.client.id === c.id));
-                                const [a, b] = resultsByClient;
-                                const totalPropertyTaxable = clientTaxResults.reduce((sum, r) => sum + r.propertyTaxableIncome, 0);
+                                const resultsByInvestor = propertyData.investors.map(c => investorTaxResults.find(r => r.investor.id === c.id));
+                                const [a, b] = resultsByInvestor;
+                                const totalPropertyTaxable = investorTaxResults.reduce((sum, r) => sum + r.propertyTaxableIncome, 0);
                                 const fmt = (n: number) => `${n < 0 ? '-' : ''}$${Math.abs(Math.round(n)).toLocaleString()}`;
                                 const estimate = (shareA: number) => {
                                   const shareB = 1 - shareA;
@@ -1606,10 +1649,10 @@ export const PropertyInputForm = ({
                     </div>
                   </div>
                   <div className="space-y-3">
-                    {clientTaxResults.map((result) => (
-                      <div key={result.client.id} className="bg-muted/30 rounded-lg p-4 space-y-2">
+                    {investorTaxResults.map((result) => (
+                      <div key={result.investor.id} className="bg-muted/30 rounded-lg p-4 space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="font-medium text-sm">{result.client.name}</span>
+                          <span className="font-medium text-sm">{result.investor.name}</span>
                           <span className="text-xs text-muted-foreground">
                             {(result.ownershipPercentage * 100).toFixed(0)}% ownership
                           </span>
@@ -1636,8 +1679,8 @@ export const PropertyInputForm = ({
                     {/* Total Tax Impact row */}
                     <div className="flex items-center justify-between bg-primary/5 rounded-lg p-3 text-sm">
                       <span className="font-medium">Total Tax Impact</span>
-                      <span className={`font-semibold ${clientTaxResults.reduce((s, r) => s + r.taxDifference, 0) < 0 ? 'text-success' : 'text-destructive'}`}>
-                        ${clientTaxResults.reduce((s, r) => s + r.taxDifference, 0).toLocaleString()}
+                      <span className={`font-semibold ${investorTaxResults.reduce((s, r) => s + r.taxDifference, 0) < 0 ? 'text-success' : 'text-destructive'}`}>
+                        ${investorTaxResults.reduce((s, r) => s + r.taxDifference, 0).toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -1655,7 +1698,7 @@ export const PropertyInputForm = ({
                       <span className="text-muted-foreground">Highest Marginal Rate:</span>
                       <div className="font-medium">
                         {(marginalTaxRate * 100).toFixed(0)}%
-                        {propertyData.clients.some(c => c.hasMedicareLevy) && (
+                        {propertyData.investors.some(c => c.hasMedicareLevy) && (
                           <span className="text-muted-foreground"> +2% Medicare</span>
                         )}
                       </div>
@@ -1698,6 +1741,76 @@ export const PropertyInputForm = ({
             ]
       }
     />
+
+    {/* Investor Selection Dialog */}
+    <Dialog open={isInvestorDialogOpen} onOpenChange={setIsInvestorDialogOpen}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Select Investor</DialogTitle>
+          <DialogDescription>
+            Choose an investor from your existing list. Their income details and Medicare Levy status will be automatically populated.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          {/* Search Input */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search investors..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          {/* Investors List */}
+          <div className="max-h-60 overflow-y-auto space-y-2">
+            {investorsLoading ? (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
+                <p className="text-sm text-muted-foreground mt-2">Loading investors...</p>
+              </div>
+            ) : investors.length === 0 ? (
+              <div className="text-center py-4">
+                <p className="text-sm text-muted-foreground">No investors found. Create some investors first.</p>
+              </div>
+            ) : (
+              investors
+                .filter(investor => 
+                  investor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  investor.id.toLowerCase().includes(searchTerm.toLowerCase())
+                )
+                .map(investor => (
+                  <div
+                    key={investor.id}
+                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer"
+                    onClick={() => selectInvestor(investor)}
+                  >
+                    <div className="flex-1">
+                      <div className="font-medium">{investor.name}</div>
+                      <div className="text-sm text-muted-foreground">
+                        Annual: ${investor.annualIncome.toLocaleString()} | 
+                        Other: ${investor.otherIncome.toLocaleString()} | 
+                        Medicare: {investor.hasMedicareLevy ? 'Yes' : 'No'}
+                      </div>
+                    </div>
+                    <Button size="sm" variant="outline">
+                      Select
+                    </Button>
+                  </div>
+                ))
+            )}
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setIsInvestorDialogOpen(false)}>
+            Cancel
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
   );
 };

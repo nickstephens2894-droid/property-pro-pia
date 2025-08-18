@@ -3,9 +3,9 @@ import { PropertyData } from "@/contexts/PropertyDataContext";
 export type CompletionStatus = 'complete' | 'warning' | 'incomplete' | 'error';
 
 export const validatePersonalProfile = (propertyData: PropertyData): CompletionStatus => {
-  // Check if all clients have income > 0
-  const hasIncomeData = propertyData.clients.every(client => 
-    client.annualIncome > 0 && client.name.trim() !== ''
+  // Check if all investors have income > 0
+  const hasIncomeData = propertyData.investors.every(investor => 
+    investor.annualIncome > 0 && investor.name.trim() !== ''
   );
   
   if (!hasIncomeData) return 'error';

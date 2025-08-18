@@ -22,18 +22,18 @@ export function generateInputsCsv(propertyData: PropertyData): string {
   };
 
   // Personal Profile
-  propertyData.clients.forEach((c, idx) => {
+  propertyData.investors.forEach((c, idx) => {
     const s = `Personal Profile`;
-    add(s, `Client ${idx + 1} Name`, c.name);
-    add(s, `Client ${idx + 1} Annual Income`, c.annualIncome);
-    add(s, `Client ${idx + 1} Other Income`, c.otherIncome);
-    add(s, `Client ${idx + 1} Medicare Levy`, c.hasMedicareLevy);
+    add(s, `Investor ${idx + 1} Name`, c.name);
+    add(s, `Investor ${idx + 1} Annual Income`, c.annualIncome);
+    add(s, `Investor ${idx + 1} Other Income`, c.otherIncome);
+    add(s, `Investor ${idx + 1} Medicare Levy`, c.hasMedicareLevy);
   });
 
   // Ownership (Tax Optimization)
-  const clientNameById = new Map(propertyData.clients.map(c => [c.id, c.name] as const));
+  const investorNameById = new Map(propertyData.investors.map(c => [c.id, c.name] as const));
   propertyData.ownershipAllocations.forEach((o) => {
-    const name = clientNameById.get(o.clientId) || o.clientId;
+    const name = investorNameById.get(o.investorId) || o.investorId;
     add("Tax Optimization", `Ownership – ${name}`, o.ownershipPercentage);
   });
 
