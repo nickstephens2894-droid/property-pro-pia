@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import PropertyAnalysis from "@/components/PropertyAnalysis";
+// import PropertyAnalysis from "@/components/PropertyAnalysis"; // Commented out - functionality integrated into instances
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -44,7 +44,20 @@ const Index = () => {
   return (
     <main className="space-y-8">
       {user ? (
-        <PropertyAnalysis />
+        <section className="max-w-3xl mx-auto text-center space-y-4">
+          <h1 className="text-3xl font-bold">Welcome to Property Pro</h1>
+          <p className="text-muted-foreground">
+            Your property investment analysis and projections are now available in the Instances section.
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            <Button asChild>
+              <Link to="/instances">View Instances</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link to="/instances/add">Create New Instance</Link>
+            </Button>
+          </div>
+        </section>
       ) : (
         <section className="max-w-3xl mx-auto text-center space-y-4">
           <h1 className="text-3xl font-bold">Property Pro</h1>

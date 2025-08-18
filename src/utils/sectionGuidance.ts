@@ -27,12 +27,12 @@ export const getSectionGuidance = (
   switch (section) {
     case "personal-profile": {
       status = validatePersonalProfile(propertyData);
-      propertyData.clients.forEach((c, idx) => {
+      propertyData.investors.forEach((c, idx) => {
         if (!c.name || c.name.trim() === "") {
-          items.push(`Enter name for client ${idx + 1}`);
+          items.push(`Enter name for investor ${idx + 1}`);
         }
         if (!c.annualIncome || c.annualIncome <= 0) {
-          items.push(`Enter annual income for ${c.name?.trim() || `client ${idx + 1}`}`);
+          items.push(`Enter annual income for ${c.name?.trim() || `investor ${idx + 1}`}`);
         }
       });
       break;

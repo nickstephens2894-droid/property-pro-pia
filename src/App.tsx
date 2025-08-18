@@ -7,12 +7,15 @@ import { PropertyDataProvider } from "./contexts/PropertyDataContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import AppNav from "./components/AppNav";
 import Index from "./pages/Index";
-import Projections from "./pages/Projections";
+// import Projections from "./pages/Projections"; // Commented out - functionality integrated into instances
 import NotFound from "./pages/NotFound";
 import Investors from "./pages/Investors";
 import Properties from "./pages/Properties";
 import Funds from "./pages/Funds";
 import Scenarios from "./pages/Scenarios";
+import Instances from "./pages/Instances";
+import AddInstance from "./pages/AddInstance";
+import InstanceDetail from "./pages/InstanceDetail";
 import Auth from "./pages/Auth";
 import SpecPage from "./pages/SpecPage";
 import { RepoProvider } from "./services/repository";
@@ -32,11 +35,14 @@ function AppLayout() {
         <Routes>
           <Route path="/auth" element={<Auth />} />
           <Route path="/" element={<RequireAuth><Index /></RequireAuth>} />
-          <Route path="/projections" element={<RequireAuth><Projections /></RequireAuth>} />
+          {/* <Route path="/projections" element={<RequireAuth><Projections /></RequireAuth>} /> */}
           <Route path="/investors" element={<RequireAuth><Investors /></RequireAuth>} />
           <Route path="/properties" element={<RequireAuth><Properties /></RequireAuth>} />
           <Route path="/funds" element={<RequireAuth><Funds /></RequireAuth>} />
           <Route path="/scenarios" element={<RequireAuth><Scenarios /></RequireAuth>} />
+          <Route path="/instances" element={<RequireAuth><Instances /></RequireAuth>} />
+          <Route path="/instances/add" element={<RequireAuth><AddInstance /></RequireAuth>} />
+          <Route path="/instances/:id" element={<RequireAuth><InstanceDetail /></RequireAuth>} />
           <Route path="/spec" element={<SpecPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

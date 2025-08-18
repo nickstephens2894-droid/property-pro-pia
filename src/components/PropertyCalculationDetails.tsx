@@ -10,8 +10,8 @@ interface DepreciationDetails {
   plantEquipmentRestricted: boolean;
 }
 
-interface ClientTaxResult {
-  client: {
+interface InvestorTaxResult {
+  investor: {
     id: string;
     name: string;
     annualIncome: number;
@@ -46,7 +46,7 @@ interface PropertyCalculationDetailsProps {
   repairs: number;
   totalDeductibleExpenses: number;
   depreciation: DepreciationDetails;
-  clientTaxResults: ClientTaxResult[];
+  investorTaxResults: InvestorTaxResult[];
   totalTaxWithProperty: number;
   totalTaxWithoutProperty: number;
   marginalTaxRate: number;
@@ -89,7 +89,7 @@ export const PropertyCalculationDetails = ({
   repairs,
   totalDeductibleExpenses,
   depreciation,
-  clientTaxResults,
+  investorTaxResults,
   totalTaxWithProperty,
   totalTaxWithoutProperty,
   marginalTaxRate,
@@ -463,11 +463,11 @@ export const PropertyCalculationDetails = ({
                 </div>
 
                 <div className="space-y-3">
-                  <h4 className="font-medium text-sm">Multi-Client Tax Summary</h4>
-                  {clientTaxResults.map((result) => (
-                    <div key={result.client.id} className="bg-muted/20 rounded-lg p-3">
+                  <h4 className="font-medium text-sm">Multi-Investor Tax Summary</h4>
+                  {investorTaxResults.map((result) => (
+                    <div key={result.investor.id} className="bg-muted/20 rounded-lg p-3">
                       <div className="flex justify-between items-center mb-2">
-                        <span className="font-medium text-sm">{result.client.name}</span>
+                        <span className="font-medium text-sm">{result.investor.name}</span>
                         <span className="text-xs">{(result.ownershipPercentage * 100).toFixed(0)}% ownership</span>
                       </div>
                       <div className="grid grid-cols-3 gap-2 text-xs">

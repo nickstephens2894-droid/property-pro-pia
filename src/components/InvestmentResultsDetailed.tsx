@@ -61,14 +61,14 @@ export const InvestmentResultsDetailed: React.FC<InvestmentResultsDetailedProps>
 		const cpiMultiplier = yearTo >= 1 ? Math.pow(1 + (cpiRate || 0) / 100, yearTo - 1) : 1;
 
 		let cgtSum = 0;
-		propertyData.clients.forEach(client => {
-			const allocation = propertyData.ownershipAllocations.find(o => o.clientId === client.id);
+		propertyData.investors.forEach(investor => {
+			const allocation = propertyData.ownershipAllocations.find(o => o.investorId === investor.id);
 			const pct = (allocation?.ownershipPercentage ?? 0) / 100;
 			if (pct <= 0) return;
-			const baseIncome = (client.annualIncome + client.otherIncome) * cpiMultiplier;
+			const baseIncome = (investor.annualIncome + investor.otherIncome) * cpiMultiplier;
 			const share = discounted * pct;
-			const before = totalTaxAU(baseIncome, client.hasMedicareLevy);
-			const after = totalTaxAU(baseIncome + share, client.hasMedicareLevy);
+			const before = totalTaxAU(baseIncome, investor.hasMedicareLevy);
+			const after = totalTaxAU(baseIncome + share, investor.hasMedicareLevy);
 			cgtSum += Math.max(0, after - before);
 		});
 
