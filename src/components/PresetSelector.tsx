@@ -4,34 +4,29 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { PropertyData } from "@/contexts/PropertyDataContext";
 import { 
-  PropertyMethod, 
   FundingMethod, 
-  PROPERTY_METHODS, 
   FUNDING_METHODS
 } from "@/types/presets";
-import { Settings, Home, CreditCard } from "lucide-react";
+import { Settings, CreditCard } from "lucide-react";
 import { QuickSetupWizard } from "@/components/QuickSetupWizard";
 
 // Payload type for applying presets from the wizard
 type PresetPayload = Partial<PropertyData> & {
-  propertyMethod?: PropertyMethod;
   fundingMethod?: FundingMethod;
 };
 
 interface PresetSelectorProps {
   onApplyPreset: (presetData: PresetPayload) => void;
-  currentPropertyMethod?: PropertyMethod;
   currentFundingMethod?: FundingMethod;
 }
 
 export const PresetSelector = ({ 
   onApplyPreset, 
-  currentPropertyMethod, 
   currentFundingMethod 
 }: PresetSelectorProps) => {
   const [open, setOpen] = useState(false);
 
-  const hasCurrentPreset = currentPropertyMethod && currentFundingMethod;
+  const hasCurrentPreset = currentFundingMethod;
 
   return (
     <Card className="mb-4 border-primary/20 shadow-sm">
@@ -47,14 +42,8 @@ export const PresetSelector = ({
 
           {/* Current selection badges (ellipsis on small screens) */}
           <div className="hidden sm:flex items-center gap-2 min-w-0 flex-1">
-            {currentPropertyMethod && (
-              <Badge variant="secondary" className="flex items-center gap-1 truncate max-w-[40%]">
-                <Home className="h-3 w-3" />
-                <span className="truncate">{PROPERTY_METHODS[currentPropertyMethod].name}</span>
-              </Badge>
-            )}
             {currentFundingMethod && (
-              <Badge variant="outline" className="flex items-center gap-1 truncate max-w-[40%]">
+              <Badge variant="outline" className="flex items-center gap-1 truncate max-w-[60%]">
                 <CreditCard className="h-3 w-3" />
                 <span className="truncate">{FUNDING_METHODS[currentFundingMethod].name}</span>
               </Badge>
@@ -77,7 +66,6 @@ export const PresetSelector = ({
           onApplyPreset(presetData);
           setOpen(false);
         }}
-        currentPropertyMethod={currentPropertyMethod}
         currentFundingMethod={currentFundingMethod}
       />
     </Card>

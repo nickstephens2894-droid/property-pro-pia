@@ -13,21 +13,21 @@ import { Building2, Search, Copy, Check } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { formatCurrency } from "@/utils/formatters";
 import { PROPERTY_METHODS } from "@/types/presets";
-import { useProperties, type Property } from "@/contexts/PropertiesContext";
+import { useProperties, type PropertyModel } from "@/contexts/PropertiesContext";
 
 
 
 interface PropertySelectorProps {
-  onApplyProperty: (propertyData: Property) => void;
+  onApplyProperty: (propertyData: PropertyModel) => void;
 }
 
 export const PropertySelector = ({ onApplyProperty }: PropertySelectorProps) => {
   const isMobile = useIsMobile();
-  const { properties } = useProperties();
+  const { properties, loading: propertiesLoading } = useProperties();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [selectedProperty, setSelectedProperty] = useState<PropertyModel | null>(null);
 
     useEffect(() => {
     if (open) {
@@ -35,11 +35,11 @@ export const PropertySelector = ({ onApplyProperty }: PropertySelectorProps) => 
     }
   }, [open]);
 
-  const filteredProperties = properties.filter(property =>
-    property.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    property.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    property.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    property.propertyType.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredProperties = (properties || []).filter(property =>
+    property && property.name && property.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    property && property.description && property.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    property && property.location && property.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    property && property.property_type && property.property_type.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleApplyProperty = () => {
@@ -70,7 +70,7 @@ export const PropertySelector = ({ onApplyProperty }: PropertySelectorProps) => 
 
                   {/* Properties List */}
       <div className="space-y-3 max-h-96 overflow-y-auto">
-        {loading ? (
+        {propertiesLoading ? (
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
                           <p className="text-sm text-muted-foreground mt-2">Loading properties...</p>
@@ -93,7 +93,7 @@ export const PropertySelector = ({ onApplyProperty }: PropertySelectorProps) => 
               )}
           </div>
         ) : (
-          filteredProperties.map((property) => {
+          filteredProperties.filter(property => property).map((property) => {
             const isSelected = selectedProperty?.id === property.id;
             return (
                               <Card
@@ -111,14 +111,14 @@ export const PropertySelector = ({ onApplyProperty }: PropertySelectorProps) => 
                         {isSelected && <Check className="h-4 w-4 text-primary" />}
                       </div>
                       <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                        {property.description}
+                        {property.description || 'No description available'}
                       </p>
                       
                       {/* Property Details */}
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Type:</span>
-                          <span className="font-medium">{property.propertyType}</span>
+                          <span className="font-medium">{property.property_type}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Location:</span>
@@ -126,21 +126,24 @@ export const PropertySelector = ({ onApplyProperty }: PropertySelectorProps) => 
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Price:</span>
-                          <span className="font-medium">{formatCurrency(property.purchasePrice)}</span>
+                          <span className="font-medium">{formatCurrency(property.purchase_price)}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Rent:</span>
-                          <span className="font-medium">{formatCurrency(property.weeklyRent)}/week</span>
+                          <span className="font-medium">{formatCurrency(property.weekly_rent)}/week</span>
                         </div>
                       </div>
 
                       {/* Badges */}
                       <div className="flex items-center gap-2 mt-3">
                         <Badge variant="secondary" className="text-xs">
-                          {PROPERTY_METHODS[property.propertyMethod].name}
+                          {PROPERTY_METHODS[property.property_method]?.name || 'Unknown Method'}
                         </Badge>
                         <Badge variant="outline" className="text-xs">
-                          {((property.weeklyRent * 52 / property.purchasePrice) * 100).toFixed(2)}% yield
+                          {property.weekly_rent && property.purchase_price ? 
+                            ((property.weekly_rent * 52 / property.purchase_price) * 100).toFixed(2) + '% yield' : 
+                            'N/A'
+                          }
                         </Badge>
                       </div>
                     </div>

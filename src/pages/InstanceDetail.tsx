@@ -646,10 +646,9 @@ const InstanceDetail = () => {
         <div className="mb-6">
           <PresetSelector 
             onApplyPreset={(presetData: any) => {
-              const { propertyMethod, fundingMethod, ...dataToApply } = presetData;
-              applyPreset(dataToApply, propertyMethod, fundingMethod);
+              const { fundingMethod, ...dataToApply } = presetData;
+              applyPreset(dataToApply, undefined, fundingMethod);
             }}
-            currentPropertyMethod={propertyData.currentPropertyMethod}
             currentFundingMethod={propertyData.currentFundingMethod}
           />
         </div>
