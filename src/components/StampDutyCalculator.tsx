@@ -9,23 +9,39 @@ import { Separator } from "@/components/ui/separator";
 interface StampDutyCalculatorProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onApplyDuty?: (duty: number) => void; // Optional callback for external forms
+  dutiableValue?: number; // Optional override for dutiable value
+  isConstructionProject?: boolean; // Optional override for construction project flag
 }
 
 const JURISDICTIONS: Jurisdiction[] = ["ACT", "NSW", "NT", "QLD", "SA", "TAS", "VIC", "WA"];
 
-export default function StampDutyCalculator({ open, onOpenChange }: StampDutyCalculatorProps) {
+export default function StampDutyCalculator({ 
+  open, 
+  onOpenChange, 
+  onApplyDuty, 
+  dutiableValue: overrideDutiableValue, 
+  isConstructionProject: overrideIsConstructionProject 
+}: StampDutyCalculatorProps) {
   const { propertyData, updateField } = usePropertyData();
   const [jurisdiction, setJurisdiction] = useState<Jurisdiction>((propertyData as any).PropertyState || "VIC");
 
-  const dutiableValue = useMemo(() => {
-    return propertyData.isConstructionProject ? propertyData.landValue : propertyData.purchasePrice;
-  }, [propertyData.isConstructionProject, propertyData.landValue, propertyData.purchasePrice]);
+  // Use override values if provided, otherwise fall back to context
+  const isConstructionProject = overrideIsConstructionProject ?? propertyData.isConstructionProject;
+  const contextDutiableValue = propertyData.isConstructionProject ? propertyData.landValue : propertyData.purchasePrice;
+  const dutiableValue = overrideDutiableValue ?? contextDutiableValue;
 
   const duty = useMemo(() => calculateStampDuty(dutiableValue, jurisdiction), [dutiableValue, jurisdiction]);
 
   const applyDuty = () => {
-    updateField("stampDuty", duty);
-    updateField("PropertyState" as any, jurisdiction);
+    if (onApplyDuty) {
+      // External form mode - use callback
+      onApplyDuty(duty);
+    } else {
+      // Context mode - update PropertyDataContext
+      updateField("stampDuty", duty);
+      updateField("PropertyState" as any, jurisdiction);
+    }
     onOpenChange(false);
   };
 
@@ -60,7 +76,7 @@ export default function StampDutyCalculator({ open, onOpenChange }: StampDutyCal
                 {formatCurrencyAUD(dutiableValue)}
               </div>
               <div className="text-[11px] text-muted-foreground mt-1">
-                {propertyData.isConstructionProject ? "Using land value for construction projects" : "Using purchase price for established properties"}
+                {isConstructionProject ? "Using land value for construction projects" : "Using purchase price for established properties"}
               </div>
             </div>
           </div>
@@ -69,7 +85,7 @@ export default function StampDutyCalculator({ open, onOpenChange }: StampDutyCal
             <div className="text-sm font-medium">Assumptions</div>
             <ul className="mt-1 list-disc pl-5 text-[11px] text-muted-foreground space-y-1">
               <li>Treated as an investment property (no concessions or exemptions)</li>
-              <li>Dutiable value uses {propertyData.isConstructionProject ? "land value (construction)" : "purchase price (established)"}</li>
+              <li>Dutiable value uses {isConstructionProject ? "land value (construction)" : "purchase price (established)"}</li>
               <li>Foreign purchaser surcharges not included</li>
               <li>Base rates only; ACT/NT are estimated for v1</li>
             </ul>

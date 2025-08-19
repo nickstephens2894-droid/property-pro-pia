@@ -150,45 +150,27 @@ interface PropertyDataContextType {
 const PropertyDataContext = createContext<PropertyDataContextType | undefined>(undefined);
 
 const defaultPropertyData: PropertyData = {
-  // Multi-investor structure
-  investors: [
-    {
-      id: '1',
-      name: 'Investor 1',
-      annualIncome: 180000, // High income earner (37% bracket)
-      otherIncome: 0,
-      hasMedicareLevy: true,
-    },
-    {
-      id: '2',
-      name: 'Investor 2',
-      annualIncome: 65000, // Mid income earner (30% bracket)
-      otherIncome: 0,
-      hasMedicareLevy: false,
-    }
-  ],
-  ownershipAllocations: [
-    { investorId: '1', ownershipPercentage: 50 }, // Equal split
-    { investorId: '2', ownershipPercentage: 50 }
-  ],
+  // Multi-investor structure - Start with empty investors
+  investors: [],
+  ownershipAllocations: [],
   
   // Project Type
   isConstructionProject: false,
   
-  // Basic Property Details - Enhanced
-  purchasePrice: 750000,
-  weeklyRent: 680, // ~4.7% gross yield
-  rentalGrowthRate: 5.0,
-  vacancyRate: 2.0,
+  // Basic Property Details - Enhanced (Start empty, populated from model)
+  purchasePrice: 0,
+  weeklyRent: 0,
+  rentalGrowthRate: 0,
+  vacancyRate: 0,
   constructionYear: 2024,
-  buildingValue: 600000,
-  plantEquipmentValue: 40000, // Ensures building + plant = total if needed
+  buildingValue: 0,
+  plantEquipmentValue: 0,
   
-  // Construction-specific (for construction projects)
-  landValue: 200000,
-  constructionValue: 550000, // Ensures land + construction = purchase price
-  constructionPeriod: 8, // months
-  constructionInterestRate: 7.0, // typically higher than standard rate
+  // Construction-specific (for construction projects) - Start empty
+  landValue: 0,
+  constructionValue: 0,
+  constructionPeriod: 0,
+  constructionInterestRate: 0,
   
   // Construction Progress Payments
   constructionProgressPayments: [
@@ -199,10 +181,10 @@ const defaultPropertyData: PropertyData = {
     { id: '5', percentage: 20, month: 8, description: 'Completion' }
   ],
   
-  // Traditional Financing
-  deposit: 150000,
-  loanAmount: 600000, // 80% of purchase price
-  interestRate: 6.0, // Current market rates
+  // Traditional Financing (Start empty, populated from model)
+  deposit: 0,
+  loanAmount: 0,
+  interestRate: 0,
   loanTerm: 30,
   lvr: 80,
   
@@ -235,21 +217,21 @@ const defaultPropertyData: PropertyData = {
   constructionHoldingInterest: 0,
   totalHoldingCosts: 0,
   
-  // Purchase Costs
+  // Purchase Costs (Start empty, populated from model)
   stampDuty: 0,
-  legalFees: 1500,
-  inspectionFees: 600,
+  legalFees: 0,
+  inspectionFees: 0,
   
-  // Construction Costs
-  councilFees: 3000,
-  architectFees: 8000,
-  siteCosts: 12000,
+  // Construction Costs (Start empty, populated from model)
+  councilFees: 0,
+  architectFees: 0,
+  siteCosts: 0,
   
-  // Annual Expenses
-  propertyManagement: 6.5,
-  councilRates: 2200,
-  insurance: 1200,
-  repairs: 1500,
+  // Annual Expenses (Start empty, populated from model)
+  propertyManagement: 0,
+  councilRates: 0,
+  insurance: 0,
+  repairs: 0,
   
   // Depreciation / Tax
   depreciationMethod: 'prime-cost',

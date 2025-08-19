@@ -16,6 +16,7 @@ export default function AppNav({ className = "" }: { className?: string }) {
     { to: "/", label: "Dashboard", icon: Home },
     { to: "/instances", label: "Instances", icon: Layers },
     { to: "/investors", label: "Investors", icon: Users },
+    { to: "/models", label: "Models", icon: Building2 },
     { to: "/properties", label: "Properties", icon: Building2 },
     { to: "/funds", label: "Funds", icon: PiggyBank },
     { to: "/scenarios", label: "Scenarios", icon: FileText },

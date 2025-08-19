@@ -66,6 +66,7 @@ interface PropertyInputFormProps {
   investorTaxResults: InvestorTaxResult[];
   totalTaxableIncome: number;
   marginalTaxRate: number;
+  selectedModel?: any; // Optional prop for selected model
 }
 
 
@@ -117,7 +118,8 @@ export const PropertyInputForm = ({
   updateField, 
   investorTaxResults,
   totalTaxableIncome, 
-  marginalTaxRate 
+  marginalTaxRate,
+  selectedModel 
 }: PropertyInputFormProps) => {
   const [openSections, setOpenSections] = useState<string[]>(["personal-profile"]);
   const { confirmations, updateConfirmation } = useFieldConfirmations();
@@ -210,6 +212,19 @@ export const PropertyInputForm = ({
     executeFieldUpdate(pendingUpdate.field, pendingUpdate.value);
     setPendingUpdate(null);
   }, [pendingUpdate, updateConfirmation, executeFieldUpdate]);
+
+  // Helper function to show model selection prompt
+  const showModelPrompt = (fieldValue: number, fieldName: string) => {
+    if (!selectedModel && fieldValue === 0) {
+      return (
+        <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+          <AlertTriangle className="h-3 w-3" />
+          Model not selected - {fieldName} will be populated from selected model
+        </div>
+      );
+    }
+    return null;
+  };
 
   // Get completion status for each section
   const personalProfileStatus = validatePersonalProfile(propertyData);
@@ -903,6 +918,7 @@ export const PropertyInputForm = ({
                         className="mt-1"
                         placeholder="Enter stamp duty"
                       />
+                      {showModelPrompt(propertyData.stampDuty, 'Stamp Duty')}
                       <StampDutyCalculator open={dutyCalcOpen} onOpenChange={setDutyCalcOpen} />
                     </div>
                     <div>
@@ -914,6 +930,7 @@ export const PropertyInputForm = ({
                         className="mt-1"
                         placeholder="Enter legal fees"
                       />
+                      {showModelPrompt(propertyData.legalFees, 'Legal Fees')}
                     </div>
                     <div>
                       <Label htmlFor="inspectionFees" className="text-sm font-medium">Inspection Fees</Label>
@@ -924,6 +941,7 @@ export const PropertyInputForm = ({
                         className="mt-1"
                         placeholder="Enter inspection fees"
                       />
+                      {showModelPrompt(propertyData.inspectionFees, 'Inspection Fees')}
                     </div>
                   </div>
                 </div>
@@ -1448,6 +1466,7 @@ export const PropertyInputForm = ({
                         className="mt-1"
                         placeholder="Enter weekly rent"
                       />
+                      {showModelPrompt(propertyData.weeklyRent, 'Weekly Rent')}
                     </div>
                     <div>
                       <Label htmlFor="rentalGrowthRate" className="text-sm font-medium">Rental Growth Rate</Label>
@@ -1457,6 +1476,7 @@ export const PropertyInputForm = ({
                         onChange={(value) => updateField('rentalGrowthRate', value)}
                         className="mt-1"
                       />
+                      {showModelPrompt(propertyData.rentalGrowthRate, 'Rental Growth Rate')}
                     </div>
                     <div>
                       <Label htmlFor="vacancyRate" className="text-sm font-medium">Vacancy Rate</Label>
@@ -1466,6 +1486,7 @@ export const PropertyInputForm = ({
                         onChange={(value) => updateField('vacancyRate', value)}
                         className="mt-1"
                       />
+                      {showModelPrompt(propertyData.vacancyRate, 'Vacancy Rate')}
                     </div>
                   </div>
                 </div>
@@ -1482,6 +1503,7 @@ export const PropertyInputForm = ({
                         onChange={(value) => updateField('propertyManagement', value)}
                         className="mt-1"
                       />
+                      {showModelPrompt(propertyData.propertyManagement, 'Property Management')}
                     </div>
                     <div>
                       <Label htmlFor="councilRates" className="text-sm font-medium">Council Rates (annual)</Label>
@@ -1492,6 +1514,7 @@ export const PropertyInputForm = ({
                         className="mt-1"
                         placeholder="Enter council rates"
                       />
+                      {showModelPrompt(propertyData.councilRates, 'Council Rates')}
                     </div>
                     <div>
                       <Label htmlFor="insurance" className="text-sm font-medium">Insurance (annual)</Label>
@@ -1502,6 +1525,7 @@ export const PropertyInputForm = ({
                         className="mt-1"
                         placeholder="Enter insurance cost"
                       />
+                      {showModelPrompt(propertyData.insurance, 'Insurance')}
                     </div>
                     <div>
                       <Label htmlFor="repairs" className="text-sm font-medium">Repairs & Maintenance (annual)</Label>
@@ -1512,6 +1536,7 @@ export const PropertyInputForm = ({
                         className="mt-1"
                         placeholder="Enter repair costs"
                       />
+                      {showModelPrompt(propertyData.repairs, 'Repairs & Maintenance')}
                     </div>
                   </div>
                 </div>
