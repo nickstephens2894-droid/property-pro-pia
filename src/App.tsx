@@ -16,12 +16,11 @@ import Scenarios from "./pages/Scenarios";
 import Instances from "./pages/Instances";
 import AddInstance from "./pages/AddInstance";
 import InstanceDetail from "./pages/InstanceDetail";
-import Models from "./pages/Models";
-import CreateModel from "./pages/CreateModel";
+import CreateProperty from "./pages/CreateProperty";
 import Auth from "./pages/Auth";
 import SpecPage from "./pages/SpecPage";
 import { RepoProvider } from "./services/repository";
-import { ModelsProvider } from "./contexts/ModelsContext";
+import { PropertiesProvider } from "./contexts/PropertiesContext";
 // import SeedDemo from "./components/SeedDemo";
 import RequireAuth from "./components/RequireAuth";
 
@@ -46,8 +45,7 @@ function AppLayout() {
           <Route path="/instances" element={<RequireAuth><Instances /></RequireAuth>} />
           <Route path="/instances/add" element={<RequireAuth><AddInstance /></RequireAuth>} />
           <Route path="/instances/:id" element={<RequireAuth><InstanceDetail /></RequireAuth>} />
-          <Route path="/models" element={<RequireAuth><Models /></RequireAuth>} />
-          <Route path="/models/create" element={<RequireAuth><CreateModel /></RequireAuth>} />
+          <Route path="/properties/create" element={<RequireAuth><CreateProperty /></RequireAuth>} />
           <Route path="/spec" element={<SpecPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
@@ -60,7 +58,7 @@ function AppLayout() {
 const App = () => (
   <AuthProvider>
     <RepoProvider>
-      <ModelsProvider>
+      <PropertiesProvider>
         {/* <SeedDemo /> */}
         <QueryClientProvider client={queryClient}>
           <PropertyDataProvider>
@@ -73,7 +71,7 @@ const App = () => (
             </TooltipProvider>
           </PropertyDataProvider>
         </QueryClientProvider>
-      </ModelsProvider>
+      </PropertiesProvider>
     </RepoProvider>
   </AuthProvider>
 );

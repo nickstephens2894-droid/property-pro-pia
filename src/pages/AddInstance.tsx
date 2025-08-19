@@ -15,7 +15,7 @@ import ProjectionsTable from "@/components/ProjectionsTable";
 import ConstructionPeriodTable from "@/components/ConstructionPeriodTable";
 import { InvestmentResultsDetailed } from "@/components/InvestmentResultsDetailed";
 import { PropertyCalculationDetails } from "@/components/PropertyCalculationDetails";
-import { ModelSelector } from "@/components/ModelSelector";
+import { PropertySelector } from "@/components/PropertySelector";
 
 // Import the context hook
 import { usePropertyData } from "@/contexts/PropertyDataContext";
@@ -536,7 +536,7 @@ const AddInstance = () => {
                 <CardTitle className="text-lg">Instance Name</CardTitle>
                 {selectedModel ? (
                   <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                    From Model: {selectedModel.name}
+                    From Property: {selectedModel.name}
                   </span>
                 ) : (
                   <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
@@ -546,8 +546,8 @@ const AddInstance = () => {
               </div>
               <CardDescription className="text-sm">
                 {selectedModel 
-                  ? 'Name populated from selected model - you can edit if needed'
-                  : 'Select a model above to auto-populate the instance name and property details'
+                  ? 'Name populated from selected property - you can edit if needed'
+                  : 'Select a property above to auto-populate the instance name and property details'
                 }
               </CardDescription>
             </CardHeader>
@@ -558,7 +558,7 @@ const AddInstance = () => {
                   value={instanceName}
                   onChange={(e) => setInstanceName(e.target.value)}
                   className="w-full px-4 py-3 text-lg border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                  placeholder={selectedModel ? selectedModel.name : "Select a model above to auto-populate..."}
+                  placeholder={selectedModel ? selectedModel.name : "Select a property above to auto-populate..."}
                 />
                 {instanceName && (
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -574,11 +574,11 @@ const AddInstance = () => {
                     Your instance will be saved as: <span className="font-medium text-foreground">"{instanceName}"</span>
                   </p>
                 )
-              ) : (
-                <p className="mt-2 text-xs text-orange-600">
-                  💡 Tip: Select a model above to automatically populate this field and all property details
-                </p>
-              )}
+                              ) : (
+                  <p className="mt-2 text-xs text-orange-600">
+                    💡 Tip: Select a property above to automatically populate this field and all property details
+                  </p>
+                )}
             </CardContent>
           </Card>
         </div>
@@ -625,19 +625,19 @@ const AddInstance = () => {
 
         {/* Add Model Section */}
         <div className="mb-6">
-          <ModelSelector 
-            onApplyModel={(modelData: any) => {
-              setSelectedModel(modelData);
-              // Set instance name from model
-              setInstanceName(modelData.name);
+          <PropertySelector 
+            onApplyProperty={(propertyData: any) => {
+              setSelectedModel(propertyData);
+              // Set instance name from property
+              setInstanceName(propertyData.name);
               
-              console.log('Applying model data:', modelData);
+              console.log('Applying property data:', propertyData);
               
-              // Apply model data to the form using applyPreset for better state management
-              const { propertyMethod, ...dataToApply } = modelData;
+              // Apply property data to the form using applyPreset for better state management
+              const { propertyMethod, ...dataToApply } = propertyData;
               console.log('Data to apply:', dataToApply);
               applyPreset(dataToApply, propertyMethod);
-              console.log('Model data applied via applyPreset');
+              console.log('Property data applied via applyPreset');
             }}
           />
           
