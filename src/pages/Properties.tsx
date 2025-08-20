@@ -12,13 +12,17 @@ import { PROPERTY_METHODS } from "@/types/presets";
 import { useProperties } from "@/contexts/PropertiesContext";
 import { type PropertyModel } from "@/types/propertyModels";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+import { useToast } from "@/components/ui/use-toast";
 
 
 
 const Properties = () => {
   const navigate = useNavigate();
   const { properties, deleteProperty, duplicateProperty } = useProperties();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [duplicatingProperty, setDuplicatingProperty] = useState<string | null>(null);
+  const [deletingProperty, setDeletingProperty] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [propertyToDelete, setPropertyToDelete] = useState<string | null>(null);
@@ -38,15 +42,48 @@ const Properties = () => {
     setDeleteDialogOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (propertyToDelete) {
-      deleteProperty(propertyToDelete);
-      setPropertyToDelete(null);
+      setDeletingProperty(propertyToDelete);
+      try {
+        await deleteProperty(propertyToDelete);
+        toast({
+          title: "Property Deleted",
+          description: "Property has been successfully deleted.",
+          variant: "default",
+        });
+      } catch (error) {
+        toast({
+          title: "Delete Failed",
+          description: error instanceof Error ? error.message : "Failed to delete property.",
+          variant: "destructive",
+        });
+      } finally {
+        setPropertyToDelete(null);
+        setDeleteDialogOpen(false);
+        setDeletingProperty(null);
+      }
     }
   };
 
-  const handleDuplicateProperty = (propertyId: string) => {
-    duplicateProperty(propertyId);
+  const handleDuplicateProperty = async (propertyId: string) => {
+    setDuplicatingProperty(propertyId);
+    try {
+      await duplicateProperty(propertyId);
+      toast({
+        title: "Property Duplicated",
+        description: "Property has been successfully duplicated.",
+        variant: "default",
+      });
+    } catch (error) {
+      toast({
+        title: "Duplicate Failed",
+        description: error instanceof Error ? error.message : "Failed to duplicate property.",
+        variant: "destructive",
+      });
+    } finally {
+      setDuplicatingProperty(null);
+    }
   };
 
   const filteredProperties = properties.filter(property =>
@@ -121,9 +158,14 @@ const Properties = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => handleDuplicateProperty(property.id)}
+                      disabled={duplicatingProperty === property.id}
                       className="h-8 w-8 p-0"
                     >
-                      <Copy className="h-4 w-4" />
+                      {duplicatingProperty === property.id ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
                     </Button>
                     <Button
                       variant="ghost"
@@ -137,9 +179,14 @@ const Properties = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => handleDeleteProperty(property.id)}
+                      disabled={deletingProperty === property.id}
                       className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      {deletingProperty === property.id ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-destructive"></div>
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
                 </div>
@@ -197,14 +244,18 @@ const Properties = () => {
       {/* Delete Confirmation Dialog */}
       <ConfirmationDialog
         open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
+        onOpenChange={(open) => {
+          if (!deletingProperty) {
+            setDeleteDialogOpen(open);
+          }
+        }}
         title="Delete Property"
         description="Are you sure you want to delete this property? This action cannot be undone."
-        confirmText="Delete Property"
+        confirmText={deletingProperty ? "Deleting..." : "Delete Property"}
         cancelText="Cancel"
         variant="destructive"
         onConfirm={confirmDelete}
-        onCancel={() => setPropertyToDelete(null)}
+        onCancel={deletingProperty ? undefined : () => setPropertyToDelete(null)}
       />
     </div>
   );

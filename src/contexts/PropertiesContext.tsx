@@ -10,6 +10,7 @@ interface PropertiesContextType {
   updateProperty: (id: string, updates: UpdatePropertyModelRequest) => Promise<void>;
   deleteProperty: (id: string) => Promise<void>;
   getPropertyById: (id: string) => PropertyModel | undefined;
+  refreshPropertyById: (id: string) => Promise<PropertyModel | null>;
   duplicateProperty: (id: string) => Promise<void>;
   refreshProperties: () => Promise<void>;
 }
@@ -94,6 +95,19 @@ export const PropertiesProvider: React.FC<PropertiesProviderProps> = ({ children
     return properties.find(property => property.id === id);
   };
 
+  const refreshPropertyById = async (id: string) => {
+    try {
+      const property = await PropertyModelsService.getById(id);
+      if (property) {
+        setProperties(prev => prev.map(p => p.id === id ? property : p));
+      }
+      return property;
+    } catch (err) {
+      console.error('Error refreshing property:', err);
+      throw err;
+    }
+  };
+
   const duplicateProperty = async (id: string) => {
     try {
       setError(null);
@@ -114,6 +128,7 @@ export const PropertiesProvider: React.FC<PropertiesProviderProps> = ({ children
     updateProperty,
     deleteProperty,
     getPropertyById,
+    refreshPropertyById,
     duplicateProperty,
     refreshProperties
   };

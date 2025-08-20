@@ -9,7 +9,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 // Import all the components from PropertyAnalysis and Projections
 import { PropertyInputForm } from "@/components/PropertyInputForm";
 import { FundingSummaryPanel } from "@/components/FundingSummaryPanel";
-import { PresetSelector } from "@/components/PresetSelector";
+
 import { PropertySummaryDashboard } from "@/components/PropertySummaryDashboard";
 import ProjectionsTable from "@/components/ProjectionsTable";
 import ConstructionPeriodTable from "@/components/ConstructionPeriodTable";
@@ -611,20 +611,13 @@ const AddInstance = () => {
           </div>
         </div>
 
-        {/* Quick Setup Presets */}
-        <div className="mb-6">
-          <PresetSelector 
-            onApplyPreset={(presetData: any) => {
-              const { fundingMethod, ...dataToApply } = presetData;
-              applyPreset(dataToApply, undefined, fundingMethod);
-            }}
-            currentFundingMethod={propertyData.currentFundingMethod}
-          />
-        </div>
+
 
         {/* Add Model Section */}
         <div className="mb-6">
           <PropertySelector 
+            hasSelectedProperty={!!selectedModel}
+            selectedPropertyName={selectedModel?.name}
             onApplyProperty={(propertyData: any) => {
               setSelectedModel(propertyData);
               // Set instance name from property
@@ -632,10 +625,46 @@ const AddInstance = () => {
               
               console.log('Applying property data:', propertyData);
               
-              // Apply property data to the form using applyPreset for better state management
-              const { propertyMethod, ...dataToApply } = propertyData;
-              console.log('Data to apply:', dataToApply);
-              applyPreset(dataToApply, propertyMethod);
+              // Map property model fields (snake_case) to PropertyData fields (camelCase)
+              const mappedData = {
+                // Basic property info
+                purchasePrice: propertyData.purchase_price || 0,
+                weeklyRent: propertyData.weekly_rent || 0,
+                rentalGrowthRate: propertyData.rental_growth_rate || 5.0,
+                vacancyRate: propertyData.vacancy_rate || 2.0,
+                location: propertyData.location || '',
+                
+                // Construction details
+                constructionYear: propertyData.construction_year || 2024,
+                isConstructionProject: propertyData.is_construction_project || false,
+                landValue: propertyData.land_value || 0,
+                constructionValue: propertyData.construction_value || 0,
+                constructionPeriod: propertyData.construction_period || 0,
+                constructionInterestRate: propertyData.construction_interest_rate || 7.0,
+                buildingValue: propertyData.building_value || 0,
+                plantEquipmentValue: propertyData.plant_equipment_value || 0,
+                
+                // Transaction costs
+                stampDuty: propertyData.stamp_duty || 0,
+                legalFees: propertyData.legal_fees || 0,
+                inspectionFees: propertyData.inspection_fees || 0,
+                councilFees: propertyData.council_fees || 0,
+                architectFees: propertyData.architect_fees || 0,
+                siteCosts: propertyData.site_costs || 0,
+                
+                // Ongoing expenses
+                propertyManagement: propertyData.property_management || 8.0,
+                councilRates: propertyData.council_rates || 0,
+                insurance: propertyData.insurance || 0,
+                repairs: propertyData.repairs || 0,
+                
+                // Depreciation & tax
+                depreciationMethod: propertyData.depreciation_method || 'prime-cost',
+                isNewProperty: propertyData.is_new_property || true,
+              };
+              
+              console.log('Mapped data to apply:', mappedData);
+              applyPreset(mappedData, propertyData.property_method);
               console.log('Property data applied via applyPreset');
             }}
           />

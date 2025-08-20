@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -104,15 +104,48 @@ const PercentageInput = ({
   disabled?: boolean;
 }) => {
   const [displayValue, setDisplayValue] = useState<string>(value?.toFixed(1) || '');
+  const [isFocused, setIsFocused] = useState(false);
+
+  // Keep display value in sync with external prop updates when not actively editing
+  useEffect(() => {
+    if (!isFocused) {
+      setDisplayValue(value === 0 ? "" : value.toFixed(1));
+    }
+  }, [value, isFocused]);
+
+  const handleFocus = () => {
+    setIsFocused(true);
+    // Remove formatting while editing and select all for easy replacement
+    setDisplayValue(value === 0 ? "" : value.toString());
+    setTimeout(() => {
+      const input = document.getElementById(id) as HTMLInputElement;
+      input?.select();
+    }, 0);
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value.replace(/[^0-9.]/g, '');
+    const inputValue = e.target.value;
+    // Allow any input while typing - we'll validate and format on blur
     setDisplayValue(inputValue);
   };
 
   const handleBlur = () => {
-    const numericValue = parseFloat(displayValue) || 0;
+    setIsFocused(false);
+    const raw = displayValue.trim();
+    
+    // Clean the input to only allow numbers and decimal points
+    const cleanedInput = raw.replace(/[^\d.]/g, '');
+    
+    // Handle multiple decimal points by keeping only the first one
+    const parts = cleanedInput.split('.');
+    const validInput = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : cleanedInput;
+    
+    // Convert to number, defaulting to 0 if invalid
+    const numericValue = validInput === "" || validInput === "." ? 0 : parseFloat(validInput);
+    
     onChange(numericValue);
+    // Re-apply formatting after editing (keep empty if user cleared)
+    setDisplayValue(raw === "" ? "" : numericValue.toFixed(1));
   };
 
   return (
@@ -122,6 +155,7 @@ const PercentageInput = ({
         type="text"
         value={displayValue}
         onChange={handleChange}
+        onFocus={handleFocus}
         onBlur={handleBlur}
         step={step}
         placeholder={placeholder}

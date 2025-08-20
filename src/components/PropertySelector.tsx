@@ -19,9 +19,11 @@ import { useProperties, type PropertyModel } from "@/contexts/PropertiesContext"
 
 interface PropertySelectorProps {
   onApplyProperty: (propertyData: PropertyModel) => void;
+  hasSelectedProperty?: boolean;
+  selectedPropertyName?: string;
 }
 
-export const PropertySelector = ({ onApplyProperty }: PropertySelectorProps) => {
+export const PropertySelector = ({ onApplyProperty, hasSelectedProperty = false, selectedPropertyName }: PropertySelectorProps) => {
   const isMobile = useIsMobile();
   const { properties, loading: propertiesLoading } = useProperties();
   const [open, setOpen] = useState(false);
@@ -178,13 +180,22 @@ export const PropertySelector = ({ onApplyProperty }: PropertySelectorProps) => 
         <Card className="mb-4 border-primary/20 shadow-sm">
           <CardContent className="py-3">
             <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <Building2 className="h-5 w-5 text-primary" />
-                <span className="font-medium">Add from Property</span>
+                          <div className="flex items-center gap-2 min-w-0">
+              <Building2 className="h-5 w-5 text-primary" />
+              <div className="flex flex-col">
+                <span className="font-medium">
+                  {hasSelectedProperty ? 'Change Property' : 'Add from Property'}
+                </span>
+                {hasSelectedProperty && selectedPropertyName && (
+                  <span className="text-xs text-muted-foreground">
+                    Current: {selectedPropertyName}
+                  </span>
+                )}
               </div>
-              <Button size="sm" variant="default" onClick={() => setOpen(true)}>
-                Select Property
-              </Button>
+            </div>
+            <Button size="sm" variant="default" onClick={() => setOpen(true)}>
+              {hasSelectedProperty ? 'Change Property' : 'Select Property'}
+            </Button>
             </div>
           </CardContent>
         </Card>
@@ -193,8 +204,13 @@ export const PropertySelector = ({ onApplyProperty }: PropertySelectorProps) => 
           <DrawerContent>
             <DrawerHeader className="flex items-start justify-between">
               <div>
-                        <DrawerTitle>Select Property</DrawerTitle>
-        <DrawerDescription>Choose a property to populate your instance form</DrawerDescription>
+                        <DrawerTitle>{hasSelectedProperty ? 'Change Property' : 'Select Property'}</DrawerTitle>
+        <DrawerDescription>
+          {hasSelectedProperty 
+            ? 'Choose a different property to replace the current one' 
+            : 'Choose a property to populate your instance form'
+          }
+        </DrawerDescription>
               </div>
               <DrawerClose asChild>
                                   <Button variant="ghost" size="icon" aria-label="Close property selector">
@@ -226,11 +242,20 @@ export const PropertySelector = ({ onApplyProperty }: PropertySelectorProps) => 
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 min-w-0">
               <Building2 className="h-5 w-5 text-primary" />
-                              <span className="font-medium">Add from Property</span>
-              <span className="text-xs text-muted-foreground">Use a saved property template</span>
+              <div className="flex flex-col">
+                <span className="font-medium">
+                  {hasSelectedProperty ? 'Change Property' : 'Add from Property'}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {hasSelectedProperty && selectedPropertyName 
+                    ? `Current: ${selectedPropertyName}` 
+                    : 'Use a saved property template'
+                  }
+                </span>
+              </div>
             </div>
             <Button size="sm" variant="default" onClick={() => setOpen(true)}>
-                              Select Property
+              {hasSelectedProperty ? 'Change Property' : 'Select Property'}
             </Button>
           </div>
         </CardContent>
@@ -239,8 +264,13 @@ export const PropertySelector = ({ onApplyProperty }: PropertySelectorProps) => 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Select Property</DialogTitle>
-            <DialogDescription>Choose a property to populate your instance form with pre-filled data</DialogDescription>
+            <DialogTitle>{hasSelectedProperty ? 'Change Property' : 'Select Property'}</DialogTitle>
+            <DialogDescription>
+              {hasSelectedProperty 
+                ? 'Choose a different property to replace the current one' 
+                : 'Choose a property to populate your instance form with pre-filled data'
+              }
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             {Body}

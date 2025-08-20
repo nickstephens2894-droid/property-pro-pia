@@ -17,6 +17,7 @@ import Instances from "./pages/Instances";
 import AddInstance from "./pages/AddInstance";
 import InstanceDetail from "./pages/InstanceDetail";
 import CreateProperty from "./pages/CreateProperty";
+import EditProperty from "./pages/EditProperty";
 import Auth from "./pages/Auth";
 import SpecPage from "./pages/SpecPage";
 import { RepoProvider } from "./services/repository";
@@ -46,6 +47,7 @@ function AppLayout() {
           <Route path="/instances/add" element={<RequireAuth><AddInstance /></RequireAuth>} />
           <Route path="/instances/:id" element={<RequireAuth><InstanceDetail /></RequireAuth>} />
           <Route path="/properties/create" element={<RequireAuth><CreateProperty /></RequireAuth>} />
+          <Route path="/properties/:propertyId/edit" element={<RequireAuth><EditProperty /></RequireAuth>} />
           <Route path="/spec" element={<SpecPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
