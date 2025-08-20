@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,7 @@ import { NumberInput } from "@/components/ui/number-input";
 import { FieldUpdateConfirmDialog } from "@/components/FieldUpdateConfirmDialog";
 import { AccordionCompletionIndicator } from "@/components/AccordionCompletionIndicator";
 import { FundingSummaryPanel } from "@/components/FundingSummaryPanel";
-import { PresetSelector } from "@/components/PresetSelector";
+
 import { ValidationWarnings } from "@/components/ValidationWarnings";
 import StampDutyCalculator from "@/components/StampDutyCalculator";
 import { useFieldConfirmations } from "@/hooks/useFieldConfirmations";
@@ -26,10 +26,10 @@ import {
   validateAnnualExpenses,
   validateTaxOptimization
 } from "@/utils/validationUtils";
-import { Users, Home, Receipt, Calculator, Building2, Hammer, CreditCard, Clock, DollarSign, TrendingUp, Percent, X, Plus, AlertTriangle, Info, Search } from "lucide-react";
+import { Users, Home, Receipt, Calculator, Building2, Hammer, CreditCard, Clock, DollarSign, TrendingUp, Percent, X, Plus, AlertTriangle, Info, Search, Check } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { formatFinancialValue } from "@/utils/calculationUtils";
-import { PROPERTY_METHODS, type PropertyMethod } from "@/types/presets";
+import { PROPERTY_METHODS, FUNDING_METHODS, type PropertyMethod, type FundingMethod, getFundingMethodData } from "@/types/presets";
 import { calculateStampDuty, type Jurisdiction } from "@/utils/stampDuty";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -66,6 +66,7 @@ interface PropertyInputFormProps {
   investorTaxResults: InvestorTaxResult[];
   totalTaxableIncome: number;
   marginalTaxRate: number;
+  selectedModel?: any; // Optional prop for selected model
 }
 
 
@@ -85,15 +86,48 @@ const PercentageInput = ({
   className?: string;
 }) => {
   const [displayValue, setDisplayValue] = useState<string>(value?.toFixed(1) || '');
+  const [isFocused, setIsFocused] = useState(false);
+
+  // Keep display value in sync with external prop updates when not actively editing
+  useEffect(() => {
+    if (!isFocused) {
+      setDisplayValue(value === 0 ? "" : value.toFixed(1));
+    }
+  }, [value, isFocused]);
+
+  const handleFocus = () => {
+    setIsFocused(true);
+    // Remove formatting while editing and select all for easy replacement
+    setDisplayValue(value === 0 ? "" : value.toString());
+    setTimeout(() => {
+      const input = document.getElementById(id) as HTMLInputElement;
+      input?.select();
+    }, 0);
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value.replace(/[^0-9.]/g, '');
+    const inputValue = e.target.value;
+    // Allow any input while typing - we'll validate and format on blur
     setDisplayValue(inputValue);
   };
 
   const handleBlur = () => {
-    const numericValue = parseFloat(displayValue) || 0;
+    setIsFocused(false);
+    const raw = displayValue.trim();
+    
+    // Clean the input to only allow numbers and decimal points
+    const cleanedInput = raw.replace(/[^\d.]/g, '');
+    
+    // Handle multiple decimal points by keeping only the first one
+    const parts = cleanedInput.split('.');
+    const validInput = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : cleanedInput;
+    
+    // Convert to number, defaulting to 0 if invalid
+    const numericValue = validInput === "" || validInput === "." ? 0 : parseFloat(validInput);
+    
     onChange(numericValue);
+    // Re-apply formatting after editing (keep empty if user cleared)
+    setDisplayValue(raw === "" ? "" : numericValue.toFixed(1));
   };
 
   return (
@@ -103,6 +137,7 @@ const PercentageInput = ({
         type="text"
         value={displayValue}
         onChange={handleChange}
+        onFocus={handleFocus}
         onBlur={handleBlur}
         placeholder={placeholder}
         className={`pr-8 ${className}`}
@@ -117,7 +152,8 @@ export const PropertyInputForm = ({
   updateField, 
   investorTaxResults,
   totalTaxableIncome, 
-  marginalTaxRate 
+  marginalTaxRate,
+  selectedModel 
 }: PropertyInputFormProps) => {
   const [openSections, setOpenSections] = useState<string[]>(["personal-profile"]);
   const { confirmations, updateConfirmation } = useFieldConfirmations();
@@ -210,6 +246,19 @@ export const PropertyInputForm = ({
     executeFieldUpdate(pendingUpdate.field, pendingUpdate.value);
     setPendingUpdate(null);
   }, [pendingUpdate, updateConfirmation, executeFieldUpdate]);
+
+  // Helper function to show model selection prompt
+  const showModelPrompt = (fieldValue: number, fieldName: string) => {
+    if (!selectedModel && fieldValue === 0) {
+      return (
+        <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+          <AlertTriangle className="h-3 w-3" />
+          Model not selected - {fieldName} will be populated from selected model
+        </div>
+      );
+    }
+    return null;
+  };
 
   // Get completion status for each section
   const personalProfileStatus = validatePersonalProfile(propertyData);
@@ -316,7 +365,7 @@ export const PropertyInputForm = ({
           <CardTitle className="flex items-center gap-3 text-primary text-xl">
             <Home className="h-6 w-6" />
             <div>
-              <div>Property Investment Details</div>
+              <div>Investment Details</div>
               <div className="text-sm font-normal text-muted-foreground mt-1">
                 Configure your property investment parameters
               </div>
@@ -903,6 +952,7 @@ export const PropertyInputForm = ({
                         className="mt-1"
                         placeholder="Enter stamp duty"
                       />
+                      {showModelPrompt(propertyData.stampDuty, 'Stamp Duty')}
                       <StampDutyCalculator open={dutyCalcOpen} onOpenChange={setDutyCalcOpen} />
                     </div>
                     <div>
@@ -914,6 +964,7 @@ export const PropertyInputForm = ({
                         className="mt-1"
                         placeholder="Enter legal fees"
                       />
+                      {showModelPrompt(propertyData.legalFees, 'Legal Fees')}
                     </div>
                     <div>
                       <Label htmlFor="inspectionFees" className="text-sm font-medium">Inspection Fees</Label>
@@ -924,6 +975,7 @@ export const PropertyInputForm = ({
                         className="mt-1"
                         placeholder="Enter inspection fees"
                       />
+                      {showModelPrompt(propertyData.inspectionFees, 'Inspection Fees')}
                     </div>
                   </div>
                 </div>
@@ -982,6 +1034,41 @@ export const PropertyInputForm = ({
             </AccordionTrigger>
             <AccordionContent className="px-6 pb-6">
               <div className="space-y-6">
+                {/* Funding Method Selection */}
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm">Funding Method</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {Object.entries(FUNDING_METHODS).map(([key, method]) => {
+                      const active = propertyData.currentFundingMethod === (key as FundingMethod);
+                      return (
+                        <Button
+                          key={key}
+                          type="button"
+                          variant={active ? "default" : "outline"}
+                          className="justify-start h-auto py-3 px-3 text-left w-full"
+                          onClick={() => {
+                            const fundingData = getFundingMethodData(key as FundingMethod, propertyData.purchasePrice || 0);
+                            // Apply the funding method data
+                            Object.entries(fundingData).forEach(([field, value]) => {
+                              if (value !== undefined) {
+                                updateField(field as keyof PropertyData, value);
+                              }
+                            });
+                            // Set the current funding method
+                            updateField('currentFundingMethod', key as FundingMethod);
+                          }}
+                        >
+                          <div className="flex items-center gap-2 w-full">
+                            <CreditCard className="h-4 w-4 flex-shrink-0" />
+                            <span className="text-sm font-medium">{method.name}</span>
+                            {active && <Check className="h-4 w-4 ml-auto flex-shrink-0" />}
+                          </div>
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {/* Cash Deposit - Always show regardless of funding method */}
                 <div className="space-y-4">
                   <h4 className="font-medium text-sm">Cash Deposit Requirements</h4>
@@ -1448,6 +1535,7 @@ export const PropertyInputForm = ({
                         className="mt-1"
                         placeholder="Enter weekly rent"
                       />
+                      {showModelPrompt(propertyData.weeklyRent, 'Weekly Rent')}
                     </div>
                     <div>
                       <Label htmlFor="rentalGrowthRate" className="text-sm font-medium">Rental Growth Rate</Label>
@@ -1457,6 +1545,7 @@ export const PropertyInputForm = ({
                         onChange={(value) => updateField('rentalGrowthRate', value)}
                         className="mt-1"
                       />
+                      {showModelPrompt(propertyData.rentalGrowthRate, 'Rental Growth Rate')}
                     </div>
                     <div>
                       <Label htmlFor="vacancyRate" className="text-sm font-medium">Vacancy Rate</Label>
@@ -1466,6 +1555,7 @@ export const PropertyInputForm = ({
                         onChange={(value) => updateField('vacancyRate', value)}
                         className="mt-1"
                       />
+                      {showModelPrompt(propertyData.vacancyRate, 'Vacancy Rate')}
                     </div>
                   </div>
                 </div>
@@ -1482,6 +1572,7 @@ export const PropertyInputForm = ({
                         onChange={(value) => updateField('propertyManagement', value)}
                         className="mt-1"
                       />
+                      {showModelPrompt(propertyData.propertyManagement, 'Property Management')}
                     </div>
                     <div>
                       <Label htmlFor="councilRates" className="text-sm font-medium">Council Rates (annual)</Label>
@@ -1492,6 +1583,7 @@ export const PropertyInputForm = ({
                         className="mt-1"
                         placeholder="Enter council rates"
                       />
+                      {showModelPrompt(propertyData.councilRates, 'Council Rates')}
                     </div>
                     <div>
                       <Label htmlFor="insurance" className="text-sm font-medium">Insurance (annual)</Label>
@@ -1502,6 +1594,7 @@ export const PropertyInputForm = ({
                         className="mt-1"
                         placeholder="Enter insurance cost"
                       />
+                      {showModelPrompt(propertyData.insurance, 'Insurance')}
                     </div>
                     <div>
                       <Label htmlFor="repairs" className="text-sm font-medium">Repairs & Maintenance (annual)</Label>
@@ -1512,6 +1605,7 @@ export const PropertyInputForm = ({
                         className="mt-1"
                         placeholder="Enter repair costs"
                       />
+                      {showModelPrompt(propertyData.repairs, 'Repairs & Maintenance')}
                     </div>
                   </div>
                 </div>

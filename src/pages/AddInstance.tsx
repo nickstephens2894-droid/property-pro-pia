@@ -1,23 +1,25 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Save, Download } from "lucide-react";
+import { ArrowLeft, Save, Download, Building2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 // Import all the components from PropertyAnalysis and Projections
 import { PropertyInputForm } from "@/components/PropertyInputForm";
 import { FundingSummaryPanel } from "@/components/FundingSummaryPanel";
-import { PresetSelector } from "@/components/PresetSelector";
+
 import { PropertySummaryDashboard } from "@/components/PropertySummaryDashboard";
 import ProjectionsTable from "@/components/ProjectionsTable";
 import ConstructionPeriodTable from "@/components/ConstructionPeriodTable";
 import { InvestmentResultsDetailed } from "@/components/InvestmentResultsDetailed";
 import { PropertyCalculationDetails } from "@/components/PropertyCalculationDetails";
+import { PropertySelector } from "@/components/PropertySelector";
 
 // Import the context hook
 import { usePropertyData } from "@/contexts/PropertyDataContext";
+import { PROPERTY_METHODS } from "@/types/presets";
 
 // Import utility functions
 import { downloadInputsCsv } from "@/utils/csvExport";
@@ -82,6 +84,7 @@ const AddInstance = () => {
   const [activeTab, setActiveTab] = useState("analysis");
   const [yearRange, setYearRange] = useState<[number, number]>([1, 30]);
   const [viewMode, setViewMode] = useState<'year' | 'table'>("table");
+  const [selectedModel, setSelectedModel] = useState<any>(null);
 
   // Calculate all the necessary values for the components
   const totalProjectCost = calculateTotalProjectCost();
@@ -97,6 +100,24 @@ const AddInstance = () => {
   const holdingCosts = useMemo(() => {
     return calculateHoldingCosts();
   }, [calculateHoldingCosts]);
+
+  // Clear any cached data and ensure clean slate on mount
+  useEffect(() => {
+    // Clear any localStorage data that might be persisting old investor data
+    localStorage.removeItem('propertyData');
+    localStorage.removeItem('propertyModels');
+    
+    // Force reset to defaults to ensure clean state
+    resetToDefaults();
+  }, []);
+
+  // Debug: Monitor propertyData changes
+  useEffect(() => {
+    if (selectedModel) {
+      console.log('PropertyData updated:', propertyData);
+      console.log('Selected model:', selectedModel);
+    }
+  }, [propertyData, selectedModel]);
 
   // Calculate depreciation
   const depreciation = useMemo(() => {
@@ -496,43 +517,71 @@ const AddInstance = () => {
             </Button>
           </div>
 
-          {/* Main Content Row */}
-          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6">
-            {/* Instance Name Input - Enhanced */}
-            <div className="flex-1 min-w-0">
-              <Card className="border-2 border-dashed border-muted-foreground/20 hover:border-primary/30 transition-colors">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-primary"></div>
-                    <CardTitle className="text-lg">Instance Name</CardTitle>
+
+
+        {/* Main Content Row */}
+        <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6">
+                    {/* Instance Name Input - Enhanced */}
+        <div className="flex-1 min-w-0">
+          <Card className={`border-2 border-dashed transition-colors ${
+            selectedModel 
+              ? 'border-green-300 bg-green-50/50 hover:border-green-400' 
+              : 'border-muted-foreground/20 hover:border-primary/30'
+          }`}>
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${
+                  selectedModel ? 'bg-green-500' : 'bg-orange-500'
+                }`}></div>
+                <CardTitle className="text-lg">Instance Name</CardTitle>
+                {selectedModel ? (
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                    From Property: {selectedModel.name}
+                  </span>
+                ) : (
+                  <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
+                    No Model Selected
+                  </span>
+                )}
+              </div>
+              <CardDescription className="text-sm">
+                {selectedModel 
+                  ? 'Name populated from selected property - you can edit if needed'
+                  : 'Select a property above to auto-populate the instance name and property details'
+                }
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={instanceName}
+                  onChange={(e) => setInstanceName(e.target.value)}
+                  className="w-full px-4 py-3 text-lg border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                  placeholder={selectedModel ? selectedModel.name : "Select a property above to auto-populate..."}
+                />
+                {instanceName && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className={`w-2 h-2 rounded-full ${
+                      selectedModel ? 'bg-green-500' : 'bg-blue-500'
+                    }`}></div>
                   </div>
-                  <CardDescription className="text-sm">
-                    This will be displayed in your instances list and used for identification
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={instanceName}
-                      onChange={(e) => setInstanceName(e.target.value)}
-                      className="w-full px-4 py-3 text-lg border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                      placeholder="e.g., Sydney CBD Apartment, Melbourne House, Brisbane Investment..."
-                    />
-                    {instanceName && (
-                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                      </div>
-                    )}
-                  </div>
-                  {instanceName && (
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      Your instance will be saved as: <span className="font-medium text-foreground">"{instanceName}"</span>
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+                )}
+              </div>
+              {selectedModel ? (
+                instanceName && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Your instance will be saved as: <span className="font-medium text-foreground">"{instanceName}"</span>
+                  </p>
+                )
+                              ) : (
+                  <p className="mt-2 text-xs text-orange-600">
+                    💡 Tip: Select a property above to automatically populate this field and all property details
+                  </p>
+                )}
+            </CardContent>
+          </Card>
+        </div>
 
             {/* Action Buttons - Enhanced */}
             <div className="flex flex-col sm:flex-row gap-3 lg:flex-col">
@@ -562,16 +611,65 @@ const AddInstance = () => {
           </div>
         </div>
 
-        {/* Quick Setup Presets */}
+
+
+        {/* Add Model Section */}
         <div className="mb-6">
-          <PresetSelector 
-            onApplyPreset={(presetData: any) => {
-              const { propertyMethod, fundingMethod, ...dataToApply } = presetData;
-              applyPreset(dataToApply, propertyMethod, fundingMethod);
+          <PropertySelector 
+            hasSelectedProperty={!!selectedModel}
+            selectedPropertyName={selectedModel?.name}
+            onApplyProperty={(propertyData: any) => {
+              setSelectedModel(propertyData);
+              // Set instance name from property
+              setInstanceName(propertyData.name);
+              
+              console.log('Applying property data:', propertyData);
+              
+              // Map property model fields (snake_case) to PropertyData fields (camelCase)
+              const mappedData = {
+                // Basic property info
+                purchasePrice: propertyData.purchase_price || 0,
+                weeklyRent: propertyData.weekly_rent || 0,
+                rentalGrowthRate: propertyData.rental_growth_rate || 5.0,
+                vacancyRate: propertyData.vacancy_rate || 2.0,
+                location: propertyData.location || '',
+                
+                // Construction details
+                constructionYear: propertyData.construction_year || 2024,
+                isConstructionProject: propertyData.is_construction_project || false,
+                landValue: propertyData.land_value || 0,
+                constructionValue: propertyData.construction_value || 0,
+                constructionPeriod: propertyData.construction_period || 0,
+                constructionInterestRate: propertyData.construction_interest_rate || 7.0,
+                buildingValue: propertyData.building_value || 0,
+                plantEquipmentValue: propertyData.plant_equipment_value || 0,
+                
+                // Transaction costs
+                stampDuty: propertyData.stamp_duty || 0,
+                legalFees: propertyData.legal_fees || 0,
+                inspectionFees: propertyData.inspection_fees || 0,
+                councilFees: propertyData.council_fees || 0,
+                architectFees: propertyData.architect_fees || 0,
+                siteCosts: propertyData.site_costs || 0,
+                
+                // Ongoing expenses
+                propertyManagement: propertyData.property_management || 8.0,
+                councilRates: propertyData.council_rates || 0,
+                insurance: propertyData.insurance || 0,
+                repairs: propertyData.repairs || 0,
+                
+                // Depreciation & tax
+                depreciationMethod: propertyData.depreciation_method || 'prime-cost',
+                isNewProperty: propertyData.is_new_property || true,
+              };
+              
+              console.log('Mapped data to apply:', mappedData);
+              applyPreset(mappedData, propertyData.property_method);
+              console.log('Property data applied via applyPreset');
             }}
-            currentPropertyMethod={propertyData.currentPropertyMethod}
-            currentFundingMethod={propertyData.currentFundingMethod}
           />
+          
+
         </div>
 
         {/* Main Content with Tabs */}
@@ -593,6 +691,7 @@ const AddInstance = () => {
                     investorTaxResults={investorTaxResults}
                     totalTaxableIncome={0} // Will be calculated
                     marginalTaxRate={0.3} // Will be calculated
+                    selectedModel={selectedModel}
                   />
                 </div>
               </div>

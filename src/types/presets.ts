@@ -29,15 +29,12 @@ export const PROPERTY_METHODS = {
 export const FUNDING_METHODS = {
   'loan-cash': {
     name: '80% Loan + Cash',
-    description: 'Traditional lending with cash deposit'
   },
   'loan-equity': {
     name: '80% Loan + Equity',
-    description: '80% loan with equity-funded deposit'
   },
   'full-equity': {
     name: 'Full Equity Funding',
-    description: '100% funding through property equity'
   }
 } as const;
 

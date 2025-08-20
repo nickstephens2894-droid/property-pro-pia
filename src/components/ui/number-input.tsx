@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -42,6 +42,13 @@ export const NumberInput = ({
   );
   const [isFocused, setIsFocused] = useState(false);
 
+  // Keep display value in sync with external prop updates when not actively editing
+  useEffect(() => {
+    if (!isFocused) {
+      setDisplayValue(value === 0 ? "" : formatNumber(value));
+    }
+  }, [value, isFocused, formatNumber]);
+
   const handleFocus = () => {
     setIsFocused(true);
     // Remove formatting while editing and select all for easy replacement
@@ -55,7 +62,21 @@ export const NumberInput = ({
   const handleBlur = () => {
     setIsFocused(false);
     let raw = displayValue.trim();
-    let numericValue = raw === "" ? 0 : Number(unformat(raw));
+    
+    // Clean the input to only allow valid characters
+    let cleanedInput = raw;
+    if (formatThousands) {
+      cleanedInput = raw.replace(/[^\d.-]/g, '');
+    } else {
+      cleanedInput = raw.replace(/[^\d.-]/g, '');
+    }
+    
+    // Handle multiple decimal points by keeping only the first one
+    const parts = cleanedInput.split('.');
+    const validInput = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : cleanedInput;
+    
+    // Convert to number, defaulting to 0 if invalid
+    let numericValue = validInput === "" || validInput === "." || validInput === "-" ? 0 : Number(validInput);
     
     // Apply min/max constraints
     if (min !== undefined) numericValue = Math.max(min, numericValue);
@@ -69,13 +90,8 @@ export const NumberInput = ({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
     
-    // Allow empty string, numbers, and decimal points (and negative if no min or min < 0)
-    const allowNegative = min === undefined || min < 0;
-    const pattern = allowNegative ? /^-?\d*\.?\d*$/ : /^\d*\.?\d*$/;
-    
-    if (inputValue === "" || pattern.test(inputValue)) {
-      setDisplayValue(inputValue);
-    }
+    // Allow any input while typing - we'll validate and format on blur
+    setDisplayValue(inputValue);
   };
 
   return (

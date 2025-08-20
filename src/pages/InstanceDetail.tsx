@@ -9,7 +9,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 // Import all the components from PropertyAnalysis and Projections
 import { PropertyInputForm } from "@/components/PropertyInputForm";
 import { FundingSummaryPanel } from "@/components/FundingSummaryPanel";
-import { PresetSelector } from "@/components/PresetSelector";
+
 import { PropertySummaryDashboard } from "@/components/PropertySummaryDashboard";
 import ProjectionsTable from "@/components/ProjectionsTable";
 import ConstructionPeriodTable from "@/components/ConstructionPeriodTable";
@@ -575,6 +575,22 @@ const InstanceDetail = () => {
                 <CardDescription className="text-base">
                   {instance.propertyType} • ${instance.purchasePrice.toLocaleString()} • ${instance.weeklyRent}/week
                 </CardDescription>
+                {/* Status and Dates integrated into header */}
+                <div className="flex items-center gap-4 mt-3">
+                  <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    instance.status === 'active' ? 'bg-green-100 text-green-800' :
+                    instance.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {instance.status}
+                  </div>
+                  <span className="text-sm text-muted-foreground">
+                    Created: {new Date(instance.createdAt).toLocaleDateString()}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    Modified: {new Date(instance.lastModified).toLocaleDateString()}
+                  </span>
+                </div>
               </CardHeader>
             </Card>
 
@@ -619,40 +635,9 @@ const InstanceDetail = () => {
           </div>
         </div>
 
-        {/* Instance Status */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  instance.status === 'active' ? 'bg-green-100 text-green-800' :
-                  instance.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
-                  'bg-gray-100 text-gray-800'
-                }`}>
-                  {instance.status}
-                </div>
-                <span className="text-sm text-muted-foreground">
-                  Created: {new Date(instance.createdAt).toLocaleDateString()}
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  Modified: {new Date(instance.lastModified).toLocaleDateString()}
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Quick Setup Presets */}
-        <div className="mb-6">
-          <PresetSelector 
-            onApplyPreset={(presetData: any) => {
-              const { propertyMethod, fundingMethod, ...dataToApply } = presetData;
-              applyPreset(dataToApply, propertyMethod, fundingMethod);
-            }}
-            currentPropertyMethod={propertyData.currentPropertyMethod}
-            currentFundingMethod={propertyData.currentFundingMethod}
-          />
-        </div>
+
+
 
         {/* Main Content with Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">

@@ -16,10 +16,13 @@ import Scenarios from "./pages/Scenarios";
 import Instances from "./pages/Instances";
 import AddInstance from "./pages/AddInstance";
 import InstanceDetail from "./pages/InstanceDetail";
+import CreateProperty from "./pages/CreateProperty";
+import EditProperty from "./pages/EditProperty";
 import Auth from "./pages/Auth";
 import SpecPage from "./pages/SpecPage";
 import { RepoProvider } from "./services/repository";
-import SeedDemo from "./components/SeedDemo";
+import { PropertiesProvider } from "./contexts/PropertiesContext";
+// import SeedDemo from "./components/SeedDemo";
 import RequireAuth from "./components/RequireAuth";
 
 const queryClient = new QueryClient();
@@ -43,6 +46,8 @@ function AppLayout() {
           <Route path="/instances" element={<RequireAuth><Instances /></RequireAuth>} />
           <Route path="/instances/add" element={<RequireAuth><AddInstance /></RequireAuth>} />
           <Route path="/instances/:id" element={<RequireAuth><InstanceDetail /></RequireAuth>} />
+          <Route path="/properties/create" element={<RequireAuth><CreateProperty /></RequireAuth>} />
+          <Route path="/properties/:propertyId/edit" element={<RequireAuth><EditProperty /></RequireAuth>} />
           <Route path="/spec" element={<SpecPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
@@ -55,18 +60,20 @@ function AppLayout() {
 const App = () => (
   <AuthProvider>
     <RepoProvider>
-      <SeedDemo />
-      <QueryClientProvider client={queryClient}>
-        <PropertyDataProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <AppLayout />
-            </BrowserRouter>
-          </TooltipProvider>
-        </PropertyDataProvider>
-      </QueryClientProvider>
+      <PropertiesProvider>
+        {/* <SeedDemo /> */}
+        <QueryClientProvider client={queryClient}>
+          <PropertyDataProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <AppLayout />
+              </BrowserRouter>
+            </TooltipProvider>
+          </PropertyDataProvider>
+        </QueryClientProvider>
+      </PropertiesProvider>
     </RepoProvider>
   </AuthProvider>
 );

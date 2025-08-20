@@ -1,0 +1,575 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { NumberInput } from "@/components/ui/number-input";
+import { ArrowLeft, Save, Building2 } from "lucide-react";
+import { PROPERTY_METHODS } from "@/types/presets";
+import { calculateStampDuty, type Jurisdiction } from "@/utils/stampDuty";
+import { useProperties } from "@/contexts/PropertiesContext";
+import { useToast } from "@/components/ui/use-toast";
+
+interface CreatePropertyForm {
+  name: string;
+  description: string;
+  property_type: 'Apartment' | 'House' | 'Townhouse' | 'Unit' | 'Land' | 'Commercial';
+  purchase_price: number;
+  weekly_rent: number;
+  location: Jurisdiction;
+  property_method: 'house-land-construction' | 'built-first-owner' | 'built-second-owner';
+  // Property Basics
+  construction_year: number;
+  is_construction_project: boolean;
+  land_value: number;
+  construction_value: number;
+  construction_period: number;
+  construction_interest_rate: number;
+  building_value: number;
+  plant_equipment_value: number;
+  // Transaction Costs
+  stamp_duty: number;
+  legal_fees: number;
+  inspection_fees: number;
+  council_fees: number;
+  architect_fees: number;
+  site_costs: number;
+  // Ongoing Income & Expenses
+  rental_growth_rate: number;
+  vacancy_rate: number;
+  property_management: number;
+  council_rates: number;
+  insurance: number;
+  repairs: number;
+  // Depreciation
+  depreciation_method: 'prime-cost' | 'diminishing-value';
+  is_new_property: boolean;
+}
+
+const CreateProperty = () => {
+  const navigate = useNavigate();
+  const { addProperty } = useProperties();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState<CreatePropertyForm>({
+    name: '',
+    description: '',
+    property_type: 'Apartment',
+    purchase_price: 0,
+    weekly_rent: 0,
+    location: 'NSW',
+    property_method: 'built-first-owner',
+    construction_year: new Date().getFullYear(),
+    is_construction_project: false,
+    land_value: 0,
+    construction_value: 0,
+    construction_period: 0,
+    construction_interest_rate: 0,
+    building_value: 0,
+    plant_equipment_value: 0,
+    stamp_duty: 0,
+    legal_fees: 0,
+    inspection_fees: 0,
+    council_fees: 0,
+    architect_fees: 0,
+    site_costs: 0,
+    rental_growth_rate: 3.0,
+    vacancy_rate: 2.0,
+    property_management: 8.0,
+    council_rates: 0,
+    insurance: 0,
+    repairs: 0,
+    depreciation_method: 'prime-cost',
+    is_new_property: true,
+  });
+
+  const handleInputChange = (field: keyof CreatePropertyForm, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handlePropertyMethodChange = (method: 'house-land-construction' | 'built-first-owner' | 'built-second-owner') => {
+    setFormData(prev => ({
+      ...prev,
+      property_method: method,
+      is_construction_project: method === 'house-land-construction'
+    }));
+  };
+
+  // Auto-calculate stamp duty when location, purchase price, or land value changes
+  useEffect(() => {
+    if (formData.location) {
+      let dutiableValue = 0;
+      
+      if (formData.is_construction_project && formData.land_value > 0) {
+        dutiableValue = formData.land_value;
+      } else if (formData.purchase_price > 0) {
+        dutiableValue = formData.purchase_price;
+      }
+      
+              if (dutiableValue > 0) {
+          const calculatedDuty = calculateStampDuty(dutiableValue, formData.location);
+          // Only update stamp duty if it's different to avoid infinite loops
+          setFormData(prev => {
+            if (prev.stamp_duty !== calculatedDuty) {
+              return {
+                ...prev,
+                stamp_duty: calculatedDuty
+              };
+            }
+            return prev;
+          });
+        } else {
+        setFormData(prev => {
+          if (prev.stamp_duty !== 0) {
+            return {
+              ...prev,
+              stamp_duty: 0
+            };
+          }
+          return prev;
+        });
+      }
+    }
+  }, [formData.location, formData.purchase_price, formData.is_construction_project, formData.land_value]);
+
+  const handleSave = async () => {
+    if (!formData.name.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a property name",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Add the property to the context
+      await addProperty(formData);
+      
+      // Show success message
+      toast({
+        title: "Property Created!",
+        description: `"${formData.name}" has been successfully created and added to your properties list.`,
+        variant: "default",
+      });
+      
+      // Navigate back to properties page
+      navigate('/properties');
+    } catch (error) {
+      console.error('Error creating property:', error);
+      toast({
+        title: "Creation Failed",
+        description: error instanceof Error ? error.message : "Failed to create property. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+            navigate('/properties');
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-6">
+          <Button variant="ghost" size="sm" onClick={handleCancel}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Properties
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">Create Property</h1>
+            <p className="text-muted-foreground">
+              Create a reusable property template for quick instance setup
+            </p>
+          </div>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Main Form */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Basic Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5" />
+                  Basic Information
+                </CardTitle>
+                <CardDescription>
+                  Define the basic details of your property
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Property Name *</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => handleInputChange('name', e.target.value)}
+                      placeholder="e.g., Sydney CBD Apartment"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="property_type">Property Type</Label>
+                    <Select value={formData.property_type} onValueChange={(value) => handleInputChange('property_type', value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Apartment">Apartment</SelectItem>
+                        <SelectItem value="House">House</SelectItem>
+                        <SelectItem value="Townhouse">Townhouse</SelectItem>
+                        <SelectItem value="Unit">Unit</SelectItem>
+                        <SelectItem value="Land">Land</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => handleInputChange('description', e.target.value)}
+                                            placeholder="Describe this property..."
+                    rows={3}
+                  />
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="location">Location (State)</Label>
+                    <Select value={formData.location} onValueChange={(value) => handleInputChange('location', value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="NSW">New South Wales</SelectItem>
+                        <SelectItem value="VIC">Victoria</SelectItem>
+                        <SelectItem value="QLD">Queensland</SelectItem>
+                        <SelectItem value="WA">Western Australia</SelectItem>
+                        <SelectItem value="SA">South Australia</SelectItem>
+                        <SelectItem value="TAS">Tasmania</SelectItem>
+                        <SelectItem value="ACT">Australian Capital Territory</SelectItem>
+                        <SelectItem value="NT">Northern Territory</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="property_method">Property Method</Label>
+                    <Select value={formData.property_method} onValueChange={handlePropertyMethodChange}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(PROPERTY_METHODS).map(([key, method]) => (
+                          <SelectItem key={key} value={key}>
+                            {method.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Property Details */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Property Details</CardTitle>
+                <CardDescription>
+                  Key property information and pricing
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="purchase_price">Purchase Price</Label>
+                    <CurrencyInput
+                      id="purchase_price"
+                      value={formData.purchase_price}
+                      onChange={(value) => handleInputChange('purchase_price', value)}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="weekly_rent">Weekly Rent</Label>
+                    <CurrencyInput
+                      id="weekly_rent"
+                      value={formData.weekly_rent}
+                      onChange={(value) => handleInputChange('weekly_rent', value)}
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="construction_year">Construction Year</Label>
+                    <NumberInput
+                      id="construction_year"
+                      value={formData.construction_year}
+                      onChange={(value) => handleInputChange('construction_year', value)}
+                      placeholder="2024"
+                    />
+                  </div>
+                  {formData.is_construction_project && (
+                    <div className="space-y-2">
+                      <Label htmlFor="construction_period">Construction Period (months)</Label>
+                      <NumberInput
+                        id="construction_period"
+                        value={formData.construction_period}
+                        onChange={(value) => handleInputChange('construction_period', value)}
+                        placeholder="0"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {formData.is_construction_project && (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="land_value">Land Value</Label>
+                      <CurrencyInput
+                        id="land_value"
+                        value={formData.land_value}
+                        onChange={(value) => handleInputChange('land_value', value)}
+                        placeholder="0"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="construction_value">Construction Value</Label>
+                      <CurrencyInput
+                        id="construction_value"
+                        value={formData.construction_value}
+                        onChange={(value) => handleInputChange('construction_value', value)}
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Transaction Costs */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Transaction Costs</CardTitle>
+                <CardDescription>
+                  Purchase-related costs and fees
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="stamp_duty">Stamp Duty (Auto-calculated)</Label>
+                    <CurrencyInput
+                      id="stamp_duty"
+                      value={formData.stamp_duty}
+                      onChange={(value) => handleInputChange('stamp_duty', value)}
+                      placeholder="0"
+                      disabled={true}
+                      className="bg-muted"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Based on {formData.location} rates for {formData.is_construction_project ? 'land value' : 'purchase price'}
+                      {formData.stamp_duty > 0 && (
+                        <span className="block mt-1 font-medium text-green-600">
+                          Calculated: ${formData.stamp_duty.toLocaleString()}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="legal_fees">Legal Fees</Label>
+                    <CurrencyInput
+                      id="legal_fees"
+                      value={formData.legal_fees}
+                      onChange={(value) => handleInputChange('legal_fees', value)}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="inspection_fees">Inspection Fees</Label>
+                    <CurrencyInput
+                      id="inspection_fees"
+                      value={formData.inspection_fees}
+                      onChange={(value) => handleInputChange('inspection_fees', value)}
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+                
+
+              </CardContent>
+            </Card>
+
+            {/* Ongoing Income & Expenses */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Ongoing Income & Expenses</CardTitle>
+                <CardDescription>
+                  Rental income projections and ongoing costs
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="rental_growth_rate">Rental Growth Rate (%)</Label>
+                    <NumberInput
+                      id="rental_growth_rate"
+                      value={formData.rental_growth_rate}
+                      onChange={(value) => handleInputChange('rental_growth_rate', value)}
+                      placeholder="3.0"
+                      step="0.1"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="vacancy_rate">Vacancy Rate (%)</Label>
+                    <NumberInput
+                      id="vacancy_rate"
+                      value={formData.vacancy_rate}
+                      onChange={(value) => handleInputChange('vacancy_rate', value)}
+                      placeholder="2.0"
+                      step="0.1"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="property_management">Property Management (%)</Label>
+                    <NumberInput
+                      id="property_management"
+                      value={formData.property_management}
+                      onChange={(value) => handleInputChange('property_management', value)}
+                      placeholder="8.0"
+                      step="0.1"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="council_rates">Council Rates (annual)</Label>
+                    <CurrencyInput
+                      id="council_rates"
+                      value={formData.council_rates}
+                      onChange={(value) => handleInputChange('council_rates', value)}
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="insurance">Insurance (annual)</Label>
+                                          <CurrencyInput
+                        id="insurance"
+                        value={formData.insurance}
+                        onChange={(value) => handleInputChange('insurance', value)}
+                        placeholder="0"
+                      />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="repairs">Repairs & Maintenance (annual)</Label>
+                                          <CurrencyInput
+                        id="repairs"
+                        value={formData.repairs}
+                        onChange={(value) => handleInputChange('repairs', value)}
+                        placeholder="0"
+                      />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Sidebar - Summary & Actions */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-4 space-y-6">
+              {/* Property Summary */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Property Summary</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Property Type:</span>
+                    <span className="font-medium">{formData.property_type}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Location:</span>
+                    <span className="font-medium">{formData.location}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Purchase Price:</span>
+                    <span className="font-medium">${formData.purchase_price.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Weekly Rent:</span>
+                    <span className="font-medium">${formData.weekly_rent.toLocaleString()}</span>
+                  </div>
+                  {formData.purchase_price > 0 && formData.weekly_rent > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Yield:</span>
+                      <span className="font-medium">
+                        {((formData.weekly_rent * 52 / formData.purchase_price) * 100).toFixed(2)}%
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Method:</span>
+                    <span className="font-medium">{PROPERTY_METHODS[formData.property_method].name}</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Actions */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Button 
+                    onClick={handleSave} 
+                    disabled={loading || !formData.name.trim()}
+                    className="w-full"
+                  >
+                    {loading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Creating Property...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        Create Property
+                      </>
+                    )}
+                  </Button>
+                  <Button variant="outline" onClick={handleCancel} className="w-full">
+                    Cancel
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CreateProperty;

@@ -16,7 +16,7 @@ export default function AppNav({ className = "" }: { className?: string }) {
     { to: "/", label: "Dashboard", icon: Home },
     { to: "/instances", label: "Instances", icon: Layers },
     { to: "/investors", label: "Investors", icon: Users },
-    // { to: "/properties", label: "Properties", icon: Building2 }, // Commented out - functionality integrated into instances
+                                    { to: "/properties", label: "Properties", icon: Building2 },
     { to: "/funds", label: "Funds", icon: PiggyBank },
     { to: "/scenarios", label: "Scenarios", icon: FileText },
   ] as const;

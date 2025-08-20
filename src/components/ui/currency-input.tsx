@@ -43,29 +43,42 @@ export const CurrencyInput = ({
   const handleFocus = () => {
     setIsFocused(true);
     // Remove formatting while editing and select all for easy replacement
-    setDisplayValue((prev) => unformat(prev));
+    const unformattedValue = unformat(displayValue);
+    setDisplayValue(unformattedValue);
     setTimeout(() => {
       const input = document.getElementById(id) as HTMLInputElement;
-      input?.select();
+      if (input) {
+        input.select();
+      }
     }, 0);
   };
 
   const handleBlur = () => {
     setIsFocused(false);
     const raw = displayValue.trim();
-    const numericValue = raw === "" ? 0 : Number(unformat(raw));
+    
+    // Clean the input to only allow numbers and decimal points
+    const cleanedInput = raw.replace(/[^\d.]/g, '');
+    
+    // Handle multiple decimal points by keeping only the first one
+    const parts = cleanedInput.split('.');
+    const validInput = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : cleanedInput;
+    
+    // Convert to number, defaulting to 0 if invalid
+    const numericValue = validInput === "" || validInput === "." ? 0 : Number(validInput);
+    
+    // Update the parent component
     onChange(numericValue);
+    
     // Re-apply formatting after editing (keep empty if user cleared)
     setDisplayValue(raw === "" ? "" : formatNumber(numericValue));
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
-
-    // Allow empty string, numbers, and decimal points
-    if (inputValue === "" || /^\d*\.?\d*$/.test(inputValue)) {
-      setDisplayValue(inputValue);
-    }
+    
+    // Allow any input while typing - we'll validate and format on blur
+    setDisplayValue(inputValue);
   };
 
   return (
