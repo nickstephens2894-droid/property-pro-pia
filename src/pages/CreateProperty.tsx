@@ -12,6 +12,7 @@ import { ArrowLeft, Save, Building2 } from "lucide-react";
 import { PROPERTY_METHODS } from "@/types/presets";
 import { calculateStampDuty, type Jurisdiction } from "@/utils/stampDuty";
 import { useProperties } from "@/contexts/PropertiesContext";
+import { ConstructionStagesTable } from "@/components/ConstructionStagesTable";
 import { useToast } from "@/components/ui/use-toast";
 
 interface CreatePropertyForm {
@@ -31,6 +32,13 @@ interface CreatePropertyForm {
   construction_interest_rate: number;
   building_value: number;
   plant_equipment_value: number;
+  // Construction Progress Payments
+  construction_progress_payments: Array<{
+    id: string;
+    percentage: number;
+    month: number;
+    description: string;
+  }>;
   // Transaction Costs
   stamp_duty: number;
   legal_fees: number;
@@ -67,10 +75,17 @@ const CreateProperty = () => {
     is_construction_project: false,
     land_value: 0,
     construction_value: 0,
-    construction_period: 0,
+    construction_period: 8,
     construction_interest_rate: 0,
     building_value: 0,
     plant_equipment_value: 0,
+    construction_progress_payments: [
+      { id: '1', percentage: 10, month: 1, description: 'Site preparation & slab' },
+      { id: '2', percentage: 20, month: 2, description: 'Frame & roof' },
+      { id: '3', percentage: 25, month: 4, description: 'Lock-up stage' },
+      { id: '4', percentage: 25, month: 6, description: 'Fixing stage' },
+      { id: '5', percentage: 20, month: 8, description: 'Completion' }
+    ],
     stamp_duty: 0,
     legal_fees: 0,
     inspection_fees: 0,
@@ -129,19 +144,19 @@ const CreateProperty = () => {
         dutiableValue = formData.purchase_price;
       }
       
-              if (dutiableValue > 0) {
-          const calculatedDuty = calculateStampDuty(dutiableValue, formData.location);
-          // Only update stamp duty if it's different to avoid infinite loops
-          setFormData(prev => {
-            if (prev.stamp_duty !== calculatedDuty) {
-              return {
-                ...prev,
-                stamp_duty: calculatedDuty
-              };
-            }
-            return prev;
-          });
-        } else {
+      if (dutiableValue > 0) {
+        const calculatedDuty = calculateStampDuty(dutiableValue, formData.location);
+        // Only update stamp duty if it's different to avoid infinite loops
+        setFormData(prev => {
+          if (prev.stamp_duty !== calculatedDuty) {
+            return {
+              ...prev,
+              stamp_duty: calculatedDuty
+            };
+          }
+          return prev;
+        });
+      } else {
         setFormData(prev => {
           if (prev.stamp_duty !== 0) {
             return {
@@ -154,6 +169,26 @@ const CreateProperty = () => {
       }
     }
   }, [formData.location, formData.purchase_price, formData.is_construction_project, formData.land_value]);
+
+  // Auto-update construction stages when construction_period changes
+  useEffect(() => {
+    if (formData.is_construction_project && formData.construction_period > 0) {
+      // Adjust stage months proportionally based on construction period
+      const updatedStages = formData.construction_progress_payments.map((stage, index) => {
+        const defaultMonth = [1, 2, 4, 6, 8][index] || stage.month;
+        const adjustedMonth = Math.max(1, Math.round((defaultMonth / 8) * formData.construction_period));
+        return {
+          ...stage,
+          month: adjustedMonth
+        };
+      });
+      
+      setFormData(prev => ({
+        ...prev,
+        construction_progress_payments: updatedStages
+      }));
+    }
+  }, [formData.construction_period, formData.is_construction_project]);
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
@@ -375,29 +410,41 @@ const CreateProperty = () => {
                 </div>
 
                 {formData.is_construction_project && (
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="land_value">Land Value</Label>
-                      <CurrencyInput
-                        id="land_value"
-                        value={formData.land_value}
-                        onChange={(value) => handleInputChange('land_value', value)}
-                        placeholder="0"
-                      />
+                  <>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="land_value">Land Value</Label>
+                        <CurrencyInput
+                          id="land_value"
+                          value={formData.land_value}
+                          onChange={(value) => handleInputChange('land_value', value)}
+                          placeholder="0"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="construction_value">Construction Value</Label>
+                        <CurrencyInput
+                          id="construction_value"
+                          value={formData.construction_value}
+                          onChange={(value) => handleInputChange('construction_value', value)}
+                          placeholder="0"
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="construction_value">Construction Value</Label>
-                      <CurrencyInput
-                        id="construction_value"
-                        value={formData.construction_value}
-                        onChange={(value) => handleInputChange('construction_value', value)}
-                        placeholder="0"
-                      />
-                    </div>
-                  </div>
+                  </>
                 )}
               </CardContent>
             </Card>
+
+            {/* Construction Stages - Only show for construction projects */}
+            {formData.is_construction_project && (
+              <ConstructionStagesTable
+                stages={formData.construction_progress_payments}
+                onChange={(stages) => handleInputChange('construction_progress_payments', stages)}
+                constructionValue={formData.construction_value}
+                constructionPeriod={formData.construction_period}
+              />
+            )}
 
             {/* Transaction Costs */}
             <Card>
