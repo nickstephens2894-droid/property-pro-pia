@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Instance, CreateInstanceRequest, UpdateInstanceRequest } from '@/integrations/supabase/types';
-import { InstancesService } from '@/services/instancesService';
+import { Instance, UpdateInstanceRequest } from '@/integrations/supabase/types';
+import { InstancesService, CreateInstanceRequestFrontend } from '@/services/instancesService';
 import { useAuth } from './AuthContext';
 
 interface InstancesContextType {
@@ -9,7 +9,7 @@ interface InstancesContextType {
   error: string | null;
   
   // CRUD operations
-  createInstance: (data: CreateInstanceRequest) => Promise<Instance>;
+  createInstance: (data: CreateInstanceRequestFrontend) => Promise<Instance>;
   updateInstance: (id: string, updates: UpdateInstanceRequest) => Promise<Instance>;
   deleteInstance: (id: string) => Promise<void>;
   updateInstanceStatus: (id: string, status: 'draft' | 'active' | 'archived') => Promise<Instance>;
@@ -75,7 +75,7 @@ export const InstancesProvider = ({ children }: InstancesProviderProps) => {
     }
   };
 
-  const createInstance = async (data: CreateInstanceRequest): Promise<Instance> => {
+  const createInstance = async (data: CreateInstanceRequestFrontend): Promise<Instance> => {
     try {
       setError(null);
       const newInstance = await InstancesService.createInstance(data);

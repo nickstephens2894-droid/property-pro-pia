@@ -14,7 +14,7 @@ export interface Database {
         Row: {
           id: string
           user_id: string
-          property_model_id: string | null
+          source_model_id: string | null
           name: string
           status: 'draft' | 'active' | 'archived'
           created_at: string
@@ -80,7 +80,7 @@ export interface Database {
         Insert: {
           id?: string
           user_id: string
-          property_model_id?: string | null
+          source_model_id?: string | null
           name: string
           status?: 'draft' | 'active' | 'archived'
           created_at?: string
@@ -146,7 +146,7 @@ export interface Database {
         Update: {
           id?: string
           user_id?: string
-          property_model_id?: string | null
+          source_model_id?: string | null
           name?: string
           status?: 'draft' | 'active' | 'archived'
           created_at?: string
@@ -218,8 +218,8 @@ export interface Database {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "instances_property_model_id_fkey"
-            columns: ["property_model_id"]
+            foreignKeyName: "instances_source_model_id_fkey"
+            columns: ["source_model_id"]
             isOneToOne: false
             referencedRelation: "property_models"
             referencedColumns: ["id"]

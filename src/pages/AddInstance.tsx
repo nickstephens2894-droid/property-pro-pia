@@ -497,15 +497,46 @@ const AddInstance = () => {
   }, [projections, yearRange, propertyData.investors]);
 
   const handleSave = async () => {
+    if (!instanceName.trim()) {
+      alert('Please enter an instance name');
+      return;
+    }
+
+    if (!selectedModel) {
+      alert('Please select a property model');
+      return;
+    }
+
     try {
+      // Validate required fields
+      const requiredFields = [
+        { field: 'purchasePrice', value: propertyData.purchasePrice, name: 'Purchase Price' },
+        { field: 'weeklyRent', value: propertyData.weeklyRent, name: 'Weekly Rent' },
+        { field: 'propertyState', value: propertyData.propertyState, name: 'Property State' }
+      ];
+
+      for (const { field, value, name } of requiredFields) {
+        if (value === undefined || value === null) {
+          alert(`Please provide a valid value for ${name}`);
+          return;
+        }
+      }
+
+      // Validate property state is one of the allowed values
+      const allowedStates = ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA'];
+      if (!allowedStates.includes(propertyData.propertyState)) {
+        alert(`Property State must be one of: ${allowedStates.join(', ')}`);
+        return;
+      }
+
       // Prepare the instance data for database
       const instanceData = {
         name: instanceName,
-        property_model_id: selectedModel?.id || null,
+        source_model_id: selectedModel?.id || null,
         property_method: propertyData.currentPropertyMethod || null,
         funding_method: propertyData.currentFundingMethod || null,
-        investors: propertyData.investors,
-        ownership_allocations: propertyData.ownershipAllocations,
+        investors: JSON.parse(JSON.stringify(propertyData.investors)),
+        ownership_allocations: JSON.parse(JSON.stringify(propertyData.ownershipAllocations)),
         is_construction_project: propertyData.isConstructionProject,
         purchase_price: propertyData.purchasePrice,
         weekly_rent: propertyData.weeklyRent,
@@ -518,7 +549,7 @@ const AddInstance = () => {
         construction_value: propertyData.constructionValue,
         construction_period: propertyData.constructionPeriod,
         construction_interest_rate: propertyData.constructionInterestRate,
-        construction_progress_payments: propertyData.constructionProgressPayments,
+        construction_progress_payments: JSON.parse(JSON.stringify(propertyData.constructionProgressPayments)),
         deposit: propertyData.deposit,
         loan_amount: propertyData.loanAmount,
         interest_rate: propertyData.interestRate,
@@ -555,12 +586,16 @@ const AddInstance = () => {
         repairs: propertyData.repairs,
         depreciation_method: propertyData.depreciationMethod,
         is_new_property: propertyData.isNewProperty,
-        property_state: (propertyData as any).PropertyState || null,
+        property_state: propertyData.propertyState || 'VIC',
         total_project_cost: totalProjectCost,
         equity_loan_amount: equityLoanAmount,
         available_equity: 0, // Will be calculated by the service
         status: 'draft' as const
       };
+
+      console.log('Sending instance data:', instanceData);
+      console.log('Property state value:', propertyData.propertyState);
+      console.log('Property state type:', typeof propertyData.propertyState);
 
       // Create the instance in the database
       const newInstance = await createInstance(instanceData);

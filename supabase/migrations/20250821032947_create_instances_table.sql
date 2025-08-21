@@ -96,7 +96,7 @@ CREATE TABLE instances (
   is_new_property BOOLEAN DEFAULT TRUE,
   
   -- Additional fields for state and calculations
-  property_state TEXT CHECK (property_state IN ('ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA')),
+  property_state TEXT CHECK (property_state IN ('ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA')) DEFAULT 'VIC',
   
   -- Calculated fields (stored for performance)
   total_project_cost DECIMAL(12,2) DEFAULT 0,

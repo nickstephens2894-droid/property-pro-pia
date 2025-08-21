@@ -1,6 +1,9 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Instance, CreateInstanceRequest, UpdateInstanceRequest } from '@/integrations/supabase/types';
 
+// Custom type for frontend that makes user_id optional since service injects it
+export type CreateInstanceRequestFrontend = Omit<CreateInstanceRequest, 'user_id'>;
+
 export class InstancesService {
   // Get all instances for the current user
   static async getUserInstances(): Promise<Instance[]> {
@@ -47,7 +50,7 @@ export class InstancesService {
   }
 
   // Create a new instance
-  static async createInstance(instanceData: CreateInstanceRequest): Promise<Instance> {
+  static async createInstance(instanceData: CreateInstanceRequestFrontend): Promise<Instance> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
@@ -58,13 +61,25 @@ export class InstancesService {
       status: instanceData.status || 'draft'
     };
 
+    console.log('Attempting to insert instance data:', dataToInsert);
+
     const { data, error } = await supabase
       .from('instances')
       .insert(dataToInsert)
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase insert error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
+      throw error;
+    }
+    
     return data;
   }
 

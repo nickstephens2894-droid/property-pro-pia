@@ -102,6 +102,9 @@ export interface PropertyData {
   depreciationMethod: 'prime-cost' | 'diminishing-value';
   isNewProperty: boolean;
 
+  // Property State for stamp duty calculations
+  propertyState: 'ACT' | 'NSW' | 'NT' | 'QLD' | 'SA' | 'TAS' | 'VIC' | 'WA';
+
   // Preset tracking
   currentPropertyMethod?: PropertyMethod;
   currentFundingMethod?: FundingMethod;
@@ -237,6 +240,9 @@ const defaultPropertyData: PropertyData = {
   depreciationMethod: 'prime-cost',
   isNewProperty: true,
   
+  // Property State for stamp duty calculations
+  propertyState: 'VIC',
+
   // Preset tracking
   currentPropertyMethod: undefined,
   currentFundingMethod: undefined,
