@@ -105,6 +105,10 @@ export interface PropertyData {
   // Property State for stamp duty calculations
   propertyState: 'ACT' | 'NSW' | 'NT' | 'QLD' | 'SA' | 'TAS' | 'VIC' | 'WA';
 
+  // Additional property metadata
+  propertyType: string;
+  location: string;
+
   // Preset tracking
   currentPropertyMethod?: PropertyMethod;
   currentFundingMethod?: FundingMethod;
@@ -242,6 +246,10 @@ const defaultPropertyData: PropertyData = {
   
   // Property State for stamp duty calculations
   propertyState: 'VIC',
+
+  // Additional property metadata
+  propertyType: 'Apartment',
+  location: 'NSW',
 
   // Preset tracking
   currentPropertyMethod: undefined,

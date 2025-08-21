@@ -37,6 +37,9 @@ interface ProjectionsTableProps {
   projections: YearProjection[];
   assumptions: {
     initialPropertyValue: number;
+    isConstructionProject: boolean;
+    constructionPeriod: number;
+    initialEquityLoanBalance: number;
     [key: string]: number | string | boolean;
   };
   validatedYearRange: [number, number];
@@ -135,6 +138,14 @@ const MobileProjectionsView = ({
   formatCurrency, 
   formatPercentage 
 }: MobileProjectionsViewProps) => {
+  // Mobile-specific state variables
+  const [showIncomeDetails, setShowIncomeDetails] = useState(false);
+  const [showExpensesDetails, setShowExpensesDetails] = useState(false);
+  const [showValueDetails, setShowValueDetails] = useState(false);
+  const [showEquityDetails, setShowEquityDetails] = useState(false);
+  const [showTaxDetails, setShowTaxDetails] = useState(false);
+  const [showCashFlowDetailsMobile, setShowCashFlowDetailsMobile] = useState(false);
+  
   const currentProjection = projections[currentYearIndex];
   
   if (!currentProjection) return null;
@@ -310,7 +321,7 @@ const MobileProjectionsView = ({
                     <span className="text-sm font-medium">Main Loan Balance</span>
                     <span className="font-bold">{formatCurrency(currentProjection.mainLoanBalance)}</span>
                   </div>
-                  {assumptions.initialEquityLoanBalance > 0 && (
+                     {(assumptions.initialEquityLoanBalance as number) > 0 && (
                     <div className="flex justify-between items-center">
                       <span className="text-sm font-medium">Equity Loan Balance</span>
                       <span className="font-bold">{formatCurrency(currentProjection.equityLoanBalance)}</span>
@@ -338,14 +349,14 @@ const MobileProjectionsView = ({
                   {/* Main Loan Details */}
                   <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-3 mt-2">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium">Main Loan ({assumptions.mainLoanType.toUpperCase()})</span>
+                      <span className="text-sm font-medium">Main Loan ({(assumptions.mainLoanType as string).toUpperCase()})</span>
                       <Badge variant={currentProjection.mainLoanIOStatus === 'IO' ? 'secondary' : 'default'}>
                         {currentProjection.mainLoanIOStatus}
                       </Badge>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-muted-foreground">
-                        {formatCurrency(assumptions.initialMainLoanBalance)} @ {formatPercentage(assumptions.mainInterestRate)}
+                        {formatCurrency(assumptions.initialMainLoanBalance as number)} @ {formatPercentage(assumptions.mainInterestRate as number)}
                       </span>
                       <span className="font-bold">{formatCurrency(currentProjection.mainLoanPayment)}</span>
                     </div>
@@ -358,17 +369,17 @@ const MobileProjectionsView = ({
                   </div>
 
                   {/* Equity Loan Details */}
-                  {assumptions.initialEquityLoanBalance > 0 && (
+                  {(assumptions.initialEquityLoanBalance as number) > 0 && (
                     <div className="bg-green-50 dark:bg-green-950/20 rounded-lg p-3 mt-2">
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium">Equity Loan ({assumptions.equityLoanType.toUpperCase()})</span>
+                        <span className="text-sm font-medium">Equity Loan ({(assumptions.equityLoanType as string).toUpperCase()})</span>
                         <Badge variant={currentProjection.equityLoanIOStatus === 'IO' ? 'secondary' : 'default'}>
                           {currentProjection.equityLoanIOStatus}
                         </Badge>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-muted-foreground">
-                          {formatCurrency(assumptions.initialEquityLoanBalance)} @ {formatPercentage(assumptions.equityInterestRate)}
+                          {formatCurrency(assumptions.initialEquityLoanBalance as number)} @ {formatPercentage(assumptions.equityInterestRate as number)}
                         </span>
                         <span className="font-bold">{formatCurrency(currentProjection.equityLoanPayment)}</span>
                       </div>
@@ -422,29 +433,29 @@ const MobileProjectionsView = ({
                     </span>
                     <span className="font-mono text-sm">{formatCurrency(currentProjection.otherExpenses)}</span>
                   </div>
-                  <div className="mt-2 space-y-1 pl-6 text-xs text-muted-foreground">
-                    <div className="flex items-center justify-between">
-                      <span>Property management ({formatPercentage(resolve<number>(assumptions.propertyManagementRate) ?? 0)})</span>
-                      <span className="font-mono">{formatCurrency(currentProjection.rentalIncome * ((resolve<number>(assumptions.propertyManagementRate) ?? 0) / 100))}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Council rates</span>
-                      <span className="font-mono">{formatCurrency(assumptions.councilRates * Math.pow(1 + assumptions.expenseInflationRate / 100, currentProjection.year - 1))}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Insurance</span>
-                      <span className="font-mono">{formatCurrency(assumptions.insurance * Math.pow(1 + assumptions.expenseInflationRate / 100, currentProjection.year - 1))}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Repairs & maintenance</span>
-                      <span className="font-mono">{formatCurrency(assumptions.repairs * Math.pow(1 + assumptions.expenseInflationRate / 100, currentProjection.year - 1))}</span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </CollapsibleContent>
-          </Collapsible>
-        </Card>
+                   <div className="mt-2 space-y-1 pl-6 text-xs text-muted-foreground">
+                     <div className="flex items-center justify-between">
+                       <span>Property management ({formatPercentage((assumptions.propertyManagementRate as number) || 0)})</span>
+                       <span className="font-mono">{formatCurrency(currentProjection.rentalIncome * (((assumptions.propertyManagementRate as number) || 0) / 100))}</span>
+                     </div>
+                     <div className="flex items-center justify-between">
+                       <span>Council rates</span>
+                       <span className="font-mono">{formatCurrency((assumptions.councilRates as number) * Math.pow(1 + (assumptions.expenseInflationRate as number) / 100, currentProjection.year - 1))}</span>
+                     </div>
+                     <div className="flex items-center justify-between">
+                       <span>Insurance</span>
+                       <span className="font-mono">{formatCurrency((assumptions.insurance as number) * Math.pow(1 + (assumptions.expenseInflationRate as number) / 100, currentProjection.year - 1))}</span>
+                     </div>
+                     <div className="flex items-center justify-between">
+                       <span>Repairs & maintenance</span>
+                       <span className="font-mono">{formatCurrency((assumptions.repairs as number) * Math.pow(1 + (assumptions.expenseInflationRate as number) / 100, currentProjection.year - 1))}</span>
+                     </div>
+                   </div>
+                 </div>
+               </CardContent>
+             </CollapsibleContent>
+           </Collapsible>
+         </Card>
 
         {/* Income - Expandable */}
         <Card>
@@ -719,7 +730,7 @@ const DesktopProjectionsTable = ({
 )}
 
 {/* Equity Loan Balance Details */}
-{showLoanDetails && assumptions.initialEquityLoanBalance > 0 && (
+{showLoanDetails && (assumptions.initialEquityLoanBalance as number) > 0 && (
   <tr className="bg-green-50 dark:bg-green-950/20 border-b">
     <td className="sticky left-0 bg-green-50 dark:bg-green-950/20 z-10 pl-8 text-sm p-3">
       Equity loan balance
@@ -772,7 +783,7 @@ const DesktopProjectionsTable = ({
     ))}
   </tr>
 )}
-{showMortgageDetails && assumptions.initialEquityLoanBalance > 0 && (
+{showMortgageDetails && (assumptions.initialEquityLoanBalance as number) > 0 && (
   <tr className="bg-green-50 dark:bg-green-950/20 border-b">
     <td className="sticky left-0 bg-green-50 dark:bg-green-950/20 z-10 pl-8 text-sm p-3">
       Equity loan interest component (P\u0026I)
@@ -830,11 +841,11 @@ const DesktopProjectionsTable = ({
 {showOperatingDetails && (
   <tr className="bg-orange-50 dark:bg-orange-950/20 border-b">
     <td className="sticky left-0 bg-orange-50 dark:bg-orange-950/20 z-10 pl-8 text-sm p-3">
-      Property management ({formatPercentage(resolve<number>(assumptions.propertyManagementRate) ?? 0)})
+      Property management ({formatPercentage((assumptions.propertyManagementRate as number) || 0)})
     </td>
     {projections.map((projection: YearProjection) => (
       <td key={projection.year} className="text-center font-mono text-xs p-3">
-        {formatCurrency(projection.rentalIncome * ((resolve<number>(assumptions.propertyManagementRate) ?? 0) / 100))}
+        {formatCurrency(projection.rentalIncome * (((assumptions.propertyManagementRate as number) || 0) / 100))}
       </td>
     ))}
   </tr>
@@ -848,7 +859,7 @@ const DesktopProjectionsTable = ({
     </td>
     {projections.map((projection: YearProjection) => (
       <td key={projection.year} className="text-center font-mono text-xs p-3">
-        {formatCurrency(assumptions.councilRates * Math.pow(1 + assumptions.expenseInflationRate / 100, projection.year - 1))}
+        {formatCurrency((assumptions.councilRates as number) * Math.pow(1 + (assumptions.expenseInflationRate as number) / 100, projection.year - 1))}
       </td>
     ))}
   </tr>
@@ -862,7 +873,7 @@ const DesktopProjectionsTable = ({
     </td>
     {projections.map((projection: YearProjection) => (
       <td key={projection.year} className="text-center font-mono text-xs p-3">
-        {formatCurrency(assumptions.insurance * Math.pow(1 + assumptions.expenseInflationRate / 100, projection.year - 1))}
+        {formatCurrency((assumptions.insurance as number) * Math.pow(1 + (assumptions.expenseInflationRate as number) / 100, projection.year - 1))}
       </td>
     ))}
   </tr>
@@ -876,7 +887,7 @@ const DesktopProjectionsTable = ({
     </td>
     {projections.map((projection: YearProjection) => (
       <td key={projection.year} className="text-center font-mono text-xs p-3">
-        {formatCurrency(assumptions.repairs * Math.pow(1 + assumptions.expenseInflationRate / 100, projection.year - 1))}
+        {formatCurrency((assumptions.repairs as number) * Math.pow(1 + (assumptions.expenseInflationRate as number) / 100, projection.year - 1))}
       </td>
     ))}
   </tr>

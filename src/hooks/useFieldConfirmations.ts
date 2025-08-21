@@ -22,8 +22,23 @@ export const useFieldConfirmations = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newConfirmations));
   }, [confirmations]);
 
+  const confirmFieldUpdate = useCallback((key: keyof ConfirmationState) => {
+    updateConfirmation(key, true);
+  }, [updateConfirmation]);
+
+  const isFieldConfirmed = useCallback((key: keyof ConfirmationState) => {
+    return confirmations[key];
+  }, [confirmations]);
+
+  const clearFieldConfirmation = useCallback((key: keyof ConfirmationState) => {
+    updateConfirmation(key, false);
+  }, [updateConfirmation]);
+
   return {
     confirmations,
     updateConfirmation,
+    confirmFieldUpdate,
+    isFieldConfirmed,
+    clearFieldConfirmation,
   };
 };

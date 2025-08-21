@@ -292,7 +292,7 @@ const ModelDrivenPropertyForm = ({
                 <CurrencyInput
                   id="purchasePrice"
                   value={propertyData.purchasePrice}
-                  onValueChange={(value) => updateField('purchasePrice', value)}
+                  onChange={(value) => updateField('purchasePrice', value)}
                   placeholder="Enter purchase price"
                   disabled={isFieldDisabled('purchasePrice')}
                 />
