@@ -26,6 +26,7 @@ import { downloadInputsCsv } from "@/utils/csvExport";
 import { formatCurrency, formatPercentage } from "@/utils/formatters";
 import { resolve, Triplet } from "@/utils/overrides";
 import { totalTaxAU, marginalRateAU } from "@/utils/tax";
+import { calculateLoanPayment } from "@/utils/calculationUtils";
 
 // Using the Instance type from Supabase types
 
@@ -169,6 +170,32 @@ const InstanceDetail = () => {
   // Calculate all the necessary values for the components
   const totalProjectCost = calculateTotalProjectCost();
   const equityLoanAmount = calculateEquityLoanAmount();
+
+  // Calculate monthly payments using useMemo for performance
+  const monthlyPayments = useMemo(() => {
+    const mainMonthly = calculateLoanPayment(propertyData.loanAmount || 0, propertyData.interestRate || 6, propertyData.loanTerm || 30, 'monthly');
+    const equityMonthly = propertyData.useEquityFunding ? calculateLoanPayment(equityLoanAmount || 0, propertyData.equityLoanInterestRate || 7.2, propertyData.equityLoanTerm || 30, 'monthly') : 0;
+    return { mainMonthly, equityMonthly, total: mainMonthly + equityMonthly };
+  }, [propertyData.loanAmount, propertyData.interestRate, propertyData.loanTerm, propertyData.useEquityFunding, equityLoanAmount, propertyData.equityLoanInterestRate, propertyData.equityLoanTerm]);
+
+  // Calculate loan payment details
+  const loanPaymentDetails = useMemo(() => {
+    const mainLoanDetails = {
+      isIO: propertyData.mainLoanType === 'io',
+      ioPayment: (propertyData.loanAmount || 0) * (propertyData.interestRate || 6) / 100 / 12,
+      piPayment: calculateLoanPayment(propertyData.loanAmount || 0, propertyData.interestRate || 6, propertyData.loanTerm || 30, 'monthly'),
+      ioTermYears: propertyData.ioTermYears || 0
+    };
+
+    const equityLoanDetails = propertyData.useEquityFunding ? {
+      isIO: propertyData.equityLoanType === 'io',
+      ioPayment: (equityLoanAmount || 0) * (propertyData.equityLoanInterestRate || 7.2) / 100 / 12,
+      piPayment: calculateLoanPayment(equityLoanAmount || 0, propertyData.equityLoanInterestRate || 7.2, propertyData.equityLoanTerm || 30, 'monthly'),
+      ioTermYears: propertyData.equityLoanIoTermYears || 0
+    } : null;
+
+    return { mainLoanDetails, equityLoanDetails };
+  }, [propertyData.loanAmount, propertyData.interestRate, propertyData.loanTerm, propertyData.mainLoanType, propertyData.ioTermYears, propertyData.useEquityFunding, equityLoanAmount, propertyData.equityLoanInterestRate, propertyData.equityLoanTerm, propertyData.equityLoanType, propertyData.equityLoanIoTermYears]);
   
   const funding = {
     mainLoanAmount: propertyData.loanAmount,
@@ -717,18 +744,8 @@ const InstanceDetail = () => {
                 <div className="space-y-6">
                   <FundingSummaryPanel />
                   <PropertyCalculationDetails
-                    monthlyRepayment={(() => {
-                      const { calculateLoanPayment } = require('@/utils/calculationUtils');
-                      const mainMonthly = calculateLoanPayment(propertyData.loanAmount || 0, propertyData.interestRate || 6, propertyData.loanTerm || 30, 'monthly');
-                      const equityMonthly = propertyData.useEquityFunding ? calculateLoanPayment(equityLoanAmount || 0, propertyData.equityLoanInterestRate || 7.2, propertyData.equityLoanTerm || 30, 'monthly') : 0;
-                      return mainMonthly + equityMonthly;
-                    })()}
-                    annualRepayment={(() => {
-                      const { calculateLoanPayment } = require('@/utils/calculationUtils');
-                      const mainMonthly = calculateLoanPayment(propertyData.loanAmount || 0, propertyData.interestRate || 6, propertyData.loanTerm || 30, 'monthly');
-                      const equityMonthly = propertyData.useEquityFunding ? calculateLoanPayment(equityLoanAmount || 0, propertyData.equityLoanInterestRate || 7.2, propertyData.equityLoanTerm || 30, 'monthly') : 0;
-                      return (mainMonthly + equityMonthly) * 12;
-                    })()}
+                    monthlyRepayment={monthlyPayments.total}
+                    annualRepayment={monthlyPayments.total * 12}
                     annualRent={(propertyData.weeklyRent || 0) * 52}
                     propertyManagementCost={(propertyData.weeklyRent || 0) * 52 * (propertyData.propertyManagement || 0.07) / 100}
                     councilRates={propertyData.councilRates || 0}
@@ -768,38 +785,24 @@ const InstanceDetail = () => {
                     actualCashInvested={0} // Will be calculated
                     constructionPeriod={propertyData.constructionPeriod || 0}
                     holdingCostFunding={propertyData.holdingCostFunding || 'cash'}
-                    mainLoanPayments={(() => {
-                      const { calculateLoanPayment } = require('@/utils/calculationUtils');
-                      const isIO = propertyData.mainLoanType === 'io';
-                      const ioPayment = isIO ? (propertyData.loanAmount || 0) * (propertyData.interestRate || 6) / 100 / 12 : 0;
-                      const piPayment = calculateLoanPayment(propertyData.loanAmount || 0, propertyData.interestRate || 6, propertyData.loanTerm || 30, 'monthly');
-                      const ioTermYears = propertyData.ioTermYears || 0;
-                      return {
-                        ioPayment,
-                        piPayment,
-                        ioTermYears,
-                        remainingTerm: (propertyData.loanTerm || 30) - ioTermYears,
-                        totalInterest: (propertyData.loanAmount || 0) * (propertyData.interestRate || 6) / 100,
-                        currentPayment: isIO && ioTermYears > 0 ? ioPayment : piPayment,
-                        futurePayment: isIO && ioTermYears > 0 ? piPayment : 0
-                      };
-                    })()}
-                    equityLoanPayments={propertyData.useEquityFunding ? (() => {
-                      const { calculateLoanPayment } = require('@/utils/calculationUtils');
-                      const isIO = propertyData.equityLoanType === 'io';
-                      const ioPayment = isIO ? (equityLoanAmount || 0) * (propertyData.equityLoanInterestRate || 7.2) / 100 / 12 : 0;
-                      const piPayment = calculateLoanPayment(equityLoanAmount || 0, propertyData.equityLoanInterestRate || 7.2, propertyData.equityLoanTerm || 30, 'monthly');
-                      const ioTermYears = propertyData.equityLoanIoTermYears || 0;
-                      return {
-                        ioPayment,
-                        piPayment,
-                        ioTermYears,
-                        remainingTerm: (propertyData.equityLoanTerm || 30) - ioTermYears,
-                        totalInterest: (equityLoanAmount || 0) * (propertyData.equityLoanInterestRate || 7.2) / 100,
-                        currentPayment: isIO && ioTermYears > 0 ? ioPayment : piPayment,
-                        futurePayment: isIO && ioTermYears > 0 ? piPayment : 0
-                      };
-                    })() : null}
+                    mainLoanPayments={{
+                      ioPayment: loanPaymentDetails.mainLoanDetails.ioPayment,
+                      piPayment: loanPaymentDetails.mainLoanDetails.piPayment,
+                      ioTermYears: loanPaymentDetails.mainLoanDetails.ioTermYears,
+                      remainingTerm: (propertyData.loanTerm || 30) - loanPaymentDetails.mainLoanDetails.ioTermYears,
+                      totalInterest: (propertyData.loanAmount || 0) * (propertyData.interestRate || 6) / 100,
+                      currentPayment: loanPaymentDetails.mainLoanDetails.isIO && loanPaymentDetails.mainLoanDetails.ioTermYears > 0 ? loanPaymentDetails.mainLoanDetails.ioPayment : loanPaymentDetails.mainLoanDetails.piPayment,
+                      futurePayment: loanPaymentDetails.mainLoanDetails.isIO && loanPaymentDetails.mainLoanDetails.ioTermYears > 0 ? loanPaymentDetails.mainLoanDetails.piPayment : 0
+                    }}
+                    equityLoanPayments={loanPaymentDetails.equityLoanDetails ? {
+                      ioPayment: loanPaymentDetails.equityLoanDetails.ioPayment,
+                      piPayment: loanPaymentDetails.equityLoanDetails.piPayment,
+                      ioTermYears: loanPaymentDetails.equityLoanDetails.ioTermYears,
+                      remainingTerm: (propertyData.equityLoanTerm || 30) - loanPaymentDetails.equityLoanDetails.ioTermYears,
+                      totalInterest: (equityLoanAmount || 0) * (propertyData.equityLoanInterestRate || 7.2) / 100,
+                      currentPayment: loanPaymentDetails.equityLoanDetails.isIO && loanPaymentDetails.equityLoanDetails.ioTermYears > 0 ? loanPaymentDetails.equityLoanDetails.ioPayment : loanPaymentDetails.equityLoanDetails.piPayment,
+                      futurePayment: loanPaymentDetails.equityLoanDetails.isIO && loanPaymentDetails.equityLoanDetails.ioTermYears > 0 ? loanPaymentDetails.equityLoanDetails.piPayment : 0
+                    } : null}
                     totalAnnualInterest={(propertyData.loanAmount || 0) * (propertyData.interestRate || 0.06) / 100}
                   />
                 </div>
