@@ -23,7 +23,7 @@ export function useScenarios() {
     
     setLoading(true);
     try {
-      // Load all scenarios for the current user (no longer tied to clients)
+      // Load all scenarios for the current user (no longer tied to investors)
       const { data, error } = await supabase
         .from('scenarios')
         .select('*')

@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { PropertyDataProvider } from "./contexts/PropertyDataContext";
+import { InstancesProvider } from "./contexts/InstancesContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import AppNav from "./components/AppNav";
 import Index from "./pages/Index";
@@ -20,9 +21,8 @@ import CreateProperty from "./pages/CreateProperty";
 import EditProperty from "./pages/EditProperty";
 import Auth from "./pages/Auth";
 import SpecPage from "./pages/SpecPage";
-import { RepoProvider } from "./services/repository";
+import { RepositoryProvider } from "./services/repository";
 import { PropertiesProvider } from "./contexts/PropertiesContext";
-// import SeedDemo from "./components/SeedDemo";
 import RequireAuth from "./components/RequireAuth";
 
 const queryClient = new QueryClient();
@@ -59,22 +59,24 @@ function AppLayout() {
 
 const App = () => (
   <AuthProvider>
-    <RepoProvider>
+    <RepositoryProvider>
       <PropertiesProvider>
         {/* <SeedDemo /> */}
         <QueryClientProvider client={queryClient}>
           <PropertyDataProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <AppLayout />
-              </BrowserRouter>
-            </TooltipProvider>
+            <InstancesProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
+                  <AppLayout />
+                </BrowserRouter>
+              </TooltipProvider>
+            </InstancesProvider>
           </PropertyDataProvider>
         </QueryClientProvider>
       </PropertiesProvider>
-    </RepoProvider>
+    </RepositoryProvider>
   </AuthProvider>
 );
 

@@ -19,6 +19,7 @@ import { PropertySelector } from "@/components/PropertySelector";
 
 // Import the context hook
 import { usePropertyData } from "@/contexts/PropertyDataContext";
+import { useInstances } from "@/contexts/InstancesContext";
 import { PROPERTY_METHODS } from "@/types/presets";
 
 // Import utility functions
@@ -78,6 +79,7 @@ const AddInstance = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { propertyData, updateField, calculateTotalProjectCost, calculateEquityLoanAmount, calculateHoldingCosts, applyPreset, resetToDefaults } = usePropertyData();
+  const { createInstance, loading: instancesLoading } = useInstances();
 
   // State for the instance
   const [instanceName, setInstanceName] = useState("New Property Investment Instance");
@@ -494,10 +496,125 @@ const AddInstance = () => {
     };
   }, [projections, yearRange, propertyData.investors]);
 
-  const handleSave = () => {
-    // Will be implemented when backend is ready
-    console.log('Saving instance:', { instanceName, propertyData });
-    navigate('/instances');
+  const handleSave = async () => {
+    if (!instanceName.trim()) {
+      alert('Please enter an instance name');
+      return;
+    }
+
+    if (!selectedModel) {
+      alert('Please select a property model');
+      return;
+    }
+
+    try {
+      // Validate required fields
+      const requiredFields = [
+        { field: 'purchasePrice', value: propertyData.purchasePrice, name: 'Purchase Price' },
+        { field: 'weeklyRent', value: propertyData.weeklyRent, name: 'Weekly Rent' },
+        { field: 'propertyState', value: propertyData.propertyState, name: 'Property State' }
+      ];
+
+      for (const { field, value, name } of requiredFields) {
+        if (value === undefined || value === null) {
+          alert(`Please provide a valid value for ${name}`);
+          return;
+        }
+      }
+
+      // Validate property state is one of the allowed values
+      const allowedStates = ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA'];
+      if (!allowedStates.includes(propertyData.propertyState)) {
+        alert(`Property State must be one of: ${allowedStates.join(', ')}`);
+        return;
+      }
+
+      // Prepare the instance data for database
+      const instanceData = {
+        name: instanceName,
+        source_model_id: selectedModel?.id || null,
+        property_method: propertyData.currentPropertyMethod || null,
+        funding_method: propertyData.currentFundingMethod || null,
+        investors: JSON.parse(JSON.stringify(propertyData.investors)),
+        ownership_allocations: JSON.parse(JSON.stringify(propertyData.ownershipAllocations)),
+        is_construction_project: propertyData.isConstructionProject,
+        purchase_price: propertyData.purchasePrice,
+        weekly_rent: propertyData.weeklyRent,
+        rental_growth_rate: propertyData.rentalGrowthRate,
+        vacancy_rate: propertyData.vacancyRate,
+        construction_year: propertyData.constructionYear,
+        building_value: propertyData.buildingValue,
+        plant_equipment_value: propertyData.plantEquipmentValue,
+        land_value: propertyData.landValue,
+        construction_value: propertyData.constructionValue,
+        construction_period: propertyData.constructionPeriod,
+        construction_interest_rate: propertyData.constructionInterestRate,
+        construction_progress_payments: JSON.parse(JSON.stringify(propertyData.constructionProgressPayments)),
+        deposit: propertyData.deposit,
+        loan_amount: propertyData.loanAmount,
+        interest_rate: propertyData.interestRate,
+        loan_term: propertyData.loanTerm,
+        lvr: propertyData.lvr,
+        main_loan_type: propertyData.mainLoanType,
+        io_term_years: propertyData.ioTermYears,
+        use_equity_funding: propertyData.useEquityFunding,
+        primary_property_value: propertyData.primaryPropertyValue,
+        existing_debt: propertyData.existingDebt,
+        max_lvr: propertyData.maxLVR,
+        equity_loan_type: propertyData.equityLoanType,
+        equity_loan_io_term_years: propertyData.equityLoanIoTermYears,
+        equity_loan_interest_rate: propertyData.equityLoanInterestRate,
+        equity_loan_term: propertyData.equityLoanTerm,
+        deposit_amount: propertyData.depositAmount,
+        minimum_deposit_required: propertyData.minimumDepositRequired,
+        holding_cost_funding: propertyData.holdingCostFunding,
+        holding_cost_cash_percentage: propertyData.holdingCostCashPercentage,
+        capitalize_construction_costs: propertyData.capitalizeConstructionCosts,
+        construction_equity_repayment_type: propertyData.constructionEquityRepaymentType,
+        land_holding_interest: propertyData.landHoldingInterest,
+        construction_holding_interest: propertyData.constructionHoldingInterest,
+        total_holding_costs: propertyData.totalHoldingCosts,
+        stamp_duty: propertyData.stampDuty,
+        legal_fees: propertyData.legalFees,
+        inspection_fees: propertyData.inspectionFees,
+        council_fees: propertyData.councilFees,
+        architect_fees: propertyData.architectFees,
+        site_costs: propertyData.siteCosts,
+        property_management: propertyData.propertyManagement,
+        council_rates: propertyData.councilRates,
+        insurance: propertyData.insurance,
+        repairs: propertyData.repairs,
+        depreciation_method: propertyData.depreciationMethod,
+        is_new_property: propertyData.isNewProperty,
+        property_state: propertyData.propertyState || 'VIC',
+        total_project_cost: totalProjectCost,
+        equity_loan_amount: equityLoanAmount,
+        available_equity: 0, // Will be calculated by the service
+        status: 'draft' as const
+      };
+
+      console.log('Sending instance data:', instanceData);
+      console.log('Property state value:', propertyData.propertyState);
+      console.log('Property state type:', typeof propertyData.propertyState);
+
+      // Create the instance in the database
+      const newInstance = await createInstance(instanceData);
+      
+      // Show success message
+      console.log('Instance created successfully:', newInstance);
+      
+      // Navigate to instances list
+      navigate('/instances');
+    } catch (error) {
+      console.error('Failed to save instance:', error);
+      
+      // Show user-friendly error message
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save instance';
+      
+      // You could add a toast notification here
+      // For now, we'll show an alert (you can replace this with a toast later)
+      alert(`Error: ${errorMessage}`);
+    }
   };
 
   const handleBack = () => {
@@ -599,12 +716,17 @@ const AddInstance = () => {
               
               <Button 
                 onClick={handleSave}
+                disabled={instancesLoading}
                 className="flex items-center gap-2 px-6 py-3 h-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
               >
                 <Save className="h-4 w-4" />
                 <div className="text-left">
-                  <div className="font-medium">Save & Continue</div>
-                  <div className="text-xs text-primary-foreground/80">Create your instance</div>
+                  <div className="font-medium">
+                    {instancesLoading ? 'Saving...' : 'Save & Continue'}
+                  </div>
+                  <div className="text-xs text-primary-foreground/80">
+                    {instancesLoading ? 'Creating your instance...' : 'Create your instance'}
+                  </div>
                 </div>
               </Button>
             </div>

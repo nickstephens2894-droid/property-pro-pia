@@ -17,7 +17,7 @@ import { ValidationWarnings } from "@/components/ValidationWarnings";
 import StampDutyCalculator from "@/components/StampDutyCalculator";
 import { useFieldConfirmations } from "@/hooks/useFieldConfirmations";
 import { usePropertyData, PropertyData } from "@/contexts/PropertyDataContext";
-import { useClients, type Investor } from "@/hooks/useClients";
+import { useRepo, type Investor } from "@/services/repository";
 import { 
   validatePersonalProfile, 
   validatePropertyBasics, 
@@ -168,7 +168,7 @@ export const PropertyInputForm = ({
   // Investor selection dialog state
   const [isInvestorDialogOpen, setIsInvestorDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const { investors, loading: investorsLoading } = useClients();
+  const { investors } = useRepo();
 
   // Calculate total construction value
   const totalConstructionValue = propertyData.buildingValue + propertyData.plantEquipmentValue;
@@ -1860,12 +1860,7 @@ export const PropertyInputForm = ({
 
           {/* Investors List */}
           <div className="max-h-60 overflow-y-auto space-y-2">
-            {investorsLoading ? (
-              <div className="text-center py-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
-                <p className="text-sm text-muted-foreground mt-2">Loading investors...</p>
-              </div>
-            ) : investors.length === 0 ? (
+            {investors.length === 0 ? (
               <div className="text-center py-4">
                 <p className="text-sm text-muted-foreground">No investors found. Create some investors first.</p>
               </div>

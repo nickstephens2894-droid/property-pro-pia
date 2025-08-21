@@ -5,51 +5,12 @@ import { Plus, Building2, TrendingUp, Calendar, DollarSign } from "lucide-react"
 import { useNavigate } from "react-router-dom";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { EmptyState } from "@/components/ui/empty-state";
-
-interface Instance {
-  id: string;
-  name: string;
-  propertyType: string;
-  purchasePrice: number;
-  weeklyRent: number;
-  status: 'active' | 'draft' | 'archived';
-  createdAt: string;
-  lastModified: string;
-}
+import { useInstances } from "@/contexts/InstancesContext";
+import { Instance } from "@/integrations/supabase/types";
 
 const Instances = () => {
   const navigate = useNavigate();
-  const [instances, setInstances] = useState<Instance[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Simulate loading instances (will be replaced with actual API call later)
-    setTimeout(() => {
-      setInstances([
-        {
-          id: '1',
-          name: 'Sydney CBD Apartment',
-          propertyType: 'Apartment',
-          purchasePrice: 850000,
-          weeklyRent: 850,
-          status: 'active',
-          createdAt: '2025-01-15',
-          lastModified: '2025-01-20'
-        },
-        {
-          id: '2',
-          name: 'Melbourne House',
-          propertyType: 'House',
-          purchasePrice: 1200000,
-          weeklyRent: 1200,
-          status: 'draft',
-          createdAt: '2025-01-10',
-          lastModified: '2025-01-18'
-        }
-      ]);
-      setLoading(false);
-    }, 1000);
-  }, []);
+  const { instances, loading, error } = useInstances();
 
   const handleAddInstance = () => {
     navigate('/instances/add');
@@ -71,11 +32,60 @@ const Instances = () => {
     );
   }
 
+  if (error) {
+    // Instead of showing error, show the header and empty state
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+          {/* Header - Same style as Properties page */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Property Investment Instances</h1>
+              <p className="text-muted-foreground">Create and manage property investment instances for analysis and projections</p>
+            </div>
+            <Button onClick={handleAddInstance} size="lg">
+              <Plus className="h-4 w-4 mr-2" />
+              Create Instance
+            </Button>
+          </div>
+
+          {/* Empty State - Centered below header */}
+          <div className="flex items-center justify-center h-64">
+            <EmptyState
+              icon={Building2}
+              title="No instances yet"
+              description="Create your first property investment instance to get started with analysis and projections."
+              action={
+                <Button onClick={handleAddInstance} size="lg">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create First Instance
+                </Button>
+              }
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (instances.length === 0) {
     return (
       <div className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-          <div className="text-center">
+          {/* Header - Same style as Properties page */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Property Investment Instances</h1>
+              <p className="text-muted-foreground">Create and manage property investment instances for analysis and projections</p>
+            </div>
+            <Button onClick={handleAddInstance} size="lg">
+              <Plus className="h-4 w-4 mr-2" />
+              Create Instance
+            </Button>
+          </div>
+
+          {/* Empty State - Centered below header */}
+          <div className="flex items-center justify-center h-64">
             <EmptyState
               icon={Building2}
               title="No instances yet"
@@ -122,7 +132,7 @@ const Instances = () => {
                     <CardTitle className="text-lg">{instance.name}</CardTitle>
                     <CardDescription className="flex items-center gap-2 mt-1">
                       <Building2 className="h-4 w-4" />
-                      {instance.propertyType}
+                      {instance.property_method || 'Property'}
                     </CardDescription>
                   </div>
                   <div className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -139,19 +149,19 @@ const Instances = () => {
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Purchase Price</span>
                     <span className="font-medium">
-                      ${instance.purchasePrice.toLocaleString()}
+                      ${instance.purchase_price.toLocaleString()}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Weekly Rent</span>
-                    <span className="font-medium">
-                      ${instance.weeklyRent.toLocaleString()}
+                    <span className="text-sm">
+                      ${instance.weekly_rent.toLocaleString()}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Created</span>
                     <span className="text-sm">
-                      {new Date(instance.createdAt).toLocaleDateString()}
+                      {new Date(instance.created_at).toLocaleDateString()}
                     </span>
                   </div>
                 </div>
