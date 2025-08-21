@@ -358,6 +358,7 @@ const CreateProperty = () => {
                       value={formData.construction_year}
                       onChange={(value) => handleInputChange('construction_year', value)}
                       placeholder="2024"
+                      formatThousands={false}
                     />
                   </div>
                   {formData.is_construction_project && (
