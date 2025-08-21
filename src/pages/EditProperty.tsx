@@ -128,7 +128,7 @@ const EditProperty = () => {
           property_type: property.property_type || 'Apartment',
           purchase_price: property.purchase_price || 0,
           weekly_rent: property.weekly_rent || 0,
-          location: property.location || 'NSW',
+          location: (property.location as any) || 'NSW',
           property_method: property.property_method || 'built-first-owner',
           construction_year: property.construction_year || new Date().getFullYear(),
           is_construction_project: property.is_construction_project || false,
@@ -217,7 +217,7 @@ const EditProperty = () => {
     setLoading(true);
     try {
       // Update the property
-      await updateProperty(propertyId, formData);
+      await updateProperty(propertyId, { ...formData, id: propertyId });
       
       // Show success message
       toast({

@@ -17,6 +17,31 @@ export const calculateLoanPayment = (principal: number, annualRate: number, term
          (Math.pow(1 + periodRate, totalPeriods) - 1);
 };
 
+export const calculateInterestOnlyPayment = (principal: number, annualRate: number, frequency: 'weekly' | 'monthly' = 'weekly'): number => {
+  const periodsPerYear = frequency === 'weekly' ? 52 : 12;
+  const periodRate = annualRate / 100 / periodsPerYear;
+  
+  return principal * periodRate;
+};
+
+export const calculateCurrentLoanPayment = (
+  principal: number, 
+  annualRate: number, 
+  termYears: number, 
+  interestOnlyPeriodYears: number,
+  currentYear: number,
+  frequency: 'weekly' | 'monthly' = 'monthly'
+): number => {
+  // If still in interest-only period
+  if (currentYear <= interestOnlyPeriodYears) {
+    return calculateInterestOnlyPayment(principal, annualRate, frequency);
+  }
+  
+  // Calculate P&I payment for remaining term
+  const remainingTermYears = termYears - interestOnlyPeriodYears;
+  return calculateLoanPayment(principal, annualRate, remainingTermYears, frequency);
+};
+
 export const validatePropertyValues = (propertyData: PropertyData): {
   isValid: boolean;
   errors: string[];
