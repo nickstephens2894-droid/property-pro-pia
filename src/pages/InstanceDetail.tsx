@@ -18,6 +18,8 @@ import { PropertyCalculationDetails } from "@/components/PropertyCalculationDeta
 
 // Import the context hook
 import { usePropertyData } from "@/contexts/PropertyDataContext";
+import { useInstances } from "@/contexts/InstancesContext";
+import { Instance } from "@/integrations/supabase/types";
 
 // Import utility functions
 import { downloadInputsCsv } from "@/utils/csvExport";
@@ -25,18 +27,7 @@ import { formatCurrency, formatPercentage } from "@/utils/formatters";
 import { resolve, Triplet } from "@/utils/overrides";
 import { totalTaxAU, marginalRateAU } from "@/utils/tax";
 
-interface Instance {
-  id: string;
-  name: string;
-  propertyType: string;
-  purchasePrice: number;
-  weeklyRent: number;
-  status: 'active' | 'draft' | 'archived';
-  createdAt: string;
-  lastModified: string;
-  // This would contain all the property data from PropertyDataContext
-  propertyData: any;
-}
+// Using the Instance type from Supabase types
 
 interface YearProjection {
   year: number;
@@ -90,6 +81,7 @@ const InstanceDetail = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { propertyData, updateField, calculateTotalProjectCost, calculateEquityLoanAmount, calculateHoldingCosts, applyPreset } = usePropertyData();
+  const { getInstance, loading: instancesLoading } = useInstances();
 
   // State for the instance
   const [instance, setInstance] = useState<Instance | null>(null);
@@ -99,22 +91,80 @@ const InstanceDetail = () => {
   const [viewMode, setViewMode] = useState<'year' | 'table'>("table");
 
   useEffect(() => {
-    // Simulate loading instance data (will be replaced with actual API call later)
-    setTimeout(() => {
-      setInstance({
-        id: id || '1',
-        name: 'Sydney CBD Apartment',
-        propertyType: 'Apartment',
-        purchasePrice: 850000,
-        weeklyRent: 850,
-        status: 'active',
-        createdAt: '2025-01-15',
-        lastModified: '2025-01-20',
-        propertyData: propertyData // Using current context data for now
-      });
-      setLoading(false);
-    }, 1000);
-  }, [id, propertyData]);
+    if (id) {
+      const loadInstance = async () => {
+        try {
+          setLoading(true);
+          const instanceData = getInstance(id);
+          if (instanceData) {
+            setInstance(instanceData);
+            // Apply the instance data to the property context
+            applyPreset({
+              investors: instanceData.investors as any,
+              ownershipAllocations: instanceData.ownership_allocations as any,
+              isConstructionProject: instanceData.is_construction_project,
+              purchasePrice: instanceData.purchase_price,
+              weeklyRent: instanceData.weekly_rent,
+              rentalGrowthRate: instanceData.rental_growth_rate,
+              vacancyRate: instanceData.vacancy_rate,
+              constructionYear: instanceData.construction_year,
+              buildingValue: instanceData.building_value,
+              plantEquipmentValue: instanceData.plant_equipment_value,
+              landValue: instanceData.land_value,
+              constructionValue: instanceData.construction_value,
+              constructionPeriod: instanceData.construction_period,
+              constructionInterestRate: instanceData.construction_interest_rate,
+              constructionProgressPayments: instanceData.construction_progress_payments as any,
+              deposit: instanceData.deposit,
+              loanAmount: instanceData.loan_amount,
+              interestRate: instanceData.interest_rate,
+              loanTerm: instanceData.loan_term,
+              lvr: instanceData.lvr,
+              mainLoanType: instanceData.main_loan_type,
+              ioTermYears: instanceData.io_term_years,
+              useEquityFunding: instanceData.use_equity_funding,
+              primaryPropertyValue: instanceData.primary_property_value,
+              existingDebt: instanceData.existing_debt,
+              maxLVR: instanceData.max_lvr,
+              equityLoanType: instanceData.equity_loan_type,
+              equityLoanIoTermYears: instanceData.equity_loan_io_term_years,
+              equityLoanInterestRate: instanceData.equity_loan_interest_rate,
+              equityLoanTerm: instanceData.equity_loan_term,
+              depositAmount: instanceData.deposit_amount,
+              minimumDepositRequired: instanceData.minimum_deposit_required,
+              holdingCostFunding: instanceData.holding_cost_funding,
+              holdingCostCashPercentage: instanceData.holding_cost_cash_percentage,
+              capitalizeConstructionCosts: instanceData.capitalize_construction_costs,
+              constructionEquityRepaymentType: instanceData.construction_equity_repayment_type,
+              landHoldingInterest: instanceData.land_holding_interest,
+              constructionHoldingInterest: instanceData.construction_holding_interest,
+              totalHoldingCosts: instanceData.total_holding_costs,
+              stampDuty: instanceData.stamp_duty,
+              legalFees: instanceData.legal_fees,
+              inspectionFees: instanceData.inspection_fees,
+              councilFees: instanceData.council_fees,
+              architectFees: instanceData.architect_fees,
+              siteCosts: instanceData.site_costs,
+              propertyManagement: instanceData.property_management,
+              councilRates: instanceData.council_rates,
+              insurance: instanceData.insurance,
+              repairs: instanceData.repairs,
+              depreciationMethod: instanceData.depreciation_method,
+              isNewProperty: instanceData.is_new_property,
+              currentPropertyMethod: instanceData.property_method as any,
+              currentFundingMethod: instanceData.funding_method as any
+            }, instanceData.property_method as any, instanceData.funding_method as any);
+          }
+        } catch (error) {
+          console.error('Failed to load instance:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      loadInstance();
+    }
+  }, [id, getInstance, applyPreset]);
 
   // Calculate all the necessary values for the components
   const totalProjectCost = calculateTotalProjectCost();
@@ -573,7 +623,7 @@ const InstanceDetail = () => {
                   <CardTitle className="text-2xl">{instance.name}</CardTitle>
                 </div>
                 <CardDescription className="text-base">
-                  {instance.propertyType} • ${instance.purchasePrice.toLocaleString()} • ${instance.weeklyRent}/week
+                  {instance.property_method || 'Property'} • ${instance.purchase_price.toLocaleString()} • ${instance.weekly_rent}/week
                 </CardDescription>
                 {/* Status and Dates integrated into header */}
                 <div className="flex items-center gap-4 mt-3">
@@ -585,10 +635,10 @@ const InstanceDetail = () => {
                     {instance.status}
                   </div>
                   <span className="text-sm text-muted-foreground">
-                    Created: {new Date(instance.createdAt).toLocaleDateString()}
+                    Created: {new Date(instance.created_at).toLocaleDateString()}
                   </span>
                   <span className="text-sm text-muted-foreground">
-                    Modified: {new Date(instance.lastModified).toLocaleDateString()}
+                    Modified: {new Date(instance.updated_at).toLocaleDateString()}
                   </span>
                 </div>
               </CardHeader>

@@ -7,39 +7,341 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "13.0.4"
-  }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
+export interface Database {
   public: {
     Tables: {
+      instances: {
+        Row: {
+          id: string
+          user_id: string
+          property_model_id: string | null
+          name: string
+          status: 'draft' | 'active' | 'archived'
+          created_at: string
+          updated_at: string
+          property_method: 'house-land-construction' | 'built-first-owner' | 'built-second-owner' | null
+          funding_method: 'loan-cash' | 'loan-equity' | 'full-equity' | null
+          investors: Json
+          ownership_allocations: Json
+          is_construction_project: boolean
+          purchase_price: number
+          weekly_rent: number
+          rental_growth_rate: number
+          vacancy_rate: number
+          construction_year: number
+          building_value: number
+          plant_equipment_value: number
+          land_value: number
+          construction_value: number
+          construction_period: number
+          construction_interest_rate: number
+          construction_progress_payments: Json
+          deposit: number
+          loan_amount: number
+          interest_rate: number
+          loan_term: number
+          lvr: number
+          main_loan_type: 'io' | 'pi'
+          io_term_years: number
+          use_equity_funding: boolean
+          primary_property_value: number
+          existing_debt: number
+          max_lvr: number
+          equity_loan_type: 'io' | 'pi'
+          equity_loan_io_term_years: number
+          equity_loan_interest_rate: number
+          equity_loan_term: number
+          deposit_amount: number
+          minimum_deposit_required: number
+          holding_cost_funding: 'cash' | 'debt' | 'hybrid'
+          holding_cost_cash_percentage: number
+          capitalize_construction_costs: boolean
+          construction_equity_repayment_type: 'io' | 'pi'
+          land_holding_interest: number
+          construction_holding_interest: number
+          total_holding_costs: number
+          stamp_duty: number
+          legal_fees: number
+          inspection_fees: number
+          council_fees: number
+          architect_fees: number
+          site_costs: number
+          property_management: number
+          council_rates: number
+          insurance: number
+          repairs: number
+          depreciation_method: 'prime-cost' | 'diminishing-value'
+          is_new_property: boolean
+          property_state: 'ACT' | 'NSW' | 'NT' | 'QLD' | 'SA' | 'TAS' | 'VIC' | 'WA' | null
+          total_project_cost: number
+          equity_loan_amount: number
+          available_equity: number
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          property_model_id?: string | null
+          name: string
+          status?: 'draft' | 'active' | 'archived'
+          created_at?: string
+          updated_at?: string
+          property_method?: 'house-land-construction' | 'built-first-owner' | 'built-second-owner' | null
+          funding_method?: 'loan-cash' | 'loan-equity' | 'full-equity' | null
+          investors?: Json
+          ownership_allocations?: Json
+          is_construction_project?: boolean
+          purchase_price?: number
+          weekly_rent?: number
+          rental_growth_rate?: number
+          vacancy_rate?: number
+          construction_year?: number
+          building_value?: number
+          plant_equipment_value?: number
+          land_value?: number
+          construction_value?: number
+          construction_period?: number
+          construction_interest_rate?: number
+          construction_progress_payments?: Json
+          deposit?: number
+          loan_amount?: number
+          interest_rate?: number
+          loan_term?: number
+          lvr?: number
+          main_loan_type?: 'io' | 'pi'
+          io_term_years?: number
+          use_equity_funding?: boolean
+          primary_property_value?: number
+          existing_debt?: number
+          max_lvr?: number
+          equity_loan_type?: 'io' | 'pi'
+          equity_loan_io_term_years?: number
+          equity_loan_interest_rate?: number
+          equity_loan_term?: number
+          deposit_amount?: number
+          minimum_deposit_required?: number
+          holding_cost_funding?: 'cash' | 'debt' | 'hybrid'
+          holding_cost_cash_percentage?: number
+          capitalize_construction_costs?: boolean
+          construction_equity_repayment_type?: 'io' | 'pi'
+          land_holding_interest?: number
+          construction_holding_interest?: number
+          total_holding_costs?: number
+          stamp_duty?: number
+          legal_fees?: number
+          inspection_fees?: number
+          council_fees?: number
+          architect_fees?: number
+          site_costs?: number
+          property_management?: number
+          council_rates?: number
+          insurance?: number
+          repairs?: number
+          depreciation_method?: 'prime-cost' | 'diminishing-value'
+          is_new_property?: boolean
+          property_state?: 'ACT' | 'NSW' | 'NT' | 'QLD' | 'SA' | 'TAS' | 'VIC' | 'WA' | null
+          total_project_cost?: number
+          equity_loan_amount?: number
+          available_equity?: number
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          property_model_id?: string | null
+          name?: string
+          status?: 'draft' | 'active' | 'archived'
+          created_at?: string
+          updated_at?: string
+          property_method?: 'house-land-construction' | 'built-first-owner' | 'built-second-owner' | null
+          funding_method?: 'loan-cash' | 'loan-equity' | 'full-equity' | null
+          investors?: Json
+          ownership_allocations?: Json
+          is_construction_project?: boolean
+          purchase_price?: number
+          weekly_rent?: number
+          rental_growth_rate?: number
+          vacancy_rate?: number
+          construction_year?: number
+          building_value?: number
+          plant_equipment_value?: number
+          land_value?: number
+          construction_value?: number
+          construction_period?: number
+          construction_interest_rate?: number
+          construction_progress_payments?: Json
+          deposit?: number
+          loan_amount?: number
+          interest_rate?: number
+          loan_term?: number
+          lvr?: number
+          main_loan_type?: 'io' | 'pi'
+          io_term_years?: number
+          use_equity_funding?: boolean
+          primary_property_value?: number
+          existing_debt?: number
+          max_lvr?: number
+          equity_loan_type?: 'io' | 'pi'
+          equity_loan_io_term_years?: number
+          equity_loan_interest_rate?: number
+          equity_loan_term?: number
+          deposit_amount?: number
+          minimum_deposit_required?: number
+          holding_cost_funding?: 'cash' | 'debt' | 'hybrid'
+          holding_cost_cash_percentage?: number
+          capitalize_construction_costs?: boolean
+          construction_equity_repayment_type?: 'io' | 'pi'
+          land_holding_interest?: number
+          construction_holding_interest?: number
+          total_holding_costs?: number
+          stamp_duty?: number
+          legal_fees?: number
+          inspection_fees?: number
+          council_fees?: number
+          architect_fees?: number
+          site_costs?: number
+          property_management?: number
+          council_rates?: number
+          insurance?: number
+          repairs?: number
+          depreciation_method?: 'prime-cost' | 'diminishing-value'
+          is_new_property?: boolean
+          property_state?: 'ACT' | 'NSW' | 'NT' | 'QLD' | 'SA' | 'TAS' | 'VIC' | 'WA' | null
+          total_project_cost?: number
+          equity_loan_amount?: number
+          available_equity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instances_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instances_property_model_id_fkey"
+            columns: ["property_model_id"]
+            isOneToOne: false
+            referencedRelation: "property_models"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      property_models: {
+        Row: {
+          id: string
+          owner_user_id: string
+          name: string
+          description: string | null
+          property_type: 'Apartment' | 'House' | 'Townhouse' | 'Unit' | 'Land' | 'Commercial'
+          property_method: 'house-land-construction' | 'built-first-owner' | 'built-second-owner'
+          purchase_price: number
+          weekly_rent: number
+          rental_growth_rate: number
+          vacancy_rate: number
+          location: string
+          construction_year: number
+          is_construction_project: boolean
+          land_value: number
+          construction_value: number
+          construction_period: number
+          construction_interest_rate: number
+          building_value: number
+          plant_equipment_value: number
+          stamp_duty: number
+          legal_fees: number
+          inspection_fees: number
+          council_fees: number
+          architect_fees: number
+          site_costs: number
+          property_management: number
+          council_rates: number
+          insurance: number
+          repairs: number
+          depreciation_method: 'prime-cost' | 'diminishing-value'
+          is_new_property: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          owner_user_id: string
+          name: string
+          description?: string | null
+          property_type: 'Apartment' | 'House' | 'Townhouse' | 'Unit' | 'Land' | 'Commercial'
+          property_method: 'house-land-construction' | 'built-first-owner' | 'built-second-owner'
+          purchase_price: number
+          weekly_rent: number
+          rental_growth_rate: number
+          vacancy_rate: number
+          location: string
+          construction_year: number
+          is_construction_project: boolean
+          land_value: number
+          construction_value: number
+          construction_period: number
+          construction_interest_rate: number
+          building_value: number
+          plant_equipment_value: number
+          stamp_duty: number
+          legal_fees: number
+          inspection_fees: number
+          council_fees: number
+          architect_fees: number
+          site_costs: number
+          property_management: number
+          council_rates: number
+          insurance: number
+          repairs: number
+          depreciation_method: 'prime-cost' | 'diminishing-value'
+          is_new_property: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          owner_user_id?: string
+          name?: string
+          description?: string | null
+          property_type?: 'Apartment' | 'House' | 'Townhouse' | 'Unit' | 'Land' | 'Commercial'
+          property_method?: 'house-land-construction' | 'built-first-owner' | 'built-second-owner'
+          purchase_price?: number
+          weekly_rent?: number
+          rental_growth_rate?: number
+          vacancy_rate?: number
+          location?: string
+          construction_year?: number
+          is_construction_project?: boolean
+          land_value?: number
+          construction_value?: number
+          construction_period?: number
+          construction_interest_rate?: number
+          building_value?: number
+          plant_equipment_value?: number
+          stamp_duty?: number
+          legal_fees?: number
+          inspection_fees?: number
+          council_fees?: number
+          architect_fees?: number
+          site_costs?: number
+          property_management?: number
+          council_rates?: number
+          insurance?: number
+          repairs?: number
+          depreciation_method?: 'prime-cost' | 'diminishing-value'
+          is_new_property?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_models_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       investors: {
         Row: {
           annual_income: number
@@ -505,3 +807,8 @@ export const Constants = {
     Enums: {},
   },
 } as const
+
+// Export the Instance type for use in components
+export type Instance = Database['public']['Tables']['instances']['Row']
+export type CreateInstanceRequest = Database['public']['Tables']['instances']['Insert']
+export type UpdateInstanceRequest = Database['public']['Tables']['instances']['Update']
