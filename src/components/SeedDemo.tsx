@@ -1,112 +1,106 @@
 import React, { useEffect } from "react";
-import { useRepo, Client, Investor, Property, Scenario } from "@/services/repository";
+import { useRepo, type Investor } from "@/services/repository";
 
-const DEMO_FLAG = "app_demo_seed_v1";
+const DEMO_FLAG = "app_demo_seed_v2";
 
 function genId(prefix = "id"): string {
   try {
-    // @ts-ignore - crypto may not exist in older browsers
     if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
-  } catch {}
+  } catch {
+    // Fallback to alternative ID generation
+  }
   return `${prefix}_${Math.random().toString(36).slice(2)}_${Date.now()}`;
 }
 
-const SeedDemo: React.FC = () => {
-  const {
-    clients,
-    properties,
-    scenarios,
-    addClient,
-    addProperty,
-    addScenario,
-  } = useRepo();
+export default function SeedDemo() {
+  const { investors, properties, scenarios, addInvestor, addProperty, addScenario } = useRepo();
 
   useEffect(() => {
     // Avoid duplicating demo data
     if (localStorage.getItem(DEMO_FLAG)) return;
 
-    // Create 3 clients with different investor setups
-    const c1Id = genId("client");
-    const c2Id = genId("client");
-    const c3Id = genId("client");
-
-    const alex: Investor = {
-      id: genId("inv"),
-      name: "Alex Johnson",
-      annualIncome: 145000,
-      otherIncome: 5000,
-      hasMedicareLevy: true,
-      ownershipPercentage: 100,
-      loanSharePercentage: 100,
-      cashContribution: 100000,
-    };
-
-    const sam: Investor = {
-      id: genId("inv"),
-      name: "Sam Patel",
-      annualIncome: 90000,
-      otherIncome: 0,
-      hasMedicareLevy: true,
-      ownershipPercentage: 50,
-      loanSharePercentage: 50,
-      cashContribution: 80000,
-    };
-    const priya: Investor = {
-      id: genId("inv"),
-      name: "Priya Patel",
-      annualIncome: 65000,
-      otherIncome: 5000,
-      hasMedicareLevy: true,
-      ownershipPercentage: 50,
-      loanSharePercentage: 50,
-      cashContribution: 40000,
-    };
-
-    const bao: Investor = {
-      id: genId("inv"),
-      name: "Bao Nguyen",
-      annualIncome: 120000,
-      otherIncome: 15000,
-      hasMedicareLevy: false,
-      ownershipPercentage: 33.33,
-      loanSharePercentage: 50,
-      cashContribution: 120000,
-    };
-    const linh: Investor = {
-      id: genId("inv"),
-      name: "Linh Nguyen",
-      annualIncome: 45000,
-      otherIncome: 2000,
-      hasMedicareLevy: true,
-      ownershipPercentage: 33.33,
-      loanSharePercentage: 30,
-      cashContribution: 30000,
-    };
-    const chris: Investor = {
-      id: genId("inv"),
-      name: "Chris Nguyen",
-      annualIncome: 30000,
-      otherIncome: 0,
-      hasMedicareLevy: false,
-      ownershipPercentage: 33.34,
-      loanSharePercentage: 20,
-      cashContribution: 15000,
-    };
-
-    const clientsToCreate: Client[] = [
-      { id: c1Id, name: "Alex Johnson (Single)", investors: [alex] },
-      { id: c2Id, name: "Sam & Priya Patel (Couple)", investors: [sam, priya] },
-      { id: c3Id, name: "Nguyen Family Group", investors: [bao, linh, chris] },
+    // Create demo investors with correct structure
+    const investorsToCreate: Investor[] = [
+      {
+        id: genId("inv"),
+        name: "Alex Johnson",
+        annualIncome: 145000,
+        otherIncome: 5000,
+        nonTaxableIncome: 0,
+        hasMedicareLevy: true,
+        ownershipPercentage: 100,
+        loanSharePercentage: 100,
+        cashContribution: 100000,
+      },
+      {
+        id: genId("inv"),
+        name: "Sam Patel",
+        annualIncome: 90000,
+        otherIncome: 0,
+        nonTaxableIncome: 0,
+        hasMedicareLevy: true,
+        ownershipPercentage: 50,
+        loanSharePercentage: 50,
+        cashContribution: 80000,
+      },
+      {
+        id: genId("inv"),
+        name: "Priya Patel",
+        annualIncome: 65000,
+        otherIncome: 5000,
+        nonTaxableIncome: 0,
+        hasMedicareLevy: true,
+        ownershipPercentage: 50,
+        loanSharePercentage: 50,
+        cashContribution: 40000,
+      },
+      {
+        id: genId("inv"),
+        name: "Bao Nguyen",
+        annualIncome: 120000,
+        otherIncome: 15000,
+        nonTaxableIncome: 0,
+        hasMedicareLevy: false,
+        ownershipPercentage: 33.33,
+        loanSharePercentage: 50,
+        cashContribution: 120000,
+      },
+      {
+        id: genId("inv"),
+        name: "Linh Nguyen",
+        annualIncome: 45000,
+        otherIncome: 2000,
+        nonTaxableIncome: 0,
+        hasMedicareLevy: true,
+        ownershipPercentage: 33.33,
+        loanSharePercentage: 30,
+        cashContribution: 30000,
+      },
+      {
+        id: genId("inv"),
+        name: "Chris Nguyen",
+        annualIncome: 30000,
+        otherIncome: 0,
+        nonTaxableIncome: 0,
+        hasMedicareLevy: false,
+        ownershipPercentage: 33.34,
+        loanSharePercentage: 20,
+        cashContribution: 15000,
+      },
     ];
 
-    // Create 3 properties with different types
-    const p1Id = genId("prop");
-    const p2Id = genId("prop");
-    const p3Id = genId("prop");
-
-    const propertiesToCreate: Property[] = [
+    // Create demo properties
+    const propertiesToCreate: Array<{
+      id: string;
+      name: string;
+      type: "House" | "Apartment" | "Land" | "Townhouse" | "Unit" | "Other";
+      purchasePrice: number;
+      weeklyRent: number;
+      location: string;
+      notes: string;
+    }> = [
       {
-        id: p1Id,
+        id: genId("prop"),
         name: "Riverside House",
         type: "House",
         purchasePrice: 750000,
@@ -115,7 +109,7 @@ const SeedDemo: React.FC = () => {
         notes: "Established suburb family home",
       },
       {
-        id: p2Id,
+        id: genId("prop"),
         name: "CityView Apartment",
         type: "Apartment",
         purchasePrice: 620000,
@@ -124,7 +118,7 @@ const SeedDemo: React.FC = () => {
         notes: "CBD proximity, high rental demand",
       },
       {
-        id: p3Id,
+        id: genId("prop"),
         name: "Sunset Acreage",
         type: "Land",
         purchasePrice: 420000,
@@ -135,39 +129,47 @@ const SeedDemo: React.FC = () => {
     ];
 
     // Only seed if nothing exists yet OR counts are below requested samples
-    const shouldSeed = clients.length < 3 || properties.length < 3 || scenarios.length < 3;
+    const shouldSeed = investors.length < 3 || properties.length < 3 || scenarios.length < 3;
     if (!shouldSeed) {
       localStorage.setItem(DEMO_FLAG, "1");
       return;
     }
 
-    clientsToCreate.forEach(addClient);
+    // Add investors and properties
+    investorsToCreate.forEach(addInvestor);
     propertiesToCreate.forEach(addProperty);
 
-    // Create 3 scenarios linking them
-    const scenariosToCreate: Scenario[] = [
+    // Create demo scenarios
+    const scenariosToCreate: Array<{
+      id: string;
+      name: string;
+      investorId: string;
+      propertyId: string;
+      createdAt: string;
+    }> = [
       {
         id: genId("scn"),
         name: "Alex buys Riverside House",
-        clientId: c1Id,
-        propertyId: p1Id,
+        investorId: investorsToCreate[0]?.id,
+        propertyId: propertiesToCreate[0]?.id,
         createdAt: new Date().toISOString(),
       },
       {
         id: genId("scn"),
         name: "Patels invest in CityView Apartment",
-        clientId: c2Id,
-        propertyId: p2Id,
+        investorId: investorsToCreate[1]?.id,
+        propertyId: propertiesToCreate[1]?.id,
         createdAt: new Date().toISOString(),
       },
       {
         id: genId("scn"),
         name: "Nguyen group land banking",
-        clientId: c3Id,
-        propertyId: p3Id,
+        investorId: investorsToCreate[3]?.id,
+        propertyId: propertiesToCreate[2]?.id,
         createdAt: new Date().toISOString(),
       },
     ];
+    
     scenariosToCreate.forEach(addScenario);
 
     localStorage.setItem(DEMO_FLAG, "1");
@@ -176,5 +178,3 @@ const SeedDemo: React.FC = () => {
 
   return null;
 };
-
-export default SeedDemo;

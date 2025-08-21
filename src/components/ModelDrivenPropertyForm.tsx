@@ -15,7 +15,7 @@ import { ValidationWarnings } from "@/components/ValidationWarnings";
 import StampDutyCalculator from "@/components/StampDutyCalculator";
 import { useFieldConfirmations } from "@/hooks/useFieldConfirmations";
 import { usePropertyData, PropertyData } from "@/contexts/PropertyDataContext";
-import { useClients, type Investor } from "@/hooks/useClients";
+import { useRepo, type Investor } from "@/services/repository";
 import { 
   validatePersonalProfile, 
   validatePropertyBasics, 
@@ -177,7 +177,7 @@ const ModelDrivenPropertyForm = ({
   marginalTaxRate,
   selectedModel
 }: ModelDrivenPropertyFormProps) => {
-  const { clients, addClient, removeClient, updateClient } = useClients();
+  const { investors, addInvestor, removeInvestor, updateInvestor } = useRepo();
   const { confirmFieldUpdate, isFieldConfirmed, clearFieldConfirmation } = useFieldConfirmations();
   const [dutyCalcOpen, setDutyCalcOpen] = useState(false);
   const [showInvestorDialog, setShowInvestorDialog] = useState(false);

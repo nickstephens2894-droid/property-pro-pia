@@ -8,12 +8,12 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2, Building2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { useClients, type Client, type Investor } from "@/hooks/useClients";
+import { useRepo, type Investor } from "@/services/repository";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { formatCurrency } from "@/utils/formatters";
 
 export default function Investors() {
-  const { investors, loading, createInvestor, updateInvestor, deleteInvestor } = useClients();
+  const { investors, addInvestor, updateInvestor, removeInvestor } = useRepo();
 
   const [searchTerm, setSearchTerm] = useState("");
   
@@ -65,11 +65,22 @@ export default function Investors() {
   const handleInvestorSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('Submitting investor form:', { editingItem, investorForm });
+    
     try {
       if (editingItem) {
+        console.log('Updating existing investor:', editingItem.id);
         await updateInvestor(editingItem.id, investorForm);
       } else {
-        await createInvestor(investorForm);
+        console.log('Creating new investor');
+        const newInvestor: Omit<Investor, 'id' | 'created_at' | 'updated_at'> = {
+          ...investorForm,
+          ownershipPercentage: 0,
+          loanSharePercentage: 0,
+          cashContribution: 0
+        };
+        console.log('New investor data:', newInvestor);
+        await addInvestor({ ...newInvestor, id: crypto.randomUUID() } as Investor);
       }
       closeDialog();
     } catch (error) {
@@ -79,7 +90,7 @@ export default function Investors() {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteInvestor(id);
+      await removeInvestor(id);
     } catch (error) {
       console.error('Error deleting investor:', error);
     }
@@ -89,7 +100,7 @@ export default function Investors() {
     return investor.name.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
-  if (loading) {
+  if (investors.length === 0) {
     return <LoadingSpinner message="Loading investors..." />;
   }
 

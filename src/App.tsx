@@ -21,9 +21,8 @@ import CreateProperty from "./pages/CreateProperty";
 import EditProperty from "./pages/EditProperty";
 import Auth from "./pages/Auth";
 import SpecPage from "./pages/SpecPage";
-import { RepoProvider } from "./services/repository";
+import { RepositoryProvider } from "./services/repository";
 import { PropertiesProvider } from "./contexts/PropertiesContext";
-// import SeedDemo from "./components/SeedDemo";
 import RequireAuth from "./components/RequireAuth";
 
 const queryClient = new QueryClient();
@@ -60,7 +59,7 @@ function AppLayout() {
 
 const App = () => (
   <AuthProvider>
-    <RepoProvider>
+    <RepositoryProvider>
       <PropertiesProvider>
         {/* <SeedDemo /> */}
         <QueryClientProvider client={queryClient}>
@@ -77,7 +76,7 @@ const App = () => (
           </PropertyDataProvider>
         </QueryClientProvider>
       </PropertiesProvider>
-    </RepoProvider>
+    </RepositoryProvider>
   </AuthProvider>
 );
 

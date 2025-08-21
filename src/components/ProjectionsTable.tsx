@@ -35,7 +35,10 @@ interface YearProjection {
 
 interface ProjectionsTableProps {
   projections: YearProjection[];
-  assumptions: any;
+  assumptions: {
+    initialPropertyValue: number;
+    [key: string]: number | string | boolean;
+  };
   validatedYearRange: [number, number];
   formatCurrency: (amount: number) => string;
   formatPercentage: (value: number) => string;
@@ -58,25 +61,36 @@ const ProjectionsTable = ({
   const [showCashFlowDetails, setShowCashFlowDetails] = useState(false);
   const [currentYearIndex, setCurrentYearIndex] = useState(0);
   
+  // Mobile-specific state
+  const [showIncomeDetails, setShowIncomeDetails] = useState(false);
+  const [showExpensesDetails, setShowExpensesDetails] = useState(false);
+  const [showValueDetails, setShowValueDetails] = useState(false);
+  const [showEquityDetails, setShowEquityDetails] = useState(false);
+  const [showTaxDetails, setShowTaxDetails] = useState(false);
+  const [showCashFlowDetailsMobile, setShowCashFlowDetailsMobile] = useState(false);
+  
   const filteredProjections = projections.filter(p => 
     p.year >= validatedYearRange[0] && p.year <= validatedYearRange[1]
   );
 
-const isMobileView = isMobile || viewMode === 'year';
+  const isMobileView = isMobile || viewMode === 'year';
 
-return (
-  isMobileView ? (
-    <MobileProjectionsView 
-      projections={filteredProjections}
-      assumptions={assumptions}
-      currentYearIndex={currentYearIndex}
-      setCurrentYearIndex={setCurrentYearIndex}
-      showLoanDetails={showLoanDetails}
-      setShowLoanDetails={setShowLoanDetails}
-      formatCurrency={formatCurrency}
-      formatPercentage={formatPercentage}
-    />
-  ) : (
+  if (isMobileView) {
+    return (
+      <MobileProjectionsView 
+        projections={filteredProjections}
+        assumptions={assumptions}
+        currentYearIndex={currentYearIndex}
+        setCurrentYearIndex={setCurrentYearIndex}
+        showLoanDetails={showLoanDetails}
+        setShowLoanDetails={setShowLoanDetails}
+        formatCurrency={formatCurrency}
+        formatPercentage={formatPercentage}
+      />
+    );
+  }
+
+  return (
     <DesktopProjectionsTable 
       projections={filteredProjections}
       assumptions={assumptions}
@@ -93,10 +107,23 @@ return (
       formatCurrency={formatCurrency}
       formatPercentage={formatPercentage}
     />
-  )
-);
+  );
 };
 
+
+interface MobileProjectionsViewProps {
+  projections: YearProjection[];
+  assumptions: {
+    initialPropertyValue: number;
+    [key: string]: number | string | boolean;
+  };
+  currentYearIndex: number;
+  setCurrentYearIndex: (index: number) => void;
+  showLoanDetails: boolean;
+  setShowLoanDetails: (show: boolean) => void;
+  formatCurrency: (amount: number) => string;
+  formatPercentage: (value: number) => string;
+}
 
 const MobileProjectionsView = ({ 
   projections, 
@@ -107,7 +134,7 @@ const MobileProjectionsView = ({
   setShowLoanDetails,
   formatCurrency, 
   formatPercentage 
-}: any) => {
+}: MobileProjectionsViewProps) => {
   const currentProjection = projections[currentYearIndex];
   
   if (!currentProjection) return null;
@@ -144,13 +171,6 @@ const MobileProjectionsView = ({
   const lvrBarPct = Math.max(0, Math.min(100, rawLvrPct)); // cap bar at 100% while label can exceed
 
   // Expand/collapse state for sections (default collapsed)
-  const [showIncomeDetails, setShowIncomeDetails] = useState(false);
-  const [showExpensesDetails, setShowExpensesDetails] = useState(false);
-  const [showValueDetails, setShowValueDetails] = useState(false);
-  const [showEquityDetails, setShowEquityDetails] = useState(false);
-  const [showTaxDetails, setShowTaxDetails] = useState(false);
-  const [showCashFlowDetailsMobile, setShowCashFlowDetailsMobile] = useState(false);
-  
   const expandAll = () => {
     setShowValueDetails(true);
     setShowEquityDetails(true);
@@ -593,6 +613,29 @@ const MobileProjectionsView = ({
   );
 };
 
+interface DesktopProjectionsTableProps {
+  projections: YearProjection[];
+  assumptions: {
+    initialPropertyValue: number;
+    isConstructionProject: boolean;
+    constructionPeriod: number;
+    initialEquityLoanBalance: number;
+    [key: string]: number | string | boolean;
+  };
+  showLoanDetails: boolean;
+  setShowLoanDetails: (show: boolean) => void;
+  showMortgageDetails: boolean;
+  setShowMortgageDetails: (show: boolean) => void;
+  showOperatingDetails: boolean;
+  setShowOperatingDetails: (show: boolean) => void;
+  showDepreciationDetails: boolean;
+  setShowDepreciationDetails: (show: boolean) => void;
+  showCashFlowDetails: boolean;
+  setShowCashFlowDetails: (show: boolean) => void;
+  formatCurrency: (amount: number) => string;
+  formatPercentage: (value: number) => string;
+}
+
 const DesktopProjectionsTable = ({ 
   projections, 
   assumptions, 
@@ -608,7 +651,7 @@ const DesktopProjectionsTable = ({
   setShowCashFlowDetails,
   formatCurrency, 
   formatPercentage 
-}: any) => {
+}: DesktopProjectionsTableProps) => {
   return (
     <div className="overflow-auto">
       <table className="w-full border-collapse">

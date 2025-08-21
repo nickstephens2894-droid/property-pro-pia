@@ -12,7 +12,7 @@ const Index = () => {
     // SEO
     document.title = authed ? "Dashboard | Property Pro" : "Property Pro – Smart property analysis";
     const desc = authed
-      ? "Analyze properties, projections, clients, and scenarios in your dashboard."
+      ? "Analyze properties, projections, investors, and scenarios in your dashboard."
       : "Analyze property investments, model cash flows, and compare scenarios. Create your free account to get started.";
     let meta = document.querySelector('meta[name="description"]');
     if (!meta) {

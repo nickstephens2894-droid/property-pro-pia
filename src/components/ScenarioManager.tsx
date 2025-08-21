@@ -20,13 +20,14 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-export const ScenarioManager = () => {
+export default function ScenarioManager() {
   const { user } = useAuth();
-  const { propertyData } = usePropertyData();
+  const { loadScenario, propertyData } = usePropertyData();
   const [scenarios, setScenarios] = useState<UserScenario[]>([]);
   const [loading, setLoading] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [scenarioName, setScenarioName] = useState('');
+  const [scenarioDescription, setScenarioDescription] = useState('');
   const [selectedScenario, setSelectedScenario] = useState<UserScenario | null>(null);
 
   // Load user scenarios on mount
@@ -59,16 +60,18 @@ export const ScenarioManager = () => {
 
     setLoading(true);
     try {
-      const scenarioId = await userDataService.saveScenario(user.id, {
+      const success = await userDataService.saveScenario({
+        id: crypto.randomUUID(),
+        userId: user.id,
         name: scenarioName.trim(),
         isPrimary: scenarios.length === 0, // First scenario becomes primary
         propertyData
       });
-
-      if (scenarioId) {
+      if (success) {
         toast.success('Scenario saved successfully');
-        setSaveDialogOpen(false);
         setScenarioName('');
+        setScenarioDescription('');
+        setSaveDialogOpen(false);
         await loadScenarios(); // Refresh the list
       } else {
         toast.error('Failed to save scenario');
@@ -84,7 +87,6 @@ export const ScenarioManager = () => {
   const handleLoadScenario = async (scenario: UserScenario) => {
     try {
       // Update the property data context with the loaded scenario
-      const { loadScenario } = usePropertyData();
       loadScenario(scenario.propertyData);
       toast.success(`Loaded scenario: ${scenario.name}`);
       setSelectedScenario(scenario);
