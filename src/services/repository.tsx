@@ -247,8 +247,9 @@ export function useRepository() {
               id: s.id, 
               name: s.name, 
               is_core: s.isCore,
+              owner_user_id: attachInvestorId,
               created_at: s.createdAt,
-              snapshot: s.snapshot
+              snapshot: s.snapshot as any
             }));
             const { error } = await supabase.from("scenarios").insert(scenarioRows);
             if (error) toast.error(`Failed to import scenarios: ${error.message}`);
@@ -421,8 +422,9 @@ export function useRepository() {
         id: scenario.id, 
         name: scenario.name, 
         is_core: scenario.isCore,
+        owner_user_id: userId,
         created_at: scenario.createdAt,
-        snapshot: scenario.snapshot
+        snapshot: scenario.snapshot as any
       });
       if (error) throw error;
       toast.success("Scenario added successfully");
@@ -443,7 +445,7 @@ export function useRepository() {
       const { error } = await supabase.from("scenarios").update({ 
         name: patch.name,
         is_core: patch.isCore,
-        snapshot: patch.snapshot
+        snapshot: patch.snapshot as any
       }).eq("id", id);
       if (error) throw error;
       toast.success("Scenario updated successfully");

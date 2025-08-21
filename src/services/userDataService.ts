@@ -35,7 +35,7 @@ class UserDataService {
           id: existingProfile.id,
           displayName: existingProfile.display_name,
           email: existingProfile.email,
-          role: existingProfile.role,
+          role: (existingProfile.role as 'individual' | 'advisor') || 'individual',
           createdAt: existingProfile.created_at,
           updatedAt: existingProfile.updated_at
         };
@@ -62,7 +62,7 @@ class UserDataService {
         id: newProfile.id,
         displayName: newProfile.display_name,
         email: newProfile.email,
-        role: newProfile.role,
+        role: (newProfile.role as 'individual' | 'advisor') || 'individual',
         createdAt: newProfile.created_at,
         updatedAt: newProfile.updated_at
       };
@@ -98,7 +98,7 @@ class UserDataService {
       const { data, error } = await supabase
         .from('scenarios')
         .insert({
-          client_id: userId,
+          owner_user_id: userId,
           name: scenario.name,
           is_core: scenario.isPrimary,
           snapshot: scenario.propertyData as any
@@ -124,7 +124,7 @@ class UserDataService {
       const { data, error } = await supabase
         .from('scenarios')
         .select('*')
-        .eq('client_id', userId)
+        .eq('owner_user_id', userId)
         .order('updated_at', { ascending: false });
 
       if (error) {
@@ -226,7 +226,7 @@ class UserDataService {
       await supabase
         .from('scenarios')
         .update({ is_core: false })
-        .eq('client_id', userId);
+        .eq('owner_user_id', userId);
 
       // Then set the specified scenario as primary
       const { error } = await supabase

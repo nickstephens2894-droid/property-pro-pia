@@ -434,11 +434,11 @@ const EditProperty = () => {
                     <NumberInput
                       id="rental_growth_rate"
                       value={formData.rental_growth_rate}
-                      onChange={(value) => handleInputChange('rental_growth_rate', value)}
+                      onChange={(value) => handleInputChange('rental_growth_rate', Number(value))}
                       placeholder="3.0"
                       min={0}
                       max={20}
-                      step={0.1}
+                       step="0.1"
                       formatThousands={false}
                     />
                   </div>
@@ -513,11 +513,11 @@ const EditProperty = () => {
                     <NumberInput
                       id="property_management"
                       value={formData.property_management}
-                      onChange={(value) => handleInputChange('property_management', value)}
+                      onChange={(value) => handleInputChange('property_management', Number(value))}
                       placeholder="8.0"
                       min={0}
                       max={20}
-                      step={0.1}
+                      step="0.1"
                       formatThousands={false}
                     />
                   </div>
