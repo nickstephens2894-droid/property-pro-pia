@@ -102,6 +102,22 @@ const CreateProperty = () => {
     }));
   };
 
+  // Auto-calculate purchase price for House & Land - Construction
+  useEffect(() => {
+    if (formData.property_method === 'house-land-construction') {
+      const calculatedPrice = formData.land_value + formData.construction_value;
+      setFormData(prev => {
+        if (prev.purchase_price !== calculatedPrice) {
+          return {
+            ...prev,
+            purchase_price: calculatedPrice
+          };
+        }
+        return prev;
+      });
+    }
+  }, [formData.property_method, formData.land_value, formData.construction_value]);
+
   // Auto-calculate stamp duty when location, purchase price, or land value changes
   useEffect(() => {
     if (formData.location) {
@@ -298,13 +314,30 @@ const CreateProperty = () => {
               <CardContent className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="purchase_price">Purchase Price</Label>
+                    <Label htmlFor="purchase_price">
+                      Purchase Price
+                      {formData.property_method === 'house-land-construction' && (
+                        <span className="text-xs text-muted-foreground ml-1">(Auto-calculated)</span>
+                      )}
+                    </Label>
                     <CurrencyInput
                       id="purchase_price"
                       value={formData.purchase_price}
                       onChange={(value) => handleInputChange('purchase_price', value)}
                       placeholder="0"
+                      disabled={formData.property_method === 'house-land-construction'}
+                      className={formData.property_method === 'house-land-construction' ? "bg-muted" : ""}
                     />
+                    {formData.property_method === 'house-land-construction' && (
+                      <p className="text-xs text-muted-foreground">
+                        Calculated as Land Value + Construction Value
+                        {formData.purchase_price > 0 && (
+                          <span className="block mt-1 font-medium text-green-600">
+                            ${formData.land_value.toLocaleString()} + ${formData.construction_value.toLocaleString()} = ${formData.purchase_price.toLocaleString()}
+                          </span>
+                        )}
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="weekly_rent">Weekly Rent</Label>
