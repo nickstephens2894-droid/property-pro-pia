@@ -7,7 +7,7 @@ import {
 } from '@/types/propertyModels';
 
 export class PropertyModelsService {
-  private static TABLE_NAME = 'property_models';
+  private static TABLE_NAME = 'properties'; // Changed from property_models to properties
 
   /**
    * Get all property models for the current user

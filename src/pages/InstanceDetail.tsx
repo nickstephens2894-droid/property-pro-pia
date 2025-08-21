@@ -512,7 +512,9 @@ const InstanceDetail = () => {
     insurance: propertyData.insurance || 0,
     repairs: propertyData.repairs || 0,
     expenseInflationRate: 2.5,
-    depreciationYear1: depreciation.total || 15000
+    depreciationYear1: depreciation.total || 15000,
+    isConstructionProject: propertyData.isConstructionProject || false,
+    constructionPeriod: propertyData.constructionPeriod || 0
   }), [propertyData, totalProjectCost, funding, depreciation.total]);
 
   // Calculate tax results for investors

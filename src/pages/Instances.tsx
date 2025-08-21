@@ -55,12 +55,8 @@ const Instances = () => {
               icon={Building2}
               title="No instances yet"
               description="Create your first property investment instance to get started with analysis and projections."
-              action={
-                <Button onClick={handleAddInstance} size="lg">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create First Instance
-                </Button>
-              }
+              actionLabel="Create First Instance"
+              onAction={handleAddInstance}
             />
           </div>
         </div>
@@ -90,12 +86,8 @@ const Instances = () => {
               icon={Building2}
               title="No instances yet"
               description="Create your first property investment instance to get started with analysis and projections."
-              action={
-                <Button onClick={handleAddInstance} size="lg">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create First Instance
-                </Button>
-              }
+              actionLabel="Create First Instance"
+              onAction={handleAddInstance}
             />
           </div>
         </div>

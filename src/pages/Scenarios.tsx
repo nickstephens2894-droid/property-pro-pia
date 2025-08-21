@@ -10,11 +10,13 @@ import { Plus, Edit, Trash2, Copy, Save, FileText, Calendar, User, X, Star } fro
 import { Textarea } from "@/components/ui/textarea";
 import { useScenarios, type Scenario } from "@/hooks/useScenarios";
 import { useProperties } from "@/hooks/useProperties";
+import { useAuth } from "@/contexts/AuthContext";
 import { SearchAndFilters } from "@/components/ui/search-and-filters";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { formatDate } from "@/utils/formatters";
 
 export default function Scenarios() {
+  const { user } = useAuth();
   const {
     scenarios,
     loading,
@@ -148,6 +150,7 @@ export default function Scenarios() {
       } else {
         await createScenario({
           name: scenarioForm.name.trim(),
+          owner_user_id: user?.id || '',
           is_core: scenarioForm.isCore,
           snapshot: snapshot
         });
@@ -523,7 +526,7 @@ export default function Scenarios() {
                           <label htmlFor={`property-${property.id}`} className="flex-1 cursor-pointer">
                             <div className="font-medium text-sm">{property.name}</div>
                             <div className="text-xs text-muted-foreground">
-                              {property.propertyType || 'Unknown'} • ${property.currentPropertyValue?.toLocaleString() || 'N/A'}
+                              {property.type || 'Unknown'} • ${property.purchasePrice?.toLocaleString() || 'N/A'}
                             </div>
                           </label>
                         </div>

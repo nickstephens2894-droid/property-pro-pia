@@ -29,6 +29,9 @@ interface PropertiesProviderProps {
   children: React.ReactNode;
 }
 
+// Re-export PropertyModel for external use
+export type { PropertyModel } from '@/types/propertyModels';
+
 export const PropertiesProvider: React.FC<PropertiesProviderProps> = ({ children }) => {
   const [properties, setProperties] = useState<PropertyModel[]>([]);
   const [loading, setLoading] = useState(true);

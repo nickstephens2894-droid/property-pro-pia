@@ -149,7 +149,7 @@ export function useRepository() {
       const mergedProperties: Property[] = (dbProperties ?? []).map((p) => ({
         id: p.id,
         name: p.name,
-        type: p.type as Property["type"],
+        type: (p.type as Property["type"]) || "Other",
         purchasePrice: num(p.purchase_price),
         weeklyRent: num(p.weekly_rent),
         location: p.location || undefined,

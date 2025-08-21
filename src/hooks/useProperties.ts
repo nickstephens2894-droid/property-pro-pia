@@ -124,8 +124,8 @@ export function useProperties() {
       const mappedProperties: Property[] = (propertiesData || []).map(prop => ({
         id: prop.id,
         name: prop.name,
-        type: prop.type,
-        status: prop.status,
+        type: (prop.type as Property["type"]) || "Other",
+        status: (prop.status as Property["status"]) || "current",
         ownedOrPotential: prop.owned_or_potential || 'Owned',
         isConstructionProject: Boolean(prop.is_construction_project),
         constructionYear: Number(prop.construction_year) || new Date().getFullYear(),
