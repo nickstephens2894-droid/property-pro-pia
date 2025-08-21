@@ -244,7 +244,7 @@ export const PropertyCalculationDetails = ({
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Current Weekly Payment:</span>
+                      <span className="text-sm">Current Monthly Payment:</span>
                       <span className="font-bold text-destructive">${mainLoanPayments.currentPayment.toFixed(2)}</span>
                     </div>
                     
@@ -257,7 +257,7 @@ export const PropertyCalculationDetails = ({
                         {mainLoanPayments.futurePayment > 0 && (
                           <div className="flex justify-between items-center">
                             <span className="text-sm">Future P&I Payment:</span>
-                            <span className="font-bold text-warning">${mainLoanPayments.futurePayment.toFixed(2)}/week</span>
+                            <span className="font-bold text-warning">${mainLoanPayments.futurePayment.toFixed(2)}/month</span>
                           </div>
                         )}
                       </div>
@@ -281,7 +281,7 @@ export const PropertyCalculationDetails = ({
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-sm">Current Weekly Payment:</span>
+                        <span className="text-sm">Current Monthly Payment:</span>
                         <span className="font-bold text-destructive">${equityLoanPayments.currentPayment.toFixed(2)}</span>
                       </div>
                       
@@ -293,7 +293,7 @@ export const PropertyCalculationDetails = ({
                           </div>
                           <div className="flex justify-between items-center">
                             <span className="text-sm">Future P&I Payment:</span>
-                            <span className="font-bold text-warning">${equityLoanPayments.futurePayment.toFixed(2)}/week</span>
+                            <span className="font-bold text-warning">${equityLoanPayments.futurePayment.toFixed(2)}/month</span>
                           </div>
                         </div>
                       )}
