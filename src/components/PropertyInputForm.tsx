@@ -617,10 +617,10 @@ export const PropertyInputForm = ({
   <div className="space-y-2">
     <Label className="text-sm font-medium">State</Label>
     <Select
-      value={(propertyData as any).PropertyState ?? 'VIC'}
+      value={propertyData.propertyState ?? 'VIC'}
       onValueChange={(value) => {
         const v = value as Jurisdiction;
-        updateField('PropertyState' as any, v);
+        updateField('propertyState', v);
         const dutiableValue = propertyData.isConstructionProject ? propertyData.landValue : propertyData.purchasePrice;
         const duty = calculateStampDuty(dutiableValue, v);
         updateFieldWithCascade('stampDuty', duty);
