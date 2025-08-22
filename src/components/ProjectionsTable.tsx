@@ -349,7 +349,7 @@ const MobileProjectionsView = ({
                   {/* Main Loan Details */}
                   <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-3 mt-2">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium">Main Loan ({(assumptions.mainLoanType as string).toUpperCase()})</span>
+                      <span className="text-sm font-medium">Main Loan ({(assumptions.mainLoanType as string || 'pi').toUpperCase()})</span>
                       <Badge variant={currentProjection.mainLoanIOStatus === 'IO' ? 'secondary' : 'default'}>
                         {currentProjection.mainLoanIOStatus}
                       </Badge>
@@ -372,7 +372,7 @@ const MobileProjectionsView = ({
                   {(assumptions.initialEquityLoanBalance as number) > 0 && (
                     <div className="bg-green-50 dark:bg-green-950/20 rounded-lg p-3 mt-2">
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium">Equity Loan ({(assumptions.equityLoanType as string).toUpperCase()})</span>
+                        <span className="text-sm font-medium">Equity Loan ({(assumptions.equityLoanType as string || 'pi').toUpperCase()})</span>
                         <Badge variant={currentProjection.equityLoanIOStatus === 'IO' ? 'secondary' : 'default'}>
                           {currentProjection.equityLoanIOStatus}
                         </Badge>

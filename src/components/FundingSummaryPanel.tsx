@@ -350,7 +350,7 @@ export const FundingSummaryPanel = () => {
             {/* Main Loan */}
             <Collapsible open={expandedSections.includes('main-loan')} onOpenChange={() => toggleSection('main-loan')}>
               <CollapsibleTrigger className="flex items-center justify-between w-full text-sm hover:bg-muted/50 p-2 rounded">
-                <span>Main Loan ({propertyData.mainLoanType.toUpperCase()})</span>
+                <span>Main Loan ({(propertyData.mainLoanType || 'pi').toUpperCase()})</span>
                 <div className="flex items-center gap-2">
                   <span className="font-medium">${mainLoanAmount.toLocaleString()}</span>
                   {expandedSections.includes('main-loan') ? 
@@ -385,7 +385,7 @@ export const FundingSummaryPanel = () => {
             {propertyData.useEquityFunding && (
               <Collapsible open={expandedSections.includes('equity-loan')} onOpenChange={() => toggleSection('equity-loan')}>
                 <CollapsibleTrigger className="flex items-center justify-between w-full text-sm hover:bg-muted/50 p-2 rounded">
-                  <span>Equity Loan ({propertyData.equityLoanType.toUpperCase()})</span>
+                  <span>Equity Loan ({(propertyData.equityLoanType || 'pi').toUpperCase()})</span>
                   <div className="flex items-center gap-2">
                     <span className="font-medium">${equityLoanAmount.toLocaleString()}</span>
                     {expandedSections.includes('equity-loan') ? 
