@@ -187,19 +187,46 @@ const AddInstance = () => {
 
   // Calculate total household tax difference from property taxable income, indexing investor incomes by CPI
   const calculateTotalTaxDifference = (propertyTaxableIncome: number, year: number) => {
+    console.log('🔍 calculateTotalTaxDifference called:', { propertyTaxableIncome, year });
+    console.log('📊 Investors data:', propertyData.investors);
+    console.log('📊 Ownership allocations:', propertyData.ownershipAllocations);
+    
     const cpiMultiplier = year >= 1 ? Math.pow(1 + 2.5 / 100, year - 1) : 1;
     let totalDifference = 0;
+    
+    if (!propertyData.investors || propertyData.investors.length === 0) {
+      console.log('⚠️ No investors found in propertyData');
+      return 0;
+    }
+    
     propertyData.investors.forEach(investor => {
       const ownership = propertyData.ownershipAllocations.find(o => o.investorId === investor.id);
       const ownershipPercentage = ownership ? ownership.ownershipPercentage / 100 : 0;
+      console.log(`👤 Processing investor ${investor.name}:`, { 
+        ownershipPercentage, 
+        annualIncome: investor.annualIncome,
+        otherIncome: investor.otherIncome 
+      });
+      
       if (ownershipPercentage > 0) {
         const baseIncome = (investor.annualIncome + investor.otherIncome) * cpiMultiplier;
         const allocatedPropertyIncome = propertyTaxableIncome * ownershipPercentage;
         const taxWithoutProperty = totalTaxAU(baseIncome, investor.hasMedicareLevy);
         const taxWithProperty = totalTaxAU(baseIncome + allocatedPropertyIncome, investor.hasMedicareLevy);
+        
+        console.log(`💰 Tax calculation for ${investor.name}:`, {
+          baseIncome,
+          allocatedPropertyIncome,
+          taxWithoutProperty,
+          taxWithProperty,
+          difference: taxWithProperty - taxWithoutProperty
+        });
+        
         totalDifference += taxWithProperty - taxWithoutProperty;
       }
     });
+    
+    console.log('💸 Total tax difference:', totalDifference);
     return totalDifference;
   };
 

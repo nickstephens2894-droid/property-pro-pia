@@ -37,5 +37,17 @@ export const medicareLevyAU = (income: number, apply: boolean): number => {
 };
 
 export const totalTaxAU = (income: number, hasMedicareLevy: boolean): number => {
-  return incomeTaxAU(income) + medicareLevyAU(income, hasMedicareLevy);
+  const incomeTax = incomeTaxAU(income);
+  const medicareLevy = medicareLevyAU(income, hasMedicareLevy);
+  const total = incomeTax + medicareLevy;
+  
+  console.log(`💰 totalTaxAU calculation:`, { 
+    income, 
+    hasMedicareLevy, 
+    incomeTax, 
+    medicareLevy, 
+    total 
+  });
+  
+  return total;
 };
