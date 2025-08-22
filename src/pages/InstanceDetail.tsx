@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -95,6 +95,8 @@ const InstanceDetail = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const debouncedSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Track changes to mark as unsaved
   // Warn before page unload if there are unsaved changes
@@ -117,9 +119,16 @@ const InstanceDetail = () => {
         try {
           setLoading(true);
           const instanceData = getInstance(id);
-          if (instanceData) {
-            setInstance(instanceData);
-            // Apply the instance data to the property context
+        if (instanceData) {
+          setInstance(instanceData);
+          console.log('🔄 Loading instance data:', {
+            constructionValue: instanceData.construction_value,
+            buildingValue: instanceData.building_value,
+            plantEquipmentValue: instanceData.plant_equipment_value
+          });
+          
+          // Only apply preset if not already loaded and not in edit mode
+          if (!isDataLoaded && !isEditMode) {
             applyPreset({
               investors: instanceData.investors as any,
               ownershipAllocations: instanceData.ownership_allocations as any,
@@ -175,7 +184,9 @@ const InstanceDetail = () => {
               currentPropertyMethod: instanceData.property_method as any,
               currentFundingMethod: instanceData.funding_method as any
             }, instanceData.property_method as any, instanceData.funding_method as any);
+            setIsDataLoaded(true);
           }
+        }
         } catch (error) {
           console.error('Failed to load instance:', error);
         } finally {
@@ -189,11 +200,39 @@ const InstanceDetail = () => {
 
   // Track changes to mark as unsaved
   useEffect(() => {
-    if (instance && isEditMode) {
-      // This will trigger whenever propertyData changes in edit mode
-      setHasUnsavedChanges(true);
+    const trackChanges = () => {
+      if (isDataLoaded && !loading) {
+        setHasUnsavedChanges(true);
+      }
+    };
+    
+    // Listen for property data changes after initial load
+    if (propertyData && isDataLoaded && !loading) {
+      trackChanges();
     }
-  }, [propertyData, isEditMode, instance]);
+  }, [propertyData, loading, isDataLoaded]);
+
+  // Debounced auto-save when in edit mode
+  useEffect(() => {
+    if (hasUnsavedChanges && isEditMode && !saving && isDataLoaded) {
+      // Clear existing timeout
+      if (debouncedSaveTimeoutRef.current) {
+        clearTimeout(debouncedSaveTimeoutRef.current);
+      }
+      
+      // Set new timeout for debounced save
+      debouncedSaveTimeoutRef.current = setTimeout(() => {
+        console.log('💾 Auto-saving changes...');
+        handleSaveInstance();
+      }, 3000); // Auto-save after 3 seconds of inactivity
+    }
+    
+    return () => {
+      if (debouncedSaveTimeoutRef.current) {
+        clearTimeout(debouncedSaveTimeoutRef.current);
+      }
+    };
+  }, [hasUnsavedChanges, isEditMode, saving, isDataLoaded]);
 
   // Convert propertyData back to instance format for saving
   const convertPropertyDataToInstance = () => {

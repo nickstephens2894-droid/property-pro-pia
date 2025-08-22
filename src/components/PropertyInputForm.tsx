@@ -113,6 +113,15 @@ const PercentageInput = ({
     const inputValue = e.target.value;
     // Allow any input while typing - we'll validate and format on blur
     setDisplayValue(inputValue);
+    
+    // Protect this field from external updates while editing
+    if (typeof onChange === 'function') {
+      // Get field protection if available through context
+      const protectField = (window as any).__protectField;
+      if (protectField) {
+        protectField(id, 2000);
+      }
+    }
   };
 
   const handleBlur = () => {
@@ -164,6 +173,14 @@ export const PropertyInputForm = ({
   const [openSections, setOpenSections] = useState<string[]>(["personal-profile"]);
   const { confirmations, updateConfirmation } = useFieldConfirmations();
   const { protectField, isFieldProtected } = useInputProtection();
+  
+  // Make protectField available globally for input components
+  useEffect(() => {
+    (window as any).__protectField = protectField;
+    return () => {
+      delete (window as any).__protectField;
+    };
+  }, [protectField]);
   const { applyPreset, calculateEquityLoanAmount, calculateAvailableEquity, calculateHoldingCosts: ctxCalculateHoldingCosts, calculateFundingAnalysis } = usePropertyData();
   const [pendingUpdate, setPendingUpdate] = useState<{
     field: keyof PropertyData;
@@ -201,6 +218,11 @@ export const PropertyInputForm = ({
 
   // Enhanced updateField with cascading updates and confirmations
   const updateFieldWithCascade = useCallback((field: keyof PropertyData, value: any) => {
+    console.log('🔄 updateFieldWithCascade:', field, value, 'isUpdatingCascade:', isUpdatingCascade);
+    
+    // Protect the field being updated
+    protectField(field as string, 2000);
+    
     // Prevent cascading updates during cascade execution
     if (isUpdatingCascade) {
       updateField(field, value);
@@ -221,9 +243,11 @@ export const PropertyInputForm = ({
     
     // Execute the update
     executeFieldUpdate(field, value);
-  }, [propertyData, updateField, confirmations, isUpdatingCascade]);
+  }, [propertyData, updateField, confirmations, isUpdatingCascade, protectField]);
 
   const executeFieldUpdate = useCallback((field: keyof PropertyData, value: any) => {
+    console.log('⚡ executeFieldUpdate:', field, value, 'current:', propertyData[field]);
+    
     // Update the field first
     updateField(field, value);
     
@@ -232,14 +256,19 @@ export const PropertyInputForm = ({
     
     setIsUpdatingCascade(true);
     
-    // Handle cascading updates with debouncing
+    // Handle cascading updates with debouncing - aligned with protection timeout
     setTimeout(() => {
+      console.log('🔄 Cascade timeout executing for field:', field);
+      
       if (field === 'constructionValue' && !isFieldProtected('buildingValue') && !isFieldProtected('plantEquipmentValue')) {
         // Only split if the value actually changed and target fields aren't protected
         const currentTotal = propertyData.buildingValue + propertyData.plantEquipmentValue;
+        console.log('🏗️ Construction value split check:', { value, currentTotal, diff: Math.abs(currentTotal - value) });
+        
         if (Math.abs(currentTotal - value) > 100) {
           const buildingValue = Math.round(value * 0.9);
           const plantEquipmentValue = Math.round(value * 0.1);
+          console.log('🏗️ Splitting construction value:', { buildingValue, plantEquipmentValue });
           updateField('buildingValue', buildingValue);
           updateField('plantEquipmentValue', plantEquipmentValue);
         }
@@ -249,8 +278,17 @@ export const PropertyInputForm = ({
         const newPlantEquipmentValue = field === 'plantEquipmentValue' ? value : propertyData.plantEquipmentValue;
         const newTotal = newBuildingValue + newPlantEquipmentValue;
         
+        console.log('🏗️ Building/equipment update:', { 
+          field, 
+          value, 
+          newTotal, 
+          currentConstructionValue: propertyData.constructionValue,
+          diff: Math.abs(propertyData.constructionValue - newTotal)
+        });
+        
         // Only update if the total actually differs
         if (Math.abs(propertyData.constructionValue - newTotal) > 10) {
+          console.log('🏗️ Updating construction value to:', newTotal);
           updateField('constructionValue', newTotal);
         }
       }
@@ -264,8 +302,8 @@ export const PropertyInputForm = ({
       }
       
       setIsUpdatingCascade(false);
-    }, 100);
-  }, [propertyData, updateField, isUpdatingCascade]);
+    }, 500); // Increased timeout to allow protection to fully establish
+  }, [propertyData, updateField, isUpdatingCascade, isFieldProtected]);
 
   const handleConfirmUpdate = useCallback((dontShowAgain: boolean) => {
     if (!pendingUpdate) return;
