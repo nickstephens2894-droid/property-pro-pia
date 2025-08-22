@@ -20,6 +20,7 @@ import { PropertyCalculationDetails } from "@/components/PropertyCalculationDeta
 import { usePropertyData } from "@/contexts/PropertyDataContext";
 import { useInstances } from "@/contexts/InstancesContext";
 import { Instance } from "@/integrations/supabase/types";
+import { useToast } from "@/hooks/use-toast";
 
 // Import utility functions
 import { downloadInputsCsv } from "@/utils/csvExport";
@@ -82,7 +83,8 @@ const InstanceDetail = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { propertyData, updateField, calculateTotalProjectCost, calculateEquityLoanAmount, calculateHoldingCosts, applyPreset } = usePropertyData();
-  const { getInstance, loading: instancesLoading } = useInstances();
+  const { getInstance, updateInstance, loading: instancesLoading } = useInstances();
+  const { toast } = useToast();
 
   // State for the instance
   const [instance, setInstance] = useState<Instance | null>(null);
@@ -90,6 +92,24 @@ const InstanceDetail = () => {
   const [activeTab, setActiveTab] = useState("analysis");
   const [yearRange, setYearRange] = useState<[number, number]>([1, 30]);
   const [viewMode, setViewMode] = useState<'year' | 'table'>("table");
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Track changes to mark as unsaved
+  // Warn before page unload if there are unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges && isEditMode) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges, isEditMode]);
 
   useEffect(() => {
     if (id) {
@@ -166,6 +186,202 @@ const InstanceDetail = () => {
       loadInstance();
     }
   }, [id, getInstance, applyPreset]);
+
+  // Track changes to mark as unsaved
+  useEffect(() => {
+    if (instance && isEditMode) {
+      // This will trigger whenever propertyData changes in edit mode
+      setHasUnsavedChanges(true);
+    }
+  }, [propertyData, isEditMode, instance]);
+
+  // Convert propertyData back to instance format for saving
+  const convertPropertyDataToInstance = () => {
+    if (!instance) return null;
+    
+    return {
+      name: instance.name, // Keep original name for now
+      description: null, // Instance doesn't have description field in schema
+      status: instance.status,
+      property_type: propertyData.propertyType || 'Apartment',
+      property_method: propertyData.currentPropertyMethod || 'built-first-owner',
+      location: propertyData.location || 'NSW',
+      purchase_price: propertyData.purchasePrice || 0,
+      weekly_rent: propertyData.weeklyRent || 0,
+      rental_growth_rate: propertyData.rentalGrowthRate || 5.0,
+      vacancy_rate: propertyData.vacancyRate || 2.0,
+      capital_growth_rate: 7.0, // Default value as it's not in PropertyData
+      is_construction_project: propertyData.isConstructionProject || false,
+      construction_year: propertyData.constructionYear || 2025,
+      land_value: propertyData.landValue || 0,
+      construction_value: propertyData.constructionValue || 0,
+      construction_period: propertyData.constructionPeriod || 0,
+      construction_interest_rate: propertyData.constructionInterestRate || 7.0,
+      building_value: propertyData.buildingValue || 0,
+      plant_equipment_value: propertyData.plantEquipmentValue || 0,
+      construction_progress_payments: propertyData.constructionProgressPayments || [],
+      stamp_duty: propertyData.stampDuty || 0,
+      legal_fees: propertyData.legalFees || 0,
+      inspection_fees: propertyData.inspectionFees || 0,
+      council_fees: propertyData.councilFees || 0,
+      architect_fees: propertyData.architectFees || 0,
+      site_costs: propertyData.siteCosts || 0,
+      property_management: propertyData.propertyManagement || 8.0,
+      council_rates: propertyData.councilRates || 0,
+      insurance: propertyData.insurance || 0,
+      repairs: propertyData.repairs || 0,
+      is_new_property: propertyData.isNewProperty || true,
+      deposit: propertyData.deposit || 0,
+      loan_amount: propertyData.loanAmount || 0,
+      interest_rate: propertyData.interestRate || 6.0,
+      loan_term: propertyData.loanTerm || 30,
+      lvr: propertyData.lvr || 80,
+      main_loan_type: propertyData.mainLoanType || 'pi',
+      io_term_years: propertyData.ioTermYears || 5,
+      use_equity_funding: propertyData.useEquityFunding || false,
+      primary_property_value: propertyData.primaryPropertyValue || 0,
+      existing_debt: propertyData.existingDebt || 0,
+      max_lvr: propertyData.maxLVR || 80,
+      equity_loan_type: propertyData.equityLoanType || 'pi',
+      equity_loan_io_term_years: propertyData.equityLoanIoTermYears || 3,
+      equity_loan_interest_rate: propertyData.equityLoanInterestRate || 7.2,
+      equity_loan_term: propertyData.equityLoanTerm || 25,
+      deposit_amount: propertyData.depositAmount || 0,
+      minimum_deposit_required: propertyData.minimumDepositRequired || 0,
+      holding_cost_funding: propertyData.holdingCostFunding || 'cash',
+      holding_cost_cash_percentage: propertyData.holdingCostCashPercentage || 100,
+      capitalize_construction_costs: propertyData.capitalizeConstructionCosts || false,
+      construction_equity_repayment_type: propertyData.constructionEquityRepaymentType || 'io',
+      land_holding_interest: propertyData.landHoldingInterest || 0,
+      construction_holding_interest: propertyData.constructionHoldingInterest || 0,
+      total_holding_costs: propertyData.totalHoldingCosts || 0,
+      investors: propertyData.investors as any || [],
+      ownership_allocations: propertyData.ownershipAllocations as any || [],
+      total_project_cost: totalProjectCost,
+      equity_loan_amount: equityLoanAmount,
+      available_equity: 0, // Will be calculated
+      minimum_cash_required: 0, // Will be calculated
+      actual_cash_deposit: propertyData.depositAmount || 0, // Use depositAmount as fallback
+      funding_shortfall: 0, // Will be calculated
+      funding_surplus: 0, // Will be calculated
+      projections: [], // Will be calculated on save
+      assumptions: {}, // Will be calculated on save
+      weekly_cashflow_year1: investmentSummary.weeklyAfterTaxCashFlowSummary,
+      tax_savings_year1: -investmentSummary.taxDifferenceSummary,
+      tax_savings_total: investmentSummary.taxSavingsTotal,
+      net_equity_at_year_to: investmentSummary.equityAtYearTo,
+      roi_at_year_to: investmentSummary.roiAtYearTo,
+      analysis_year_to: yearRange[1],
+      depreciation_method: propertyData.depreciationMethod || 'prime-cost',
+      funding_method: propertyData.currentFundingMethod,
+      property_state: propertyData.propertyState || 'VIC'
+    };
+  };
+
+  const handleSaveInstance = async () => {
+    if (!instance || !id) return;
+    
+    try {
+      setSaving(true);
+      const instanceUpdates = convertPropertyDataToInstance();
+      
+      if (instanceUpdates) {
+        await updateInstance(id, instanceUpdates);
+        setHasUnsavedChanges(false);
+        setIsEditMode(false);
+        
+        toast({
+          title: "Instance Updated",
+          description: "Your instance has been successfully updated.",
+        });
+      }
+    } catch (error) {
+      console.error('Failed to save instance:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update instance. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    if (hasUnsavedChanges) {
+      if (confirm('You have unsaved changes. Are you sure you want to discard them?')) {
+        setIsEditMode(false);
+        setHasUnsavedChanges(false);
+        // Reload the instance data to reset any changes
+        if (instance) {
+          applyPreset({
+            investors: instance.investors as any,
+            ownershipAllocations: instance.ownership_allocations as any,
+            isConstructionProject: instance.is_construction_project,
+            purchasePrice: instance.purchase_price,
+            weeklyRent: instance.weekly_rent,
+            rentalGrowthRate: instance.rental_growth_rate,
+            vacancyRate: instance.vacancy_rate,
+            constructionYear: instance.construction_year,
+            buildingValue: instance.building_value,
+            plantEquipmentValue: instance.plant_equipment_value,
+            landValue: instance.land_value,
+            constructionValue: instance.construction_value,
+            constructionPeriod: instance.construction_period,
+            constructionInterestRate: instance.construction_interest_rate,
+            constructionProgressPayments: instance.construction_progress_payments as any,
+            deposit: instance.deposit,
+            loanAmount: instance.loan_amount,
+            interestRate: instance.interest_rate,
+            loanTerm: instance.loan_term,
+            lvr: instance.lvr,
+            mainLoanType: instance.main_loan_type,
+            ioTermYears: instance.io_term_years,
+            useEquityFunding: instance.use_equity_funding,
+            primaryPropertyValue: instance.primary_property_value,
+            existingDebt: instance.existing_debt,
+            maxLVR: instance.max_lvr,
+            equityLoanType: instance.equity_loan_type,
+            equityLoanIoTermYears: instance.equity_loan_io_term_years,
+            equityLoanInterestRate: instance.equity_loan_interest_rate,
+            equityLoanTerm: instance.equity_loan_term,
+            depositAmount: instance.deposit_amount,
+            minimumDepositRequired: instance.minimum_deposit_required,
+            holdingCostFunding: instance.holding_cost_funding,
+            holdingCostCashPercentage: instance.holding_cost_cash_percentage,
+            capitalizeConstructionCosts: instance.capitalize_construction_costs,
+            constructionEquityRepaymentType: instance.construction_equity_repayment_type,
+            landHoldingInterest: instance.land_holding_interest,
+            constructionHoldingInterest: instance.construction_holding_interest,
+            totalHoldingCosts: instance.total_holding_costs,
+            stampDuty: instance.stamp_duty,
+            legalFees: instance.legal_fees,
+            inspectionFees: instance.inspection_fees,
+            councilFees: instance.council_fees,
+            architectFees: instance.architect_fees,
+            siteCosts: instance.site_costs,
+            propertyManagement: instance.property_management,
+            councilRates: instance.council_rates,
+            insurance: instance.insurance,
+            repairs: instance.repairs,
+            depreciationMethod: instance.depreciation_method,
+            isNewProperty: instance.is_new_property,
+            currentPropertyMethod: instance.property_method as any,
+            currentFundingMethod: instance.funding_method as any
+          }, instance.property_method as any, instance.funding_method as any);
+        }
+      }
+    } else {
+      setIsEditMode(false);
+    }
+  };
+
+  const enhancedUpdateField = (field: keyof typeof propertyData, value: any) => {
+    updateField(field, value);
+    if (isEditMode) {
+      setHasUnsavedChanges(true);
+    }
+  };
 
   // Calculate all the necessary values for the components
   const totalProjectCost = calculateTotalProjectCost();
@@ -666,7 +882,7 @@ const InstanceDetail = () => {
   }, [projections, yearRange, propertyData.investors]);
 
   const handleEdit = () => {
-    navigate(`/instances/${id}/edit`);
+    setIsEditMode(true);
   };
 
   const handleDelete = () => {
@@ -725,11 +941,21 @@ const InstanceDetail = () => {
           {/* Instance Info Header - All on same row */}
           <div className="flex items-center gap-4">
             {/* Instance Details - Enhanced */}
-            <Card className="flex-1 min-w-0 border-2 border-dashed border-muted-foreground/20 hover:border-primary/30 transition-colors">
+            <Card className={`flex-1 min-w-0 border-2 ${isEditMode ? 'border-primary' : 'border-dashed border-muted-foreground/20'} ${isEditMode ? 'border-primary/50' : 'hover:border-primary/30'} transition-colors`}>
               <CardHeader className="pb-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-primary"></div>
+                  <div className={`w-2 h-2 rounded-full ${isEditMode ? 'bg-orange-500' : 'bg-primary'}`}></div>
                   <CardTitle className="text-2xl">{instance.name}</CardTitle>
+                  {isEditMode && (
+                    <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full">
+                      EDITING
+                    </span>
+                  )}
+                  {hasUnsavedChanges && (
+                    <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">
+                      UNSAVED
+                    </span>
+                  )}
                 </div>
                 <CardDescription className="text-base">
                   {instance.property_method || 'Property'} • ${instance.purchase_price.toLocaleString()} • ${instance.weekly_rent}/week
@@ -755,41 +981,83 @@ const InstanceDetail = () => {
 
             {/* Action Buttons - Horizontal layout */}
             <div className="flex gap-3">
-              <Button 
-                variant="outline" 
-                onClick={() => downloadInputsCsv(propertyData)}
-                className="flex items-center gap-2 px-4 py-2 h-auto"
-              >
-                <Download className="h-4 w-4" />
-                <div className="text-left">
-                  <div className="font-medium">Export CSV</div>
-                  <div className="text-xs text-muted-foreground">Download current data</div>
-                </div>
-              </Button>
-              
-              <Button 
-                variant="outline"
-                onClick={handleEdit}
-                className="flex items-center gap-2 px-4 py-2 h-auto"
-              >
-                <Edit className="h-4 w-4" />
-                <div className="text-left">
-                  <div className="font-medium">Edit Instance</div>
-                  <div className="text-xs text-muted-foreground">Modify settings</div>
-                </div>
-              </Button>
+              {isEditMode ? (
+                <>
+                  <Button 
+                    variant="default" 
+                    onClick={handleSaveInstance}
+                    disabled={saving || !hasUnsavedChanges}
+                    className="flex items-center gap-2 px-4 py-2 h-auto"
+                  >
+                    {saving ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    ) : (
+                      <div className="h-4 w-4 bg-green-500 rounded-full"></div>
+                    )}
+                    <div className="text-left">
+                      <div className="font-medium">
+                        {saving ? 'Saving...' : hasUnsavedChanges ? 'Save Changes' : 'Saved'}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {hasUnsavedChanges ? 'Updates pending' : 'All changes saved'}
+                      </div>
+                    </div>
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    onClick={handleCancelEdit}
+                    disabled={saving}
+                    className="flex items-center gap-2 px-4 py-2 h-auto"
+                  >
+                    <div className="h-4 w-4 bg-gray-400 rounded-full"></div>
+                    <div className="text-left">
+                      <div className="font-medium">Cancel</div>
+                      <div className="text-xs text-muted-foreground">
+                        {hasUnsavedChanges ? 'Discard changes' : 'Exit edit mode'}
+                      </div>
+                    </div>
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => downloadInputsCsv(propertyData)}
+                    className="flex items-center gap-2 px-4 py-2 h-auto"
+                  >
+                    <Download className="h-4 w-4" />
+                    <div className="text-left">
+                      <div className="font-medium">Export CSV</div>
+                      <div className="text-xs text-muted-foreground">Download current data</div>
+                    </div>
+                  </Button>
+                  
+                  <Button 
+                    variant="outline"
+                    onClick={handleEdit}
+                    className="flex items-center gap-2 px-4 py-2 h-auto"
+                  >
+                    <Edit className="h-4 w-4" />
+                    <div className="text-left">
+                      <div className="font-medium">Edit Instance</div>
+                      <div className="text-xs text-muted-foreground">Modify settings</div>
+                    </div>
+                  </Button>
 
-              <Button 
-                variant="destructive"
-                onClick={handleDelete}
-                className="flex items-center gap-2 px-4 py-2 h-auto"
-              >
-                <Trash2 className="h-4 w-4" />
-                <div className="text-left">
-                  <div className="font-medium">Delete Instance</div>
-                  <div className="text-xs text-muted-foreground">Remove permanently</div>
-                </div>
-              </Button>
+                  <Button 
+                    variant="destructive"
+                    onClick={handleDelete}
+                    className="flex items-center gap-2 px-4 py-2 h-auto"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    <div className="text-left">
+                      <div className="font-medium">Delete Instance</div>
+                      <div className="text-xs text-muted-foreground">Remove permanently</div>
+                    </div>
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -813,10 +1081,11 @@ const InstanceDetail = () => {
                 <div className="sticky top-4">
                   <PropertyInputForm
                     propertyData={propertyData}
-                    updateField={updateField}
+                    updateField={enhancedUpdateField}
                     investorTaxResults={investorTaxResults}
                     totalTaxableIncome={0} // Will be calculated
                     marginalTaxRate={0.3} // Will be calculated
+                    isEditMode={isEditMode}
                   />
                 </div>
               </div>

@@ -67,6 +67,7 @@ interface PropertyInputFormProps {
   totalTaxableIncome: number;
   marginalTaxRate: number;
   selectedModel?: any; // Optional prop for selected model
+  isEditMode?: boolean; // Add edit mode prop
 }
 
 
@@ -153,7 +154,8 @@ export const PropertyInputForm = ({
   investorTaxResults,
   totalTaxableIncome, 
   marginalTaxRate,
-  selectedModel 
+  selectedModel,
+  isEditMode = false 
 }: PropertyInputFormProps) => {
   const [openSections, setOpenSections] = useState<string[]>(["personal-profile"]);
   const { confirmations, updateConfirmation } = useFieldConfirmations();
@@ -357,6 +359,19 @@ export const PropertyInputForm = ({
 
   return (
     <div className="space-y-6">
+      {/* Edit Mode Banner */}
+      {isEditMode && (
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+            <h3 className="font-medium text-orange-800">Edit Mode Active</h3>
+          </div>
+          <p className="text-sm text-orange-700 mt-1">
+            You can now modify the investment parameters. Changes will be saved to this instance only.
+          </p>
+        </div>
+      )}
+      
       {/* Validation Warnings */}
       <ValidationWarnings />
       
