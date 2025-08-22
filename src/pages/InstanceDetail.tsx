@@ -570,18 +570,20 @@ const InstanceDetail = () => {
     };
   }, [propertyData, totalProjectCost, funding, depreciation.total]);
 
+  // Calculate annual interest for display use
+  const annualInterest = (projections[0]?.mainInterestYear || 0) + (projections[0]?.equityInterestYear || 0);
+
   // Calculate tax results for investors
   const investorTaxResults = useMemo(() => {
     if (!propertyData.investors || propertyData.investors.length === 0) return [];
     
     const annualRent = (propertyData.weeklyRent || 0) * 52;
     // Calculate total deductible expenses including all tax-deductible items
-    const annualInterest = (projections[0]?.mainInterestYear || 0) + (projections[0]?.equityInterestYear || 0);
     const totalDeductibleExpenses = 
       (propertyData.councilRates || 0) + 
       (propertyData.insurance || 0) + 
       (propertyData.repairs || 0) + 
-      (propertyData.propertyManagement || 0) +
+      ((propertyData.weeklyRent || 0) * 52 * (propertyData.propertyManagement || 0.07) / 100) +
       depreciation.total +
       annualInterest;
     
@@ -831,13 +833,13 @@ const InstanceDetail = () => {
                     councilRates={propertyData.councilRates || 0}
                     insurance={propertyData.insurance || 0}
                     repairs={propertyData.repairs || 0}
-                    totalDeductibleExpenses={
+                     totalDeductibleExpenses={
                       (propertyData.councilRates || 0) + 
                       (propertyData.insurance || 0) + 
                       (propertyData.repairs || 0) + 
                       ((propertyData.weeklyRent || 0) * 52 * (propertyData.propertyManagement || 0.07) / 100) +
                       depreciation.total +
-                      ((projections[0]?.mainInterestYear || 0) + (projections[0]?.equityInterestYear || 0))
+                      annualInterest
                     }
                     depreciation={{
                       capitalWorks: depreciation.capitalWorks,

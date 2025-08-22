@@ -510,14 +510,16 @@ const AddInstance = () => {
     };
   }, [propertyData, totalProjectCost, funding, depreciation.total]);
 
+  // Calculate annual interest for display use
+  const annualInterest = (projections[0]?.mainInterestYear || 0) + (projections[0]?.equityInterestYear || 0);
+
   // Calculate tax results for investors
   const investorTaxResults = useMemo(() => {
     if (!propertyData.investors || propertyData.investors.length === 0) return [];
     
     const annualRent = (propertyData.weeklyRent || 0) * 52;
     // Calculate total deductible expenses including all tax-deductible items
-    const annualInterest = (projections[0]?.mainInterestYear || 0) + (projections[0]?.equityInterestYear || 0);
-    const totalDeductibleExpenses = 
+    const totalDeductibleExpenses =
       (propertyData.councilRates || 0) + 
       (propertyData.insurance || 0) + 
       (propertyData.repairs || 0) + 
@@ -943,7 +945,7 @@ const AddInstance = () => {
                       (propertyData.repairs || 0) + 
                       ((propertyData.weeklyRent || 0) * 52 * (propertyData.propertyManagement || 0.07) / 100) +
                       depreciation.total +
-                      ((projections[0]?.mainInterestYear || 0) + (projections[0]?.equityInterestYear || 0))
+                      annualInterest
                     }
                     depreciation={{
                       capitalWorks: depreciation.capitalWorks,
