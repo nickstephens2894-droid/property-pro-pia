@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { usePropertyData } from "@/contexts/PropertyDataContext";
 import { getSectionGuidance, type SectionKey } from "@/utils/sectionGuidance";
+import { useMemo } from "react";
 
 export type CompletionStatus = "complete" | "warning" | "incomplete" | "error";
 
@@ -18,7 +19,11 @@ export const AccordionCompletionIndicator = ({
   sectionKey,
 }: AccordionCompletionIndicatorProps) => {
   const { propertyData } = usePropertyData();
-  const guidance = sectionKey ? getSectionGuidance(propertyData, sectionKey) : null;
+  
+  // Memoize guidance calculation to prevent infinite re-renders
+  const guidance = useMemo(() => {
+    return sectionKey ? getSectionGuidance(propertyData, sectionKey) : null;
+  }, [propertyData, sectionKey]);
 
   const getIcon = () => {
     switch (status) {

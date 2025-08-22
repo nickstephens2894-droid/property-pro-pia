@@ -575,7 +575,25 @@ const InstanceDetail = () => {
     if (!propertyData.investors || propertyData.investors.length === 0) return [];
     
     const annualRent = (propertyData.weeklyRent || 0) * 52;
-    const totalDeductibleExpenses = (propertyData.councilRates || 0) + (propertyData.insurance || 0) + (propertyData.repairs || 0) + depreciation.total;
+    // Calculate total deductible expenses including all tax-deductible items
+    const annualInterest = (projections[0]?.mainInterestYear || 0) + (projections[0]?.equityInterestYear || 0);
+    const totalDeductibleExpenses = 
+      (propertyData.councilRates || 0) + 
+      (propertyData.insurance || 0) + 
+      (propertyData.repairs || 0) + 
+      (propertyData.propertyManagement || 0) +
+      depreciation.total +
+      annualInterest;
+    
+    console.log('📊 Total Deductible Expenses Breakdown:', {
+      councilRates: propertyData.councilRates || 0,
+      insurance: propertyData.insurance || 0,
+      repairs: propertyData.repairs || 0,
+      propertyManagement: propertyData.propertyManagement || 0,
+      depreciation: depreciation.total,
+      annualInterest,
+      total: totalDeductibleExpenses
+    });
     
     return propertyData.investors.map(investor => {
       const ownership = propertyData.ownershipAllocations?.find(o => o.investorId === investor.id);
@@ -813,7 +831,14 @@ const InstanceDetail = () => {
                     councilRates={propertyData.councilRates || 0}
                     insurance={propertyData.insurance || 0}
                     repairs={propertyData.repairs || 0}
-                    totalDeductibleExpenses={(propertyData.councilRates || 0) + (propertyData.insurance || 0) + (propertyData.repairs || 0)}
+                    totalDeductibleExpenses={
+                      (propertyData.councilRates || 0) + 
+                      (propertyData.insurance || 0) + 
+                      (propertyData.repairs || 0) + 
+                      (propertyData.propertyManagement || 0) +
+                      depreciation.total +
+                      ((projections[0]?.mainInterestYear || 0) + (projections[0]?.equityInterestYear || 0))
+                    }
                     depreciation={{
                       capitalWorks: depreciation.capitalWorks,
                       plantEquipment: depreciation.plantEquipment,
