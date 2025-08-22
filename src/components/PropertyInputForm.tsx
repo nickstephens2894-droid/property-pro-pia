@@ -16,6 +16,7 @@ import { FundingSummaryPanel } from "@/components/FundingSummaryPanel";
 import { ValidationWarnings } from "@/components/ValidationWarnings";
 import StampDutyCalculator from "@/components/StampDutyCalculator";
 import { useFieldConfirmations } from "@/hooks/useFieldConfirmations";
+import { useInputProtection } from "@/hooks/useInputProtection";
 import { usePropertyData, PropertyData } from "@/contexts/PropertyDataContext";
 import { useRepo, type Investor } from "@/services/repository";
 import { 
@@ -88,13 +89,15 @@ const PercentageInput = ({
 }) => {
   const [displayValue, setDisplayValue] = useState<string>(value?.toFixed(1) || '');
   const [isFocused, setIsFocused] = useState(false);
+  const [lastExternalValue, setLastExternalValue] = useState(value);
 
   // Keep display value in sync with external prop updates when not actively editing
   useEffect(() => {
-    if (!isFocused) {
+    if (!isFocused && Math.abs(value - lastExternalValue) > 0.01) {
       setDisplayValue(value === 0 ? "" : value.toFixed(1));
+      setLastExternalValue(value);
     }
-  }, [value, isFocused]);
+  }, [value, isFocused, lastExternalValue]);
 
   const handleFocus = () => {
     setIsFocused(true);
@@ -126,6 +129,7 @@ const PercentageInput = ({
     // Convert to number, defaulting to 0 if invalid
     const numericValue = validInput === "" || validInput === "." ? 0 : parseFloat(validInput);
     
+    setLastExternalValue(numericValue);
     onChange(numericValue);
     // Re-apply formatting after editing (keep empty if user cleared)
     setDisplayValue(raw === "" ? "" : numericValue.toFixed(1));
@@ -159,6 +163,7 @@ export const PropertyInputForm = ({
 }: PropertyInputFormProps) => {
   const [openSections, setOpenSections] = useState<string[]>(["personal-profile"]);
   const { confirmations, updateConfirmation } = useFieldConfirmations();
+  const { protectField, isFieldProtected } = useInputProtection();
   const { applyPreset, calculateEquityLoanAmount, calculateAvailableEquity, calculateHoldingCosts: ctxCalculateHoldingCosts, calculateFundingAnalysis } = usePropertyData();
   const [pendingUpdate, setPendingUpdate] = useState<{
     field: keyof PropertyData;
@@ -191,8 +196,17 @@ export const PropertyInputForm = ({
     totalHoldingCosts: 0
   };
 
+  // State to prevent cascade loops
+  const [isUpdatingCascade, setIsUpdatingCascade] = useState(false);
+
   // Enhanced updateField with cascading updates and confirmations
   const updateFieldWithCascade = useCallback((field: keyof PropertyData, value: any) => {
+    // Prevent cascading updates during cascade execution
+    if (isUpdatingCascade) {
+      updateField(field, value);
+      return;
+    }
+
     // Handle construction contract value with confirmation
     if (field === 'constructionValue' && !confirmations.hasShownConstructionWarning) {
       setPendingUpdate({ field, value, confirmationType: 'construction' });
@@ -207,34 +221,51 @@ export const PropertyInputForm = ({
     
     // Execute the update
     executeFieldUpdate(field, value);
-  }, [propertyData, updateField, confirmations]);
+  }, [propertyData, updateField, confirmations, isUpdatingCascade]);
 
   const executeFieldUpdate = useCallback((field: keyof PropertyData, value: any) => {
+    // Update the field first
     updateField(field, value);
     
-    // Handle cascading updates
-    if (field === 'constructionValue') {
-      // Split construction value: 90% building, 10% plant & equipment
-      const buildingValue = Math.round(value * 0.9);
-      const plantEquipmentValue = Math.round(value * 0.1);
-      updateField('buildingValue', buildingValue);
-      updateField('plantEquipmentValue', plantEquipmentValue);
-    } else if (field === 'buildingValue' || field === 'plantEquipmentValue') {
-      // Update construction contract value when building/equipment changes
-      const newBuildingValue = field === 'buildingValue' ? value : propertyData.buildingValue;
-      const newPlantEquipmentValue = field === 'plantEquipmentValue' ? value : propertyData.plantEquipmentValue;
-      const newTotal = newBuildingValue + newPlantEquipmentValue;
-      updateField('constructionValue', newTotal);
-    }
+    // Prevent infinite loops during cascade updates
+    if (isUpdatingCascade) return;
     
-    // Update holding costs when construction parameters change
-    if (['landValue', 'constructionValue', 'constructionPeriod', 'constructionInterestRate'].includes(field)) {
-      const costs = calculateHoldingCosts();
-      updateField('landHoldingInterest', costs.landHoldingInterest);
-      updateField('constructionHoldingInterest', costs.constructionHoldingInterest);
-      updateField('totalHoldingCosts', costs.totalHoldingCosts);
-    }
-  }, [propertyData, updateField]);
+    setIsUpdatingCascade(true);
+    
+    // Handle cascading updates with debouncing
+    setTimeout(() => {
+      if (field === 'constructionValue' && !isFieldProtected('buildingValue') && !isFieldProtected('plantEquipmentValue')) {
+        // Only split if the value actually changed and target fields aren't protected
+        const currentTotal = propertyData.buildingValue + propertyData.plantEquipmentValue;
+        if (Math.abs(currentTotal - value) > 100) {
+          const buildingValue = Math.round(value * 0.9);
+          const plantEquipmentValue = Math.round(value * 0.1);
+          updateField('buildingValue', buildingValue);
+          updateField('plantEquipmentValue', plantEquipmentValue);
+        }
+      } else if ((field === 'buildingValue' || field === 'plantEquipmentValue') && !isFieldProtected('constructionValue')) {
+        // Update construction contract value when building/equipment changes, if not protected
+        const newBuildingValue = field === 'buildingValue' ? value : propertyData.buildingValue;
+        const newPlantEquipmentValue = field === 'plantEquipmentValue' ? value : propertyData.plantEquipmentValue;
+        const newTotal = newBuildingValue + newPlantEquipmentValue;
+        
+        // Only update if the total actually differs
+        if (Math.abs(propertyData.constructionValue - newTotal) > 10) {
+          updateField('constructionValue', newTotal);
+        }
+      }
+      
+      // Update holding costs when construction parameters change
+      if (['landValue', 'constructionValue', 'constructionPeriod', 'constructionInterestRate'].includes(field)) {
+        const costs = calculateHoldingCosts();
+        updateField('landHoldingInterest', costs.landHoldingInterest);
+        updateField('constructionHoldingInterest', costs.constructionHoldingInterest);
+        updateField('totalHoldingCosts', costs.totalHoldingCosts);
+      }
+      
+      setIsUpdatingCascade(false);
+    }, 100);
+  }, [propertyData, updateField, isUpdatingCascade]);
 
   const handleConfirmUpdate = useCallback((dontShowAgain: boolean) => {
     if (!pendingUpdate) return;
@@ -641,7 +672,10 @@ export const PropertyInputForm = ({
             <CurrencyInput
               id="constructionValue"
               value={propertyData.constructionValue}
-              onChange={(value) => updateFieldWithCascade('constructionValue', value)}
+              onChange={(value) => {
+                protectField('constructionValue', 2000);
+                updateFieldWithCascade('constructionValue', value);
+              }}
               className="mt-1"
               placeholder="Enter total construction value"
             />
@@ -672,7 +706,10 @@ export const PropertyInputForm = ({
               <CurrencyInput
                 id="buildingValue"
                 value={propertyData.buildingValue}
-                onChange={(value) => updateFieldWithCascade('buildingValue', value)}
+                onChange={(value) => {
+                  protectField('buildingValue', 2000);
+                  updateFieldWithCascade('buildingValue', value);
+                }}
                 className="mt-1"
                 placeholder="Enter building value"
               />
@@ -682,7 +719,10 @@ export const PropertyInputForm = ({
               <CurrencyInput
                 id="plantEquipmentValue"
                 value={propertyData.plantEquipmentValue}
-                onChange={(value) => updateFieldWithCascade('plantEquipmentValue', value)}
+                onChange={(value) => {
+                  protectField('plantEquipmentValue', 2000);
+                  updateFieldWithCascade('plantEquipmentValue', value);
+                }}
                 className="mt-1"
                 placeholder="Enter equipment value"
               />

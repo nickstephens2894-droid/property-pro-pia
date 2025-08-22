@@ -312,7 +312,7 @@ const InstanceDetail = () => {
       if (confirm('You have unsaved changes. Are you sure you want to discard them?')) {
         setIsEditMode(false);
         setHasUnsavedChanges(false);
-        // Reload the instance data to reset any changes
+        // Reload the instance data to reset any changes with proper field mapping
         if (instance) {
           applyPreset({
             investors: instance.investors as any,
@@ -364,6 +364,7 @@ const InstanceDetail = () => {
             councilRates: instance.council_rates,
             insurance: instance.insurance,
             repairs: instance.repairs,
+            // Fix depreciation method mapping
             depreciationMethod: instance.depreciation_method,
             isNewProperty: instance.is_new_property,
             currentPropertyMethod: instance.property_method as any,
