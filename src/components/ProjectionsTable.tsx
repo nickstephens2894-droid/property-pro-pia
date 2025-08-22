@@ -8,7 +8,7 @@ import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, ArrowUpRight, ArrowD
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { resolve } from "@/utils/overrides";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface YearProjection {
   year: number;
@@ -25,6 +25,8 @@ interface YearProjection {
   equityLoanIOStatus: 'IO' | 'P&I';
   otherExpenses: number;
   depreciation: number;
+  buildingDepreciation: number;
+  fixturesDepreciation: number;
   taxableIncome: number;
   taxBenefit: number;
   afterTaxCashFlow: number;
@@ -918,11 +920,22 @@ const DesktopProjectionsTable = ({
 {showDepreciationDetails && (
   <tr className="bg-purple-50 dark:bg-purple-950/20 border-b">
     <td className="sticky left-0 bg-purple-50 dark:bg-purple-950/20 z-10 pl-8 text-sm p-3">
-      Building depreciation
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger className="flex items-center gap-1">
+            Building depreciation
+            <span className="text-xs text-muted-foreground">ℹ</span>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Capital works depreciation: 2.5% annually (prime cost method)<br/>
+               Available for buildings constructed after Sept 1987</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </td>
     {projections.map((projection: YearProjection) => (
       <td key={projection.year} className="text-center font-mono text-xs p-3">
-        {formatCurrency(projection.depreciation * 0.6)} {/* Assume 60% is building */}
+        {formatCurrency(projection.buildingDepreciation)}
       </td>
     ))}
   </tr>
@@ -932,11 +945,22 @@ const DesktopProjectionsTable = ({
 {showDepreciationDetails && (
   <tr className="bg-purple-50 dark:bg-purple-950/20 border-b">
     <td className="sticky left-0 bg-purple-50 dark:bg-purple-950/20 z-10 pl-8 text-sm p-3">
-      Fixtures & fittings
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger className="flex items-center gap-1">
+            Fixtures & fittings
+            <span className="text-xs text-muted-foreground">ℹ</span>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Plant & equipment depreciation: 15% using selected method<br/>
+               Available for new properties only (purchased after May 2017)</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </td>
     {projections.map((projection: YearProjection) => (
       <td key={projection.year} className="text-center font-mono text-xs p-3">
-        {formatCurrency(projection.depreciation * 0.4)} {/* Assume 40% is fixtures */}
+        {formatCurrency(projection.fixturesDepreciation)}
       </td>
     ))}
   </tr>

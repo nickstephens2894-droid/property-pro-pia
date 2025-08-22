@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,6 +44,8 @@ interface YearProjection {
   equityLoanIOStatus: 'IO' | 'P&I';
   otherExpenses: number;
   depreciation: number;
+  buildingDepreciation: number;
+  fixturesDepreciation: number;
   taxableIncome: number;
   taxBenefit: number;
   afterTaxCashFlow: number;
@@ -170,20 +172,46 @@ const AddInstance = () => {
     }
   }, [propertyData, selectedModel]);
 
-  // Calculate depreciation
-  const depreciation = useMemo(() => {
+  // Calculate depreciation with separate building and fixtures amounts per year
+  const calculateDepreciationForYear = useCallback((year: number) => {
     const buildingValue = propertyData.buildingValue || 0;
     const plantEquipmentValue = propertyData.plantEquipmentValue || 0;
     
-    const capitalWorksDepreciation = propertyData.constructionYear >= 1987 ? buildingValue * 0.025 : 0;
-    const plantEquipmentDepreciation = propertyData.isNewProperty ? plantEquipmentValue * 0.15 : 0;
+    // Building depreciation: 2.5% annually (prime cost method) - available if built after Sept 1987
+    const buildingDepreciationAvailable = propertyData.constructionYear >= 1987;
+    const buildingDepreciationAnnual = buildingDepreciationAvailable ? buildingValue * 0.025 : 0;
+    
+    // Fixtures depreciation: 15% using chosen method - available for new properties only
+    const fixturesDepreciationAvailable = propertyData.isNewProperty;
+    let fixturesDepreciationAnnual = 0;
+    
+    if (fixturesDepreciationAvailable && plantEquipmentValue > 0) {
+      if (propertyData.depreciationMethod === 'prime-cost') {
+        // Prime cost: 15% of original value each year
+        fixturesDepreciationAnnual = plantEquipmentValue * 0.15;
+      } else {
+        // Diminishing value: 15% of remaining value each year
+        const remainingValue = plantEquipmentValue * Math.pow(0.85, year - 1);
+        fixturesDepreciationAnnual = remainingValue > 0 ? remainingValue * 0.15 : 0;
+      }
+    }
     
     return {
-      capitalWorks: capitalWorksDepreciation,
-      plantEquipment: plantEquipmentDepreciation,
-      total: capitalWorksDepreciation + plantEquipmentDepreciation
+      building: Math.max(0, buildingDepreciationAnnual),
+      fixtures: Math.max(0, fixturesDepreciationAnnual),
+      total: Math.max(0, buildingDepreciationAnnual + fixturesDepreciationAnnual)
     };
-  }, [propertyData.buildingValue, propertyData.plantEquipmentValue, propertyData.constructionYear, propertyData.isNewProperty]);
+  }, [propertyData.buildingValue, propertyData.plantEquipmentValue, propertyData.constructionYear, propertyData.isNewProperty, propertyData.depreciationMethod]);
+
+  // Calculate total annual depreciation for display
+  const depreciation = useMemo(() => {
+    const year1 = calculateDepreciationForYear(1);
+    return {
+      capitalWorks: year1.building,
+      plantEquipment: year1.fixtures,
+      total: year1.total
+    };
+  }, [calculateDepreciationForYear]);
 
   // Calculate total household tax difference from property taxable income, indexing investor incomes by CPI
   const calculateTotalTaxDifference = (propertyTaxableIncome: number, year: number) => {
@@ -343,6 +371,8 @@ const AddInstance = () => {
         equityLoanIOStatus: propertyData.constructionEquityRepaymentType === 'pi' ? 'P&I' : 'IO',
         otherExpenses: 0,
         depreciation: 0,
+        buildingDepreciation: 0,
+        fixturesDepreciation: 0,
         taxableIncome: Math.round(constructionTaxableIncome),
         taxBenefit: Math.round(constructionTaxBenefit),
         afterTaxCashFlow: Math.round(constructionAfterTaxCashFlow),
@@ -430,8 +460,9 @@ const AddInstance = () => {
       const repairs = (propertyData.repairs || 0) * inflationMultiplier;
       const otherExpenses = propertyManagement + councilRates + insurance + repairs;
 
-      // Depreciation (diminishing over time)
-      const depreciationAmount = Math.max(0, (depreciation.total || 15000) * Math.pow(0.95, year - 1));
+      // Depreciation using proper calculation for each year
+      const yearDepreciation = calculateDepreciationForYear(year);
+      const depreciationAmount = yearDepreciation.total;
 
       // Tax calculations using progressive tax method
       const taxableIncome = rentalIncome - totalInterest - otherExpenses - depreciationAmount;
@@ -463,6 +494,8 @@ const AddInstance = () => {
         equityLoanIOStatus,
         otherExpenses,
         depreciation: depreciationAmount,
+        buildingDepreciation: yearDepreciation.building,
+        fixturesDepreciation: yearDepreciation.fixtures,
         taxableIncome,
         taxBenefit,
         afterTaxCashFlow,
