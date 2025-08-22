@@ -953,8 +953,8 @@ const AddInstance = () => {
                       plantEquipmentRestricted: !propertyData.isNewProperty
                     }}
                     investorTaxResults={investorTaxResults}
-                    totalTaxWithProperty={0} // Will be calculated
-                    totalTaxWithoutProperty={0} // Will be calculated
+                    totalTaxWithProperty={investorTaxResults.reduce((sum, result) => sum + (result.taxWithProperty || 0), 0)}
+                    totalTaxWithoutProperty={investorTaxResults.reduce((sum, result) => sum + (result.taxWithoutProperty || 0), 0)}
                     marginalTaxRate={0.3} // Will be calculated
                     purchasePrice={propertyData.purchasePrice || 0}
                     constructionYear={propertyData.constructionYear || 2020}
