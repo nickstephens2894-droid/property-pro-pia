@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 
 // Import utility functions
 import { downloadInputsCsv } from "@/utils/csvExport";
+import { SaveIndicator } from "@/components/SaveIndicator";
 import { formatCurrency, formatPercentage } from "@/utils/formatters";
 import { resolve, Triplet } from "@/utils/overrides";
 import { totalTaxAU, marginalRateAU } from "@/utils/tax";
@@ -116,7 +117,7 @@ const InstanceDetail = () => {
   }, [hasUnsavedChanges, isEditMode]);
 
   useEffect(() => {
-    if (id) {
+    if (id && !isDataLoaded) {
       const loadInstance = async () => {
         try {
           setLoading(true);
@@ -124,13 +125,18 @@ const InstanceDetail = () => {
         if (instanceData) {
           setInstance(instanceData);
           console.log('🔄 Loading instance data:', {
+            id: instanceData.id,
             constructionValue: instanceData.construction_value,
             buildingValue: instanceData.building_value,
-            plantEquipmentValue: instanceData.plant_equipment_value
+            plantEquipmentValue: instanceData.plant_equipment_value,
+            purchasePrice: instanceData.purchase_price,
+            isEditMode,
+            isDataLoaded
           });
           
-          // Only apply preset if not already loaded and not in edit mode
-          if (!isDataLoaded && !isEditMode) {
+          // Only apply preset if not in edit mode and data hasn't been loaded yet
+          if (!isEditMode && !hasUnsavedChanges) {
+            console.log('📋 Applying preset data from instance');
             applyPreset({
               investors: instanceData.investors as any,
               ownershipAllocations: instanceData.ownership_allocations as any,
@@ -187,10 +193,14 @@ const InstanceDetail = () => {
               currentFundingMethod: instanceData.funding_method as any
             }, instanceData.property_method as any, instanceData.funding_method as any);
             setIsDataLoaded(true);
+            console.log('✅ Instance data loaded and applied');
+          } else {
+            console.log('⚠️ Skipping preset application - edit mode or has unsaved changes');
+            setIsDataLoaded(true);
           }
         }
         } catch (error) {
-          console.error('Failed to load instance:', error);
+          console.error('❌ Failed to load instance:', error);
         } finally {
           setLoading(false);
         }
@@ -198,35 +208,62 @@ const InstanceDetail = () => {
 
       loadInstance();
     }
-  }, [id, getInstance, applyPreset]);
+  }, [id, getInstance, applyPreset, isDataLoaded, isEditMode, hasUnsavedChanges]);
 
-  // Track changes to mark as unsaved
+  // Track changes to mark as unsaved with improved logic
+  const lastPropertyDataRef = useRef(propertyData);
   useEffect(() => {
-    const trackChanges = () => {
-      if (isDataLoaded && !loading) {
+    if (isDataLoaded && !loading && isEditMode) {
+      // Only mark as unsaved if data actually changed (deep comparison on key fields)
+      const currentData = propertyData;
+      const lastData = lastPropertyDataRef.current;
+      
+      const keyFieldsChanged = currentData.purchasePrice !== lastData.purchasePrice ||
+        currentData.weeklyRent !== lastData.weeklyRent ||
+        currentData.constructionValue !== lastData.constructionValue ||
+        currentData.buildingValue !== lastData.buildingValue ||
+        currentData.plantEquipmentValue !== lastData.plantEquipmentValue ||
+        currentData.landValue !== lastData.landValue ||
+        currentData.loanAmount !== lastData.loanAmount ||
+        currentData.depositAmount !== lastData.depositAmount;
+      
+      if (keyFieldsChanged) {
+        console.log('📝 Property data changed, marking as unsaved:', {
+          purchasePrice: { old: lastData.purchasePrice, new: currentData.purchasePrice },
+          constructionValue: { old: lastData.constructionValue, new: currentData.constructionValue },
+          buildingValue: { old: lastData.buildingValue, new: currentData.buildingValue }
+        });
         setHasUnsavedChanges(true);
       }
-    };
-    
-    // Listen for property data changes after initial load
-    if (propertyData && isDataLoaded && !loading) {
-      trackChanges();
     }
-  }, [propertyData, loading, isDataLoaded]);
+    
+    lastPropertyDataRef.current = propertyData;
+  }, [propertyData, loading, isDataLoaded, isEditMode]);
 
-  // Debounced auto-save when in edit mode
+  // Improved debounced auto-save with faster response and validation
   useEffect(() => {
-    if (hasUnsavedChanges && isEditMode && !saving && isDataLoaded) {
+    if (hasUnsavedChanges && isEditMode && !saving && isDataLoaded && instance) {
       // Clear existing timeout
       if (debouncedSaveTimeoutRef.current) {
         clearTimeout(debouncedSaveTimeoutRef.current);
       }
       
-      // Set new timeout for debounced save
-      debouncedSaveTimeoutRef.current = setTimeout(() => {
-        console.log('💾 Auto-saving changes...');
-        handleSaveInstance();
-      }, 3000); // Auto-save after 3 seconds of inactivity
+      // Validate that we have essential data before saving
+      const hasValidData = propertyData.purchasePrice > 0 || propertyData.constructionValue > 0;
+      
+      if (hasValidData) {
+        // Set new timeout for debounced save - reduced to 1 second for more responsive saving
+        debouncedSaveTimeoutRef.current = setTimeout(() => {
+          console.log('💾 Auto-saving changes (1s timeout)...', {
+            purchasePrice: propertyData.purchasePrice,
+            constructionValue: propertyData.constructionValue,
+            buildingValue: propertyData.buildingValue
+          });
+          handleSaveInstance();
+        }, 1000); // Reduced from 3000ms to 1000ms for faster auto-save
+      } else {
+        console.log('⚠️ Skipping auto-save - invalid data detected');
+      }
     }
     
     return () => {
@@ -234,7 +271,7 @@ const InstanceDetail = () => {
         clearTimeout(debouncedSaveTimeoutRef.current);
       }
     };
-  }, [hasUnsavedChanges, isEditMode, saving, isDataLoaded]);
+  }, [hasUnsavedChanges, isEditMode, saving, isDataLoaded, instance, propertyData.purchasePrice, propertyData.constructionValue, propertyData.buildingValue]);
 
   // Convert propertyData back to instance format for saving
   const convertPropertyDataToInstance = () => {
@@ -320,29 +357,61 @@ const InstanceDetail = () => {
   };
 
   const handleSaveInstance = async () => {
-    if (!instance || !id) return;
+    if (!instance || !id) {
+      console.error('❌ Cannot save - missing instance or id');
+      return;
+    }
     
     try {
       setSaving(true);
+      console.log('💾 Starting save process...', {
+        instanceId: id,
+        hasUnsavedChanges,
+        isEditMode,
+        propertyData: {
+          purchasePrice: propertyData.purchasePrice,
+          constructionValue: propertyData.constructionValue,
+          buildingValue: propertyData.buildingValue,
+          plantEquipmentValue: propertyData.plantEquipmentValue
+        }
+      });
+      
       const instanceUpdates = convertPropertyDataToInstance();
       
       if (instanceUpdates) {
+        console.log('🔄 Saving instance updates:', {
+          purchase_price: instanceUpdates.purchase_price,
+          construction_value: instanceUpdates.construction_value,
+          building_value: instanceUpdates.building_value,
+          plant_equipment_value: instanceUpdates.plant_equipment_value
+        });
+        
         await updateInstance(id, instanceUpdates);
         setHasUnsavedChanges(false);
-        setIsEditMode(false);
         
+        console.log('✅ Instance saved successfully');
         toast({
           title: "Instance Updated",
           description: "Your instance has been successfully updated.",
         });
+      } else {
+        console.error('❌ Failed to convert property data to instance format');
       }
     } catch (error) {
-      console.error('Failed to save instance:', error);
+      console.error('❌ Failed to save instance:', error);
       toast({
         title: "Error",
         description: "Failed to update instance. Please try again.",
         variant: "destructive",
       });
+      
+      // Add retry logic
+      setTimeout(() => {
+        if (hasUnsavedChanges && isEditMode) {
+          console.log('🔄 Retrying auto-save in 5 seconds...');
+          handleSaveInstance();
+        }
+      }, 5000);
     } finally {
       setSaving(false);
     }
@@ -419,8 +488,17 @@ const InstanceDetail = () => {
   };
 
   const enhancedUpdateField = (field: keyof typeof propertyData, value: any) => {
+    console.log('🔧 Field update:', { field, value, isEditMode, isDataLoaded });
+    
+    // Enable edit mode if not already enabled and data is loaded
+    if (!isEditMode && isDataLoaded) {
+      console.log('📝 Enabling edit mode due to field update');
+      setIsEditMode(true);
+    }
+    
     updateField(field, value);
-    if (isEditMode) {
+    
+    if (isDataLoaded) {
       setHasUnsavedChanges(true);
     }
   };
@@ -1019,16 +1097,11 @@ const InstanceDetail = () => {
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${isEditMode ? 'bg-orange-500' : 'bg-primary'}`}></div>
                   <CardTitle className="text-2xl">{instance.name}</CardTitle>
-                  {isEditMode && (
-                    <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full">
-                      EDITING
-                    </span>
-                  )}
-                  {hasUnsavedChanges && (
-                    <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">
-                      UNSAVED
-                    </span>
-                  )}
+                  <SaveIndicator 
+                    hasUnsavedChanges={hasUnsavedChanges} 
+                    saving={saving} 
+                    isEditMode={isEditMode} 
+                  />
                 </div>
                 <CardDescription className="text-base">
                   {instance.property_method || 'Property'} • ${instance.purchase_price.toLocaleString()} • ${instance.weekly_rent}/week

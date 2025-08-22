@@ -8,7 +8,9 @@ export const useInputProtection = () => {
   const timeoutRefs = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   const protectField = useCallback((fieldId: string, duration = 2000) => {
-    console.log('🛡️ Protecting field:', fieldId, 'for', duration, 'ms');
+    // Extend protection duration to cover auto-save period (1.5 seconds to be safe)
+    const protectionDuration = Math.max(duration, 1500);
+    console.log('🛡️ Protecting field:', fieldId, 'for', protectionDuration, 'ms');
     setProtectedFields(prev => new Set(prev).add(fieldId));
     
     // Clear existing timeout for this field
@@ -26,7 +28,7 @@ export const useInputProtection = () => {
         return newSet;
       });
       timeoutRefs.current.delete(fieldId);
-    }, duration);
+    }, protectionDuration);
     
     timeoutRefs.current.set(fieldId, timeout);
   }, []);
