@@ -1201,7 +1201,11 @@ const InstanceDetail = () => {
                       currentPayment: loanPaymentDetails.equityLoanDetails.isIO && loanPaymentDetails.equityLoanDetails.ioTermYears > 0 ? loanPaymentDetails.equityLoanDetails.ioPayment : loanPaymentDetails.equityLoanDetails.piPayment,
                       futurePayment: loanPaymentDetails.equityLoanDetails.isIO && loanPaymentDetails.equityLoanDetails.ioTermYears > 0 ? loanPaymentDetails.equityLoanDetails.piPayment : 0
                     } : null}
-                    totalAnnualInterest={(propertyData.loanAmount || 0) * (propertyData.interestRate || 0.06) / 100}
+                    totalAnnualInterest={
+                      ((propertyData.loanAmount || 0) * (propertyData.interestRate || 0.06) / 100) +
+                      (propertyData.useEquityFunding && equityLoanAmount ? 
+                        (equityLoanAmount * (propertyData.equityLoanInterestRate || 7.2) / 100) : 0)
+                    }
                   />
                 </div>
               </div>
