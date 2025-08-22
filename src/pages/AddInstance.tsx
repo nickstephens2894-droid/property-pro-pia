@@ -519,13 +519,13 @@ const AddInstance = () => {
     
     const annualRent = (propertyData.weeklyRent || 0) * 52;
     // Calculate total deductible expenses including all tax-deductible items
-    const totalDeductibleExpenses =
+    const totalDeductibleExpenses = 
       (propertyData.councilRates || 0) + 
       (propertyData.insurance || 0) + 
       (propertyData.repairs || 0) + 
       ((propertyData.weeklyRent || 0) * 52 * (propertyData.propertyManagement || 0.07) / 100) +
       depreciation.total +
-      annualInterest;
+      ((propertyData.loanAmount || 0) * (propertyData.interestRate || 0.06) / 100);
     
     console.log('📊 Total Deductible Expenses Breakdown:', {
       councilRates: propertyData.councilRates || 0,
@@ -945,7 +945,7 @@ const AddInstance = () => {
                       (propertyData.repairs || 0) + 
                       ((propertyData.weeklyRent || 0) * 52 * (propertyData.propertyManagement || 0.07) / 100) +
                       depreciation.total +
-                      annualInterest
+                      ((propertyData.loanAmount || 0) * (propertyData.interestRate || 0.06) / 100)
                     }
                     depreciation={{
                       capitalWorks: depreciation.capitalWorks,

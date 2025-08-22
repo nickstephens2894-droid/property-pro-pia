@@ -585,7 +585,7 @@ const InstanceDetail = () => {
       (propertyData.repairs || 0) + 
       ((propertyData.weeklyRent || 0) * 52 * (propertyData.propertyManagement || 0.07) / 100) +
       depreciation.total +
-      annualInterest;
+      ((propertyData.loanAmount || 0) * (propertyData.interestRate || 0.06) / 100);
     
     console.log('📊 Total Deductible Expenses Breakdown:', {
       councilRates: propertyData.councilRates || 0,
@@ -839,7 +839,7 @@ const InstanceDetail = () => {
                       (propertyData.repairs || 0) + 
                       ((propertyData.weeklyRent || 0) * 52 * (propertyData.propertyManagement || 0.07) / 100) +
                       depreciation.total +
-                      annualInterest
+                      ((propertyData.loanAmount || 0) * (propertyData.interestRate || 0.06) / 100)
                     }
                     depreciation={{
                       capitalWorks: depreciation.capitalWorks,
