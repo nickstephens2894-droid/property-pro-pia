@@ -835,7 +835,7 @@ const InstanceDetail = () => {
                       (propertyData.councilRates || 0) + 
                       (propertyData.insurance || 0) + 
                       (propertyData.repairs || 0) + 
-                      (propertyData.propertyManagement || 0) +
+                      ((propertyData.weeklyRent || 0) * 52 * (propertyData.propertyManagement || 0.07) / 100) +
                       depreciation.total +
                       ((projections[0]?.mainInterestYear || 0) + (projections[0]?.equityInterestYear || 0))
                     }
