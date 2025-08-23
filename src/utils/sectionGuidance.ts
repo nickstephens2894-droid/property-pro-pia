@@ -5,6 +5,7 @@ import {
   validateFinancing,
   validatePurchaseCosts,
   validateAnnualExpenses,
+  validateConstruction,
   validateTaxOptimization,
   type CompletionStatus,
 } from "@/utils/validationUtils";
@@ -12,6 +13,7 @@ import {
 export type SectionKey =
   | "personal-profile"
   | "property-basics"
+  | "construction"
   | "funding-finance"
   | "transaction-costs"
   | "ongoing-income-expenses"
@@ -55,6 +57,18 @@ export const getSectionGuidance = (
         if (!propertyData.weeklyRent || propertyData.weeklyRent <= 0)
           items.push("Enter expected weekly rent");
       }
+      break;
+    }
+    case "construction": {
+      status = validateConstruction(propertyData);
+      if (!propertyData.constructionValue || propertyData.constructionValue <= 0)
+        items.push("Enter total construction contract value");
+      if (!propertyData.buildingValue || propertyData.buildingValue <= 0)
+        items.push("Enter building value for depreciation");
+      if (!propertyData.constructionPeriod || propertyData.constructionPeriod <= 0)
+        items.push("Set construction period (months)");
+      if (!propertyData.constructionYear || propertyData.constructionYear <= 0)
+        items.push("Enter construction completion year");
       break;
     }
     case "funding-finance": {
@@ -101,7 +115,8 @@ export const getSectionGuidance = (
       if (!propertyData.stampDuty || propertyData.stampDuty <= 0)
         items.push("Enter stamp duty (or use calculator)");
       if (!propertyData.legalFees || propertyData.legalFees <= 0) items.push("Enter legal fees");
-      if (!propertyData.inspectionFees || propertyData.inspectionFees <= 0) items.push("Enter inspection fees");
+      if (!propertyData.inspectionFees || propertyData.inspectionFees < 300) 
+        items.push("Enter realistic inspection fees (typically $300-$800)");
       if (
         propertyData.isConstructionProject &&
         !propertyData.councilFees &&

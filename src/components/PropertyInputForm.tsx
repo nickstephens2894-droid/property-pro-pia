@@ -25,6 +25,7 @@ import {
   validateFinancing, 
   validatePurchaseCosts, 
   validateAnnualExpenses,
+  validateConstruction,
   validateTaxOptimization
 } from "@/utils/validationUtils";
 import { Users, Home, Receipt, Calculator, Building2, Hammer, CreditCard, Clock, DollarSign, TrendingUp, Percent, X, Plus, AlertTriangle, Info, Search, Check } from "lucide-react";
@@ -334,6 +335,7 @@ export const PropertyInputForm = ({
   // Get completion status for each section
   const personalProfileStatus = validatePersonalProfile(propertyData);
   const propertyBasicsStatus = validatePropertyBasics(propertyData);
+  const constructionStatus = validateConstruction(propertyData);
   const financingStatus = validateFinancing(propertyData);
   const purchaseCostsStatus = validatePurchaseCosts(propertyData);
   const annualExpensesStatus = validateAnnualExpenses(propertyData);
@@ -689,9 +691,12 @@ export const PropertyInputForm = ({
 {propertyData.isConstructionProject && (
   <AccordionItem value="construction" className="border-b">
     <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
-      <div className="flex items-center gap-2 w-full">
-        <Hammer className="h-4 w-4 text-primary" />
-        <span className="font-medium">Construction</span>
+      <div className="flex items-center justify-between w-full">
+        <div className="flex items-center gap-2">
+          <Hammer className="h-4 w-4 text-primary" />
+          <span className="font-medium">Construction</span>
+        </div>
+        <AccordionCompletionIndicator status={constructionStatus} sectionKey="construction" />
       </div>
     </AccordionTrigger>
     <AccordionContent className="px-6 pb-6">

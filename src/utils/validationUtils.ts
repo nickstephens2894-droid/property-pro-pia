@@ -64,9 +64,10 @@ export const validateFinancing = (propertyData: PropertyData): CompletionStatus 
 export const validatePurchaseCosts = (propertyData: PropertyData): CompletionStatus => {
   const hasStampDuty = propertyData.stampDuty > 0;
   const hasLegalFees = propertyData.legalFees > 0;
+  const hasRealisticInspectionFees = propertyData.inspectionFees >= 300; // Minimum realistic inspection fee
   
   if (!hasStampDuty) return 'error';
-  if (!hasLegalFees) return 'warning';
+  if (!hasLegalFees || !hasRealisticInspectionFees) return 'warning';
   
   if (propertyData.isConstructionProject) {
     const hasConstructionCosts = 
@@ -86,6 +87,20 @@ export const validateAnnualExpenses = (propertyData: PropertyData): CompletionSt
   const hasInsurance = propertyData.insurance > 0;
   
   if (!hasPropertyManagement || !hasCouncilRates || !hasInsurance) return 'warning';
+  return 'complete';
+};
+
+export const validateConstruction = (propertyData: PropertyData): CompletionStatus => {
+  if (!propertyData.isConstructionProject) return 'complete';
+  
+  const hasConstructionValue = propertyData.constructionValue > 0;
+  const hasBuildingValue = propertyData.buildingValue > 0;
+  const hasConstructionPeriod = propertyData.constructionPeriod > 0;
+  const hasConstructionYear = propertyData.constructionYear > 0;
+  
+  if (!hasConstructionValue || !hasBuildingValue) return 'error';
+  if (!hasConstructionPeriod || !hasConstructionYear) return 'warning';
+  
   return 'complete';
 };
 
