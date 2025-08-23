@@ -413,8 +413,32 @@ export const PropertyInputForm = ({
   };
 
   const updateOwnershipAllocation = (investorId: string, percentage: number) => {
+    // Ensure percentage is within valid range
+    const validPercentage = Math.max(0, Math.min(100, percentage));
+    
+    // Auto-balance for two investors
+    if (propertyData.investors.length === 2) {
+      const otherInvestor = propertyData.investors.find(inv => inv.id !== investorId);
+      if (otherInvestor) {
+        const remainingPercentage = 100 - validPercentage;
+        
+        const updatedAllocations = propertyData.ownershipAllocations.map(allocation => {
+          if (allocation.investorId === investorId) {
+            return { ...allocation, ownershipPercentage: validPercentage };
+          } else if (allocation.investorId === otherInvestor.id) {
+            return { ...allocation, ownershipPercentage: remainingPercentage };
+          }
+          return allocation;
+        });
+        
+        updateField('ownershipAllocations', updatedAllocations);
+        return;
+      }
+    }
+    
+    // Default behavior for non-two-investor scenarios
     const updatedAllocations = propertyData.ownershipAllocations.map(allocation =>
-      allocation.investorId === investorId ? { ...allocation, ownershipPercentage: percentage } : allocation
+      allocation.investorId === investorId ? { ...allocation, ownershipPercentage: validPercentage } : allocation
     );
     updateField('ownershipAllocations', updatedAllocations);
   };
