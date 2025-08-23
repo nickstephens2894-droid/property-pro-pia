@@ -64,8 +64,10 @@ export const validateFinancing = (propertyData: PropertyData): CompletionStatus 
 export const validatePurchaseCosts = (propertyData: PropertyData): CompletionStatus => {
   const { stampDuty, legalFees, inspectionFees, councilFees } = propertyData;
   
-  // Check if all basic purchase costs are present (including 0 as valid)
+  // Check if stamp duty is present and > 0 (required field with realistic minimum)
   const hasStampDuty = stampDuty !== undefined && stampDuty !== null && stampDuty > 0;
+  
+  // Check if optional fields have been set (including 0 as valid)
   const hasLegalFees = legalFees !== undefined && legalFees !== null;
   const hasInspectionFees = inspectionFees !== undefined && inspectionFees !== null;
   const hasCouncilFees = councilFees !== undefined && councilFees !== null;
