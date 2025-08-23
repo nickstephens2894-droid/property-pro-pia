@@ -15,6 +15,7 @@ import ProjectionsTable from "@/components/ProjectionsTable";
 import ConstructionPeriodTable from "@/components/ConstructionPeriodTable";
 import { InvestmentResultsDetailed } from "@/components/InvestmentResultsDetailed";
 import { PropertyCalculationDetails } from "@/components/PropertyCalculationDetails";
+import { ValidationWarnings } from "@/components/ValidationWarnings";
 
 // Import the context hook
 import { usePropertyData } from "@/contexts/PropertyDataContext";
@@ -1078,62 +1079,64 @@ const InstanceDetail = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+      <div className={`max-w-7xl mx-auto ${isMobile ? 'px-3 py-4' : 'px-4 sm:px-6 py-6'}`}>
         {/* Enhanced Header */}
-        <div className="mb-8">
+        <div className={isMobile ? 'mb-6' : 'mb-8'}>
           {/* Back Button Row */}
-          <div className="mb-6">
-            <Button variant="ghost" size="sm" onClick={handleBack} className="text-muted-foreground hover:text-foreground">
+          <div className={isMobile ? 'mb-4' : 'mb-6'}>
+            <Button variant="ghost" size={isMobile ? 'default' : 'sm'} onClick={handleBack} className={`text-muted-foreground hover:text-foreground ${isMobile ? 'min-h-[44px] px-3' : ''}`}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Instances
             </Button>
           </div>
 
-          {/* Instance Info Header - All on same row */}
-          <div className="flex items-center gap-4">
+          {/* Instance Info Header - Responsive Layout */}
+          <div className={`${isMobile ? 'space-y-4' : 'flex items-center gap-4'}`}>
             {/* Instance Details - Enhanced */}
-            <Card className={`flex-1 min-w-0 border-2 ${isEditMode ? 'border-primary' : 'border-dashed border-muted-foreground/20'} ${isEditMode ? 'border-primary/50' : 'hover:border-primary/30'} transition-colors`}>
-              <CardHeader className="pb-4">
+            <Card className={`${isMobile ? 'w-full' : 'flex-1 min-w-0'} border-2 ${isEditMode ? 'border-primary' : 'border-dashed border-muted-foreground/20'} ${isEditMode ? 'border-primary/50' : 'hover:border-primary/30'} transition-colors`}>
+              <CardHeader className={isMobile ? "pb-3 px-4 pt-4" : "pb-4"}>
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${isEditMode ? 'bg-orange-500' : 'bg-primary'}`}></div>
-                  <CardTitle className="text-2xl">{instance.name}</CardTitle>
+                  <CardTitle className={`${isMobile ? 'text-xl' : 'text-2xl'}`}>{instance.name}</CardTitle>
                   <SaveIndicator 
                     hasUnsavedChanges={hasUnsavedChanges} 
                     saving={saving} 
                     isEditMode={isEditMode} 
                   />
                 </div>
-                <CardDescription className="text-base">
+                <CardDescription className={`${isMobile ? 'text-sm' : 'text-base'}`}>
                   {instance.property_method || 'Property'} • ${instance.purchase_price.toLocaleString()} • ${instance.weekly_rent}/week
                 </CardDescription>
                 {/* Status and Dates integrated into header */}
-                <div className="flex items-center gap-4 mt-3">
+                <div className={`${isMobile ? 'flex flex-col gap-2 mt-2' : 'flex items-center gap-4 mt-3'}`}>
                   <div className={`px-3 py-1 rounded-full text-sm font-medium ${
                     instance.status === 'active' ? 'bg-green-100 text-green-800' :
                     instance.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
                     'bg-gray-100 text-gray-800'
-                  }`}>
+                  } ${isMobile ? 'self-start' : ''}`}>
                     {instance.status}
                   </div>
-                  <span className="text-sm text-muted-foreground">
-                    Created: {new Date(instance.created_at).toLocaleDateString()}
-                  </span>
-                  <span className="text-sm text-muted-foreground">
-                    Modified: {new Date(instance.updated_at).toLocaleDateString()}
-                  </span>
+                  <div className={`${isMobile ? 'flex flex-col gap-1' : 'flex gap-4'}`}>
+                    <span className="text-sm text-muted-foreground">
+                      Created: {new Date(instance.created_at).toLocaleDateString()}
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      Modified: {new Date(instance.updated_at).toLocaleDateString()}
+                    </span>
+                  </div>
                 </div>
               </CardHeader>
             </Card>
 
-            {/* Action Buttons - Horizontal layout */}
-            <div className="flex gap-3">
+            {/* Action Buttons - Mobile Optimized */}
+            <div className={`${isMobile ? 'grid grid-cols-2 gap-3' : 'flex gap-3'}`}>
               {isEditMode ? (
                 <>
                   <Button 
                     variant="default" 
                     onClick={handleSaveInstance}
                     disabled={saving || !hasUnsavedChanges}
-                    className="flex items-center gap-2 px-4 py-2 h-auto"
+                    className={`flex items-center gap-2 px-4 py-2 h-auto ${isMobile ? 'min-h-[48px] w-full' : ''}`}
                   >
                     {saving ? (
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
@@ -1144,9 +1147,11 @@ const InstanceDetail = () => {
                       <div className="font-medium">
                         {saving ? 'Saving...' : hasUnsavedChanges ? 'Save Changes' : 'Saved'}
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {hasUnsavedChanges ? 'Updates pending' : 'All changes saved'}
-                      </div>
+                      {!isMobile && (
+                        <div className="text-xs text-muted-foreground">
+                          {hasUnsavedChanges ? 'Updates pending' : 'All changes saved'}
+                        </div>
+                      )}
                     </div>
                   </Button>
                   
@@ -1154,14 +1159,16 @@ const InstanceDetail = () => {
                     variant="outline" 
                     onClick={handleCancelEdit}
                     disabled={saving}
-                    className="flex items-center gap-2 px-4 py-2 h-auto"
+                    className={`flex items-center gap-2 px-4 py-2 h-auto ${isMobile ? 'min-h-[48px] w-full' : ''}`}
                   >
                     <div className="h-4 w-4 bg-gray-400 rounded-full"></div>
                     <div className="text-left">
                       <div className="font-medium">Cancel</div>
-                      <div className="text-xs text-muted-foreground">
-                        {hasUnsavedChanges ? 'Discard changes' : 'Exit edit mode'}
-                      </div>
+                      {!isMobile && (
+                        <div className="text-xs text-muted-foreground">
+                          {hasUnsavedChanges ? 'Discard changes' : 'Exit edit mode'}
+                        </div>
+                      )}
                     </div>
                   </Button>
                 </>
@@ -1170,38 +1177,44 @@ const InstanceDetail = () => {
                   <Button 
                     variant="outline" 
                     onClick={() => downloadInputsCsv(propertyData)}
-                    className="flex items-center gap-2 px-4 py-2 h-auto"
+                    className={`flex items-center gap-2 px-4 py-2 h-auto ${isMobile ? 'min-h-[48px] w-full' : ''}`}
                   >
                     <Download className="h-4 w-4" />
                     <div className="text-left">
                       <div className="font-medium">Export CSV</div>
-                      <div className="text-xs text-muted-foreground">Download current data</div>
+                      {!isMobile && (
+                        <div className="text-xs text-muted-foreground">Download current data</div>
+                      )}
                     </div>
                   </Button>
                   
                   <Button 
                     variant="outline"
                     onClick={handleEdit}
-                    className="flex items-center gap-2 px-4 py-2 h-auto"
+                    className={`flex items-center gap-2 px-4 py-2 h-auto ${isMobile ? 'min-h-[48px] w-full' : ''}`}
                   >
                     <Edit className="h-4 w-4" />
                     <div className="text-left">
                       <div className="font-medium">Edit Instance</div>
-                      <div className="text-xs text-muted-foreground">Modify settings</div>
+                      {!isMobile && (
+                        <div className="text-xs text-muted-foreground">Modify settings</div>
+                      )}
                     </div>
                   </Button>
 
-                  <Button 
-                    variant="destructive"
-                    onClick={handleDelete}
-                    className="flex items-center gap-2 px-4 py-2 h-auto"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    <div className="text-left">
-                      <div className="font-medium">Delete Instance</div>
-                      <div className="text-xs text-muted-foreground">Remove permanently</div>
-                    </div>
-                  </Button>
+                  {!isMobile && (
+                    <Button 
+                      variant="destructive"
+                      onClick={handleDelete}
+                      className="flex items-center gap-2 px-4 py-2 h-auto"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <div className="text-left">
+                        <div className="font-medium">Delete Instance</div>
+                        <div className="text-xs text-muted-foreground">Remove permanently</div>
+                      </div>
+                    </Button>
+                  )}
                 </>
               )}
             </div>
@@ -1214,9 +1227,9 @@ const InstanceDetail = () => {
 
         {/* Main Content with Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="analysis">Analysis</TabsTrigger>
-            <TabsTrigger value="projections">Projections</TabsTrigger>
+          <TabsList className={`grid w-full grid-cols-2 ${isMobile ? 'h-12' : ''}`}>
+            <TabsTrigger value="analysis" className={isMobile ? 'text-sm' : ''}>Analysis</TabsTrigger>
+            <TabsTrigger value="projections" className={isMobile ? 'text-sm' : ''}>Projections</TabsTrigger>
           </TabsList>
 
           {/* Analysis Tab */}
@@ -1393,6 +1406,11 @@ const InstanceDetail = () => {
             </Card>
           </TabsContent>
         </Tabs>
+        
+        {/* Validation Warnings at bottom for mobile */}
+        <div className={isMobile ? 'mt-6 pb-6' : 'mt-8'}>
+          <ValidationWarnings />
+        </div>
       </div>
     </div>
   );
