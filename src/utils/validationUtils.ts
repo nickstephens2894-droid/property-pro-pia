@@ -62,23 +62,32 @@ export const validateFinancing = (propertyData: PropertyData): CompletionStatus 
 };
 
 export const validatePurchaseCosts = (propertyData: PropertyData): CompletionStatus => {
-  const hasStampDuty = propertyData.stampDuty > 0;
-  const hasLegalFees = propertyData.legalFees > 0;
-  const hasRealisticInspectionFees = propertyData.inspectionFees >= 300; // Minimum realistic inspection fee
+  const { stampDuty, legalFees, inspectionFees, councilFees } = propertyData;
+  
+  // Check if all basic purchase costs are present (including 0 as valid)
+  const hasStampDuty = stampDuty !== undefined && stampDuty !== null && stampDuty > 0;
+  const hasLegalFees = legalFees !== undefined && legalFees !== null;
+  const hasInspectionFees = inspectionFees !== undefined && inspectionFees !== null;
+  const hasCouncilFees = councilFees !== undefined && councilFees !== null;
   
   if (!hasStampDuty) return 'error';
-  if (!hasLegalFees || !hasRealisticInspectionFees) return 'warning';
   
+  let missingOptionalFields = 0;
+  if (!hasLegalFees) missingOptionalFields++;
+  if (!hasInspectionFees) missingOptionalFields++;
+  if (!hasCouncilFees) missingOptionalFields++;
+  
+  // For construction projects, also check architect fees and site costs
   if (propertyData.isConstructionProject) {
-    const hasConstructionCosts = 
-      propertyData.councilFees > 0 || 
-      propertyData.architectFees > 0 || 
-      propertyData.siteCosts > 0;
+    const hasArchitectFees = propertyData.architectFees !== undefined && propertyData.architectFees !== null;
+    const hasSiteCosts = propertyData.siteCosts !== undefined && propertyData.siteCosts !== null;
     
-    if (!hasConstructionCosts) return 'warning';
+    if (!hasArchitectFees) missingOptionalFields++;
+    if (!hasSiteCosts) missingOptionalFields++;
   }
   
-  return 'complete';
+  if (missingOptionalFields === 0) return 'complete';
+  return missingOptionalFields <= 2 ? 'warning' : 'incomplete';
 };
 
 export const validateAnnualExpenses = (propertyData: PropertyData): CompletionStatus => {
