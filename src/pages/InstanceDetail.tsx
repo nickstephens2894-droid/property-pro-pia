@@ -571,18 +571,7 @@ const InstanceDetail = () => {
 
   // Calculate holding costs
   const holdingCosts = useMemo(() => {
-    const result = calculateHoldingCosts();
-    console.log('🔧 DEBUG: Holding costs calculation:', {
-      isConstructionProject: propertyData.isConstructionProject,
-      constructionPeriod: propertyData.constructionPeriod,
-      constructionInterestRate: propertyData.constructionInterestRate,
-      landValue: propertyData.landValue,
-      constructionValue: propertyData.constructionValue,
-      stampDuty: propertyData.stampDuty,
-      constructionProgressPayments: propertyData.constructionProgressPayments,
-      result: result
-    });
-    return result;
+    return calculateHoldingCosts();
   }, [calculateHoldingCosts]);
 
   // Calculate depreciation with separate building and fixtures amounts per year
@@ -768,17 +757,6 @@ const InstanceDetail = () => {
       const constructionTaxBenefit = -calculateTotalTaxDifference(constructionTaxableIncome, 0);
       const constructionAfterTaxCashFlow = -(constructionMainPaymentCash + constructionEquityPaymentCash) + constructionTaxBenefit;
       cumulativeCashFlow += constructionAfterTaxCashFlow;
-
-      // Debug log construction period calculation
-      console.log('🚀 Construction Period Summary Debug:', {
-        holdingCostsTotal: holdingCosts.total,
-        constructionPeriod: propertyData.constructionPeriod,
-        constructionInterestRate: propertyData.constructionInterestRate,
-        isConstructionProject: propertyData.isConstructionProject,
-        landValue: propertyData.landValue,
-        constructionValue: propertyData.constructionValue,
-        constructionProgressPayments: propertyData.constructionProgressPayments
-      });
 
       constructionPeriodProjection = {
         year: 0,
