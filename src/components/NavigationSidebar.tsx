@@ -64,7 +64,8 @@ export function NavigationSidebar({ open, onOpenChange }: NavigationSidebarProps
             <nav className="flex-1 px-4 py-4">
               <div className="space-y-1">
                 {navigationItems.map(({ to, label, icon: Icon }) => {
-                  const isActive = pathname === to;
+                  // Helper function to determine if a route is active (including sub-routes)
+                  const isActive = to === "/" ? pathname === "/" : pathname.startsWith(to);
                   return (
                     <Button
                       key={to}

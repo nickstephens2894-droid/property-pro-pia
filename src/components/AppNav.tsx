@@ -16,27 +16,38 @@ export default function AppNav({ className = "" }: { className?: string }) {
     { to: "/", label: "Dashboard", icon: Home },
     { to: "/instances", label: "Instances", icon: Layers },
     { to: "/investors", label: "Investors", icon: Users },
-                                    { to: "/properties", label: "Properties", icon: Building2 },
+    { to: "/properties", label: "Properties", icon: Building2 },
     { to: "/funds", label: "Funds", icon: PiggyBank },
     { to: "/scenarios", label: "Scenarios", icon: FileText },
   ] as const;
 
-  const link = (to: string, label: string) => (
-    <Button
-      key={to}
-      variant={pathname === to ? "default" : "outline"}
-      size="sm"
-      onClick={() => navigate(to)}
-      className={cn(
-        "rounded-lg font-medium",
-        pathname === to 
-          ? "bg-primary text-primary-foreground hover:bg-primary/90" 
-          : "bg-white text-gray-700 hover:bg-gray-50 border-gray-200"
-      )}
-    >
-      {label}
-    </Button>
-  );
+  // Helper function to determine if a route is active (including sub-routes)
+  const isActiveRoute = (route: string) => {
+    if (route === "/") {
+      return pathname === "/";
+    }
+    return pathname.startsWith(route);
+  };
+
+  const link = (to: string, label: string) => {
+    const isActive = isActiveRoute(to);
+    return (
+      <Button
+        key={to}
+        variant={isActive ? "default" : "outline"}
+        size="sm"
+        onClick={() => navigate(to)}
+        className={cn(
+          "rounded-lg font-medium",
+          isActive 
+            ? "bg-primary text-primary-foreground hover:bg-primary/90" 
+            : "bg-white text-gray-700 hover:bg-gray-50 border-gray-200"
+        )}
+      >
+        {label}
+      </Button>
+    );
+  };
 
   return (
     <>

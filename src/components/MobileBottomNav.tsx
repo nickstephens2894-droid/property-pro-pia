@@ -11,18 +11,18 @@ export function MobileBottomNav() {
   const navigate = useNavigate();
   const [showSidebar, setShowSidebar] = React.useState(false);
 
-  // Determine the primary icon and type based on current route
+  // Determine the primary icon and type based on current route (including sub-routes)
   const getPrimaryConfig = () => {
-    switch (pathname) {
-      case "/instances":
-        return { icon: Layers, type: "instances" as const, label: "Instances" };
-      case "/investors":
-        return { icon: Users, type: "investors" as const, label: "Investors" };
-      case "/properties":
-        return { icon: Building2, type: "properties" as const, label: "Properties" };
-      default:
-        return { icon: Home, type: null, label: "Dashboard" };
+    if (pathname.startsWith("/instances")) {
+      return { icon: Layers, type: "instances" as const, label: "Instances" };
     }
+    if (pathname.startsWith("/investors")) {
+      return { icon: Users, type: "investors" as const, label: "Investors" };
+    }
+    if (pathname.startsWith("/properties")) {
+      return { icon: Building2, type: "properties" as const, label: "Properties" };
+    }
+    return { icon: Home, type: null, label: "Dashboard" };
   };
 
   const primaryConfig = getPrimaryConfig();
