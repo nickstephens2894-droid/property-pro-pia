@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, BarChart3, FileText, PiggyBank, HelpCircle, X } from "lucide-react";
+import { Home, BarChart3, FileText, PiggyBank, HelpCircle, X, Layers, Users, Building2 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -20,6 +20,9 @@ export function NavigationSidebar({ open, onOpenChange }: NavigationSidebarProps
 
   const navigationItems = [
     { to: "/", label: "Dashboard", icon: Home },
+    { to: "/instances", label: "Instances", icon: Layers },
+    { to: "/investors", label: "Investors", icon: Users },
+    { to: "/properties", label: "Properties", icon: Building2 },
     { to: "/projections", label: "Projections", icon: BarChart3 },
     { to: "/funds", label: "Funds", icon: PiggyBank },
     { to: "/scenarios", label: "Scenarios", icon: FileText },
