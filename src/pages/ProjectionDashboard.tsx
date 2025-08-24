@@ -50,7 +50,7 @@ export default function ProjectionDashboard() {
   const isMobile = useIsMobile();
   const [selectedInstanceIds, setSelectedInstanceIds] = useState<string[]>([]);
   const [selectedMetrics, setSelectedMetrics] = useState<MetricComparison[]>([]);
-  const [yearRange, setYearRange] = useState<[number, number]>([1, 10]);
+  const [startYear, setStartYear] = useState<number>(1); // Starting year of 10-year window
 
   useEffect(() => {
     if (selectedInstanceIds.length > 0 && instances.length > 0) {
@@ -96,8 +96,8 @@ export default function ProjectionDashboard() {
   const generateTimelineData = () => {
     if (selectedMetrics.length === 0) return [];
     
-    const [startYear, endYear] = yearRange;
-    const years = Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i);
+    const endYear = startYear + 9; // Always show 10 years
+    const years = Array.from({ length: 10 }, (_, i) => startYear + i);
     
     return years.map(year => {
       const dataPoint: any = { year: isMobile ? `Y${year}` : `Year ${year}` };
@@ -377,26 +377,25 @@ export default function ProjectionDashboard() {
                   </ResponsiveContainer>
                 </ChartContainer>
                 
-                {/* Year Range Slider */}
+                {/* Year Slider */}
                 <div className="mt-4 space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium">Year Range:</span>
                     <span className="text-sm text-muted-foreground">
-                      Year {yearRange[0]} - {yearRange[1]} ({yearRange[1] - yearRange[0] + 1} years)
+                      Year {startYear} - {startYear + 9} (10 years)
                     </span>
                   </div>
                   <Slider
-                    value={yearRange}
-                    onValueChange={([start, end]) => setYearRange([start, end])}
-                    max={30}
+                    value={[startYear]}
+                    onValueChange={([value]) => setStartYear(value)}
+                    max={21}
                     min={1}
-                    step={1}
-                    minStepsBetweenThumbs={9} // Minimum 10 year span
+                    step={5}
                     className="w-full"
                   />
                   <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Year 1</span>
-                    <span>Year 30</span>
+                    <span>Years 1-10</span>
+                    <span>Years 21-30</span>
                   </div>
                 </div>
                 
@@ -492,26 +491,25 @@ export default function ProjectionDashboard() {
                   </ResponsiveContainer>
                 </ChartContainer>
                 
-                {/* Year Range Slider */}
+                {/* Year Slider */}
                 <div className="mt-4 space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium">Year Range:</span>
                     <span className="text-sm text-muted-foreground">
-                      Year {yearRange[0]} - {yearRange[1]} ({yearRange[1] - yearRange[0] + 1} years)
+                      Year {startYear} - {startYear + 9} (10 years)
                     </span>
                   </div>
                   <Slider
-                    value={yearRange}
-                    onValueChange={([start, end]) => setYearRange([start, end])}
-                    max={30}
+                    value={[startYear]}
+                    onValueChange={([value]) => setStartYear(value)}
+                    max={21}
                     min={1}
-                    step={1}
-                    minStepsBetweenThumbs={9} // Minimum 10 year span
+                    step={5}
                     className="w-full"
                   />
                   <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Year 1</span>
-                    <span>Year 30</span>
+                    <span>Years 1-10</span>
+                    <span>Years 21-30</span>
                   </div>
                 </div>
                 
