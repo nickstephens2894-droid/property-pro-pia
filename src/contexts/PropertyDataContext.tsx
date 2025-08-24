@@ -62,6 +62,7 @@ export interface PropertyData {
   primaryPropertyValue: number;
   existingDebt: number;
   maxLVR: number;
+  equityLoanAmount: number; // The calculated/entered equity loan amount
   equityLoanType: 'io' | 'pi';
   equityLoanIoTermYears: number;
   equityLoanInterestRate: number;
@@ -221,6 +222,7 @@ const defaultPropertyData: PropertyData = {
   primaryPropertyValue: 1000000,
   existingDebt: 400000,
   maxLVR: 80,
+  equityLoanAmount: 0, // Calculated/entered equity loan amount
   equityLoanType: 'pi',
   equityLoanIoTermYears: 3,
   equityLoanInterestRate: 7.2, // Higher rate for equity loans
@@ -455,35 +457,63 @@ export const PropertyDataProvider = ({ children }: { children: ReactNode }) => {
     return fundingAnalysis.minimumCashRequired;
   };
 
+  const calculateOptimalMainLoan = () => {
+    const totalProjectCost = calculateTotalProjectCost();
+    const propertyValue = propertyData.isConstructionProject 
+      ? propertyData.landValue + propertyData.constructionValue 
+      : propertyData.purchasePrice;
+    
+    // Calculate maximum loan based on LVR
+    const maxLoanByLVR = (propertyValue * propertyData.lvr) / 100;
+    
+    // Calculate maximum loan based on funding requirement
+    const cashDeposit = propertyData.depositAmount || 0;
+    const equityLoan = propertyData.equityLoanAmount || 0;
+    const maxLoanByFunding = totalProjectCost - cashDeposit - equityLoan;
+    
+    // Take the minimum to respect both LVR and funding constraints
+    return Math.max(0, Math.min(maxLoanByLVR, maxLoanByFunding));
+  };
+
   const calculateFundingAnalysis = () => {
     const totalProjectCost = calculateTotalProjectCost();
     const availableEquity = calculateAvailableEquity();
     
-    // Calculate equity loan amount first (without circular dependency)
-    const shortfallAfterMainLoan = Math.max(0, totalProjectCost - propertyData.loanAmount);
+    // Use the equity loan amount from user input (calculated via EquityLoanCalculator)
     const equityLoanAmount = propertyData.useEquityFunding 
-      ? Math.min(shortfallAfterMainLoan, availableEquity)
+      ? (propertyData.equityLoanAmount || 0)
       : 0;
     
-    // Calculate what's needed after main loan and equity
-    const shortfallAfterLoans = Math.max(0, totalProjectCost - propertyData.loanAmount - equityLoanAmount);
+    // Calculate optimal main loan based on LVR and funding constraints  
+    const propertyValue = propertyData.isConstructionProject 
+      ? propertyData.landValue + propertyData.constructionValue 
+      : propertyData.purchasePrice;
+    const maxLoanByLVR = (propertyValue * propertyData.lvr) / 100;
+    const optimalMainLoan = Math.min(maxLoanByLVR, totalProjectCost - equityLoanAmount - (propertyData.depositAmount || 0));
+    const actualMainLoan = propertyData.loanAmount || optimalMainLoan;
+    
     const actualCashDeposit = propertyData.depositAmount || 0;
     
     // Total funding provided
-    const totalFunding = propertyData.loanAmount + equityLoanAmount + actualCashDeposit;
+    const totalFunding = actualMainLoan + equityLoanAmount + actualCashDeposit;
+    
+    // Calculate minimum cash required to complete the project
+    const minimumCashRequired = Math.max(0, totalProjectCost - actualMainLoan - equityLoanAmount);
     
     return {
       totalProjectCost,
-      mainLoanAmount: propertyData.loanAmount,
+      mainLoanAmount: actualMainLoan,
+      optimalMainLoan,
       equityLoanAmount,
       availableEquity,
-      minimumCashRequired: shortfallAfterLoans,
+      minimumCashRequired,
       actualCashDeposit,
       fundingShortfall: Math.max(0, totalProjectCost - totalFunding),
       fundingSurplus: Math.max(0, totalFunding - totalProjectCost),
       isEquityEnabled: propertyData.useEquityFunding,
       equitySurplus: Math.max(0, availableEquity - equityLoanAmount),
       offsetAccountBalance: Math.max(0, totalFunding - totalProjectCost),
+      lvrUtilization: actualMainLoan > 0 && propertyData.lvr > 0 ? (actualMainLoan / ((propertyData.isConstructionProject ? propertyData.landValue + propertyData.constructionValue : propertyData.purchasePrice) * propertyData.lvr / 100)) * 100 : 0,
     };
   };
 

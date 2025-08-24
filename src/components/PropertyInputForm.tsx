@@ -15,10 +15,12 @@ import { FundingSummaryPanel } from "@/components/FundingSummaryPanel";
 
 import { ValidationWarnings } from "@/components/ValidationWarnings";
 import StampDutyCalculator from "@/components/StampDutyCalculator";
+import EquityLoanCalculator from "@/components/EquityLoanCalculator";
 import { useFieldConfirmations } from "@/hooks/useFieldConfirmations";
 import { useInputProtection } from "@/hooks/useInputProtection";
 import { usePropertyData, PropertyData } from "@/contexts/PropertyDataContext";
 import { useRepo, type Investor } from "@/services/repository";
+import { formatCurrency } from "@/utils/formatters";
 import { 
   validatePersonalProfile, 
   validatePropertyBasics, 
@@ -196,6 +198,7 @@ export const PropertyInputForm = ({
     confirmationType: 'construction' | 'building';
   } | null>(null);
   const [dutyCalcOpen, setDutyCalcOpen] = useState(false);
+  const [showEquityCalculator, setShowEquityCalculator] = useState(false);
   
   // Investor selection dialog state
   const [isInvestorDialogOpen, setIsInvestorDialogOpen] = useState(false);
@@ -1532,9 +1535,77 @@ export const PropertyInputForm = ({
                   </div>
                 </div>
 
-                     {/* Equity Funding Details */}
+                      {/* Equity Funding Details */}
                 {propertyData.useEquityFunding && (
                   <div className="space-y-4">
+                    <h4 className="font-medium text-sm md:text-base">Equity Loan Amount</h4>
+                    
+                    {/* Equity Loan Amount Input with Calculator */}
+                    <div className="space-y-4">
+                      <div className="flex flex-col md:flex-row gap-3">
+                        <div className="flex-1 space-y-2">
+                          <Label htmlFor="equityLoanAmount" className="text-sm font-medium">Equity Loan Amount</Label>
+                          <CurrencyInput
+                            id="equityLoanAmount"
+                            value={propertyData.equityLoanAmount || 0}
+                            onChange={(value) => updateField('equityLoanAmount', value)}
+                            className="min-h-[44px] md:min-h-10"
+                            placeholder="Enter equity loan amount"
+                          />
+                        </div>
+                        <div className="flex items-end">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size={isMobile ? "default" : "sm"}
+                            className="w-full md:w-auto min-h-[44px] md:min-h-10 px-4"
+                            onClick={() => setShowEquityCalculator(true)}
+                          >
+                            <Calculator className="h-4 w-4 mr-2" />
+                            Calculate
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      {/* Quick Funding Analysis Summary */}
+                      {(() => {
+                        const fundingAnalysis = calculateFundingAnalysis();
+                        const hasEquityShortfall = fundingAnalysis.equityLoanAmount > (propertyData.equityLoanAmount || 0);
+                        const fundingGap = fundingAnalysis.fundingShortfall;
+                        
+                        return (
+                          <div className="bg-muted/30 rounded-lg p-3 space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Calculator className="h-4 w-4 flex-shrink-0" />
+                              <span className="text-sm font-medium">Funding Analysis</span>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                              <div>
+                                <div className="text-xs text-muted-foreground">Required for Project:</div>
+                                <div className="font-medium">{formatCurrency(fundingAnalysis.totalProjectCost)}</div>
+                              </div>
+                              <div>
+                                <div className="text-xs text-muted-foreground">Total Funding:</div>
+                                <div className="font-medium">{formatCurrency(fundingAnalysis.mainLoanAmount + fundingAnalysis.equityLoanAmount + fundingAnalysis.actualCashDeposit)}</div>
+                              </div>
+                              <div>
+                                <div className="text-xs text-muted-foreground">Funding Gap:</div>
+                                <div className={`font-medium ${fundingGap > 0 ? 'text-destructive' : 'text-success'}`}>
+                                  {fundingGap > 0 ? `-${formatCurrency(fundingGap)}` : formatCurrency(Math.abs(fundingGap))}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-xs text-muted-foreground">Status:</div>
+                                <div className={`font-medium text-xs ${fundingGap === 0 ? 'text-success' : fundingGap > 0 ? 'text-destructive' : 'text-warning'}`}>
+                                  {fundingGap === 0 ? '✓ Fully Funded' : fundingGap > 0 ? '⚠ Shortfall' : '⚠ Overfunded'}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+
                     <h4 className="font-medium text-sm md:text-base">Equity Property Details</h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-2">
@@ -1558,48 +1629,16 @@ export const PropertyInputForm = ({
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="maxLVR" className="text-sm font-medium">Maximum LVR Available</Label>
-                        <PercentageInput
+                        <Label htmlFor="maxLVR" className="text-sm font-medium">Maximum LVR Available (%)</Label>
+                        <NumberInput
                           id="maxLVR"
                           value={propertyData.maxLVR}
                           onChange={(value) => updateField('maxLVR', value)}
                           className="min-h-[44px] md:min-h-10"
+                          min={0}
+                          max={100}
                         />
                       </div>
-                    </div>
-
-                    {/* Equity Loan Calculation Display */}
-                    <div className="bg-muted/30 rounded-lg p-3 md:p-4 space-y-3">
-                      <h5 className="font-medium text-sm flex items-center gap-2">
-                        <Calculator className="h-4 w-4 flex-shrink-0" />
-                        Equity Calculation Summary
-                      </h5>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                        <div className="space-y-1">
-                          <span className="text-muted-foreground">Available Equity:</span>
-                          <div className="font-medium text-primary">
-                            ${calculateAvailableEquity().toLocaleString()}
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <span className="text-muted-foreground">Required Equity Loan:</span>
-                          <div className={`font-medium ${calculateEquityLoanAmount() > calculateAvailableEquity() ? 'text-destructive' : 'text-success'}`}>
-                            ${calculateEquityLoanAmount().toLocaleString()}
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <span className="text-muted-foreground">Remaining Equity:</span>
-                          <div className="font-medium">
-                            ${Math.max(0, calculateAvailableEquity() - calculateEquityLoanAmount()).toLocaleString()}
-                          </div>
-                        </div>
-                      </div>
-                      {calculateEquityLoanAmount() > calculateAvailableEquity() && (
-                        <div className="flex items-start gap-2 text-destructive text-sm p-2 bg-destructive/10 rounded">
-                          <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                          <span>Insufficient equity available. Consider increasing property value or reducing loan amount.</span>
-                        </div>
-                      )}
                     </div>
 
                     {/* Equity Loan Options */}
@@ -2166,6 +2205,13 @@ export const PropertyInputForm = ({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {/* Equity Loan Calculator Dialog */}
+    <EquityLoanCalculator
+      open={showEquityCalculator}
+      onOpenChange={setShowEquityCalculator}
+      onApplyEquityLoan={(amount) => updateField('equityLoanAmount', amount)}
+    />
   </div>
   );
 };
