@@ -943,13 +943,13 @@ export const PropertyInputForm = ({
     </AccordionTrigger>
     <AccordionContent className="px-6 pb-6">
       <div className="space-y-6">
-        {/* Construction Timeline */}
+        {/* Construction Timeline & Financing */}
         <div className="bg-accent/20 rounded-lg p-4">
           <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
             <Clock className="h-4 w-4" />
-            Construction Timeline
+            Construction Timeline & Loan Structure
           </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
             <div>
               <Label htmlFor="constructionPeriod" className="text-sm font-medium">Construction Period (months)</Label>
               <NumberInput
@@ -963,7 +963,7 @@ export const PropertyInputForm = ({
               />
             </div>
             <div>
-              <Label htmlFor="constructionInterestRate" className="text-sm font-medium">Construction Interest Rate</Label>
+              <Label htmlFor="constructionInterestRate" className="text-sm font-medium">Main Loan Rate (Construction Period)</Label>
               <PercentageInput
                 id="constructionInterestRate"
                 value={propertyData.constructionInterestRate}
@@ -971,6 +971,22 @@ export const PropertyInputForm = ({
                 className="mt-1"
                 placeholder="Enter rate"
               />
+              <div className="text-xs text-muted-foreground mt-1">
+                Interest rate during construction
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="postConstructionRateReduction" className="text-sm font-medium">Rate Reduction After Construction</Label>
+              <PercentageInput
+                id="postConstructionRateReduction"
+                value={propertyData.postConstructionRateReduction}
+                onChange={(value) => updateField('postConstructionRateReduction', value)}
+                className="mt-1"
+                placeholder="0.5"
+              />
+              <div className="text-xs text-muted-foreground mt-1">
+                Ongoing rate: {(propertyData.constructionInterestRate - propertyData.postConstructionRateReduction).toFixed(1)}%
+              </div>
             </div>
           </div>
           {/* Construction Progress Payments */}
@@ -1345,16 +1361,46 @@ export const PropertyInputForm = ({
                 {/* Main Loan Structure */}
                 <div className="space-y-4">
                   <h4 className="font-medium text-sm">Main Loan Structure</h4>
+                  {propertyData.isConstructionProject && (
+                    <Alert variant="info" className="mb-4">
+                      <Info className="h-4 w-4" />
+                      <AlertTitle>Construction Loan Structure</AlertTitle>
+                      <AlertDescription>
+                        The main loan acts as your construction loan during building. Rate is set in Construction Timeline section.
+                        <br />
+                        <strong>Construction Rate:</strong> {propertyData.constructionInterestRate}% →  
+                        <strong>Ongoing Rate:</strong> {(propertyData.constructionInterestRate - propertyData.postConstructionRateReduction).toFixed(1)}% 
+                        (after {propertyData.postConstructionRateReduction}% reduction)
+                      </AlertDescription>
+                    </Alert>
+                  )}
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div>
-                        <Label htmlFor="interestRate" className="text-sm font-medium">Interest Rate</Label>
+                        <Label htmlFor="interestRate" className="text-sm font-medium">
+                          {propertyData.isConstructionProject ? 'Ongoing Interest Rate (Post-Construction)' : 'Interest Rate'}
+                        </Label>
                         <PercentageInput
                           id="interestRate"
-                          value={propertyData.interestRate}
-                          onChange={(value) => updateField('interestRate', value)}
+                          value={propertyData.isConstructionProject ? 
+                            (propertyData.constructionInterestRate - propertyData.postConstructionRateReduction) : 
+                            propertyData.interestRate
+                          }
+                          onChange={(value) => {
+                            if (propertyData.isConstructionProject) {
+                              // Update construction rate to maintain the reduction amount
+                              updateField('constructionInterestRate', value + propertyData.postConstructionRateReduction);
+                            } else {
+                              updateField('interestRate', value);
+                            }
+                          }}
                           className="mt-1"
                         />
+                        {propertyData.isConstructionProject && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Calculated from construction rate minus reduction
+                          </div>
+                        )}
                       </div>
                       <div>
                         <Label htmlFor="loanTerm" className="text-sm font-medium">Loan Term (years)</Label>

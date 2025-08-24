@@ -35,7 +35,8 @@ export interface PropertyData {
   landValue: number;
   constructionValue: number;
   constructionPeriod: number; // months
-  constructionInterestRate: number;
+  constructionInterestRate: number; // Main loan rate during construction
+  postConstructionRateReduction: number; // Rate reduction after construction (e.g., 0.5%)
   
   // Construction Progress Payments
   constructionProgressPayments: Array<{
@@ -178,6 +179,7 @@ const defaultPropertyData: PropertyData = {
   constructionValue: 0,
   constructionPeriod: 0,
   constructionInterestRate: 0,
+  postConstructionRateReduction: 0.5, // Default 0.5% reduction after construction
   
   // Construction Progress Payments
   constructionProgressPayments: [
