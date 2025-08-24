@@ -6,7 +6,9 @@ import { useNavigate } from "react-router-dom";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useInstances } from "@/contexts/InstancesContext";
-import { Instance } from "@/integrations/supabase/types";
+import { Database } from "@/integrations/supabase/types";
+
+type Instance = Database['public']['Tables']['instances']['Row'];
 
 const Instances = () => {
   const navigate = useNavigate();

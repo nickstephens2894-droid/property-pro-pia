@@ -526,12 +526,30 @@ export const PropertyCalculationDetails = ({
                         <span className="text-xs">{(result.ownershipPercentage * 100).toFixed(0)}% ownership</span>
                       </div>
                       <div className="grid grid-cols-3 gap-2 text-xs">
-                        <div>Tax: ${result.taxDifference.toLocaleString()}</div>
+                        <div className={result.taxDifference < 0 ? 'text-success' : 'text-destructive'}>
+                          Tax {result.taxDifference < 0 ? 'Benefit' : 'Cost'}: ${Math.abs(result.taxDifference).toLocaleString()}
+                        </div>
                         <div>Rate: {(result.marginalTaxRate * 100).toFixed(0)}%</div>
                         <div>Income: ${result.propertyTaxableIncome.toLocaleString()}</div>
                       </div>
                     </div>
                   ))}
+                  
+                  {/* Total Tax Impact Summary */}
+                  <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium text-sm">Total Tax Impact (Year 1)</span>
+                      <span className={`text-lg font-bold ${taxRefundOrLiability < 0 ? 'text-success' : 'text-destructive'}`}>
+                        {taxRefundOrLiability < 0 ? '+' : '-'}${Math.abs(taxRefundOrLiability).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {taxRefundOrLiability < 0 
+                        ? '✅ Property provides tax savings (reduces total tax liability)' 
+                        : '⚠️ Property increases total tax liability'
+                      }
+                    </div>
+                  </div>
                 </div>
 
                 {/* CGT Impact */}

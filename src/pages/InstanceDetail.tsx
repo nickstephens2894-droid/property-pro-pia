@@ -20,7 +20,9 @@ import { ValidationWarnings } from "@/components/ValidationWarnings";
 // Import the context hook
 import { usePropertyData } from "@/contexts/PropertyDataContext";
 import { useInstances } from "@/contexts/InstancesContext";
-import { Instance } from "@/integrations/supabase/types";
+import { Database } from "@/integrations/supabase/types";
+
+type Instance = Database['public']['Tables']['instances']['Row'];
 import { useToast } from "@/hooks/use-toast";
 
 // Import utility functions
@@ -159,22 +161,22 @@ const InstanceDetail = () => {
               interestRate: instanceData.interest_rate,
               loanTerm: instanceData.loan_term,
               lvr: instanceData.lvr,
-              mainLoanType: instanceData.main_loan_type,
+              mainLoanType: instanceData.main_loan_type as "io" | "pi",
               ioTermYears: instanceData.io_term_years,
               useEquityFunding: instanceData.use_equity_funding,
               primaryPropertyValue: instanceData.primary_property_value,
               existingDebt: instanceData.existing_debt,
               maxLVR: instanceData.max_lvr,
-              equityLoanType: instanceData.equity_loan_type,
+              equityLoanType: instanceData.equity_loan_type as "io" | "pi",
               equityLoanIoTermYears: instanceData.equity_loan_io_term_years,
               equityLoanInterestRate: instanceData.equity_loan_interest_rate,
               equityLoanTerm: instanceData.equity_loan_term,
               depositAmount: instanceData.deposit_amount,
               minimumDepositRequired: instanceData.minimum_deposit_required,
-              holdingCostFunding: instanceData.holding_cost_funding,
+              holdingCostFunding: instanceData.holding_cost_funding as "cash" | "debt" | "hybrid",
               holdingCostCashPercentage: instanceData.holding_cost_cash_percentage,
               capitalizeConstructionCosts: instanceData.capitalize_construction_costs,
-              constructionEquityRepaymentType: instanceData.construction_equity_repayment_type,
+              constructionEquityRepaymentType: instanceData.construction_equity_repayment_type as "io" | "pi",
               landHoldingInterest: instanceData.land_holding_interest,
               constructionHoldingInterest: instanceData.construction_holding_interest,
               totalHoldingCosts: instanceData.total_holding_costs,
@@ -188,7 +190,7 @@ const InstanceDetail = () => {
               councilRates: instanceData.council_rates,
               insurance: instanceData.insurance,
               repairs: instanceData.repairs,
-              depreciationMethod: instanceData.depreciation_method,
+              depreciationMethod: instanceData.depreciation_method as "prime-cost" | "diminishing-value",
               isNewProperty: instanceData.is_new_property,
               currentPropertyMethod: instanceData.property_method as any,
               currentFundingMethod: instanceData.funding_method as any
@@ -446,22 +448,22 @@ const InstanceDetail = () => {
             interestRate: instance.interest_rate,
             loanTerm: instance.loan_term,
             lvr: instance.lvr,
-            mainLoanType: instance.main_loan_type,
+            mainLoanType: instance.main_loan_type as "io" | "pi",
             ioTermYears: instance.io_term_years,
             useEquityFunding: instance.use_equity_funding,
             primaryPropertyValue: instance.primary_property_value,
             existingDebt: instance.existing_debt,
             maxLVR: instance.max_lvr,
-            equityLoanType: instance.equity_loan_type,
+            equityLoanType: instance.equity_loan_type as "io" | "pi",
             equityLoanIoTermYears: instance.equity_loan_io_term_years,
             equityLoanInterestRate: instance.equity_loan_interest_rate,
             equityLoanTerm: instance.equity_loan_term,
             depositAmount: instance.deposit_amount,
             minimumDepositRequired: instance.minimum_deposit_required,
-            holdingCostFunding: instance.holding_cost_funding,
+            holdingCostFunding: instance.holding_cost_funding as "cash" | "debt" | "hybrid",
             holdingCostCashPercentage: instance.holding_cost_cash_percentage,
             capitalizeConstructionCosts: instance.capitalize_construction_costs,
-            constructionEquityRepaymentType: instance.construction_equity_repayment_type,
+            constructionEquityRepaymentType: instance.construction_equity_repayment_type as "io" | "pi",
             landHoldingInterest: instance.land_holding_interest,
             constructionHoldingInterest: instance.construction_holding_interest,
             totalHoldingCosts: instance.total_holding_costs,
@@ -476,7 +478,7 @@ const InstanceDetail = () => {
             insurance: instance.insurance,
             repairs: instance.repairs,
             // Fix depreciation method mapping
-            depreciationMethod: instance.depreciation_method,
+            depreciationMethod: instance.depreciation_method as "prime-cost" | "diminishing-value",
             isNewProperty: instance.is_new_property,
             currentPropertyMethod: instance.property_method as any,
             currentFundingMethod: instance.funding_method as any
@@ -952,7 +954,7 @@ const InstanceDetail = () => {
   const paperDeductions = depreciation.total;
   const totalDeductibleExpenses = cashDeductions + paperDeductions;
 
-  // Calculate tax results for investors using projections as single source of truth
+  // Calculate tax results for investors using projections as single source of truth with CPI indexing
   const investorTaxResults = useMemo(() => {
     const year1Data = projections.find(p => p.year === 1);
     if (!propertyData.investors || propertyData.investors.length === 0 || !year1Data) {
@@ -960,15 +962,14 @@ const InstanceDetail = () => {
       return [];
     }
     
-    // Use values from projections for consistency
-    const annualRent = year1Data.rentalIncome;
+    // Apply CPI indexing to investor incomes for consistency with projections
+    const cpiMultiplier = Math.pow(1 + 2.5 / 100, 1 - 1); // Year 1, so multiplier = 1
     const totalTaxBenefit = year1Data.taxBenefit;
     
-    console.log('📊 Using Projections for Tax Calculations:', {
+    console.log('📊 Using Projections for Tax Calculations (CPI-adjusted):', {
       source: 'projections[1]',
-      annualRent,
+      cpiMultiplier,
       totalTaxBenefit,
-      totalDeductibleExpenses,
       year1Data: {
         rentalIncome: year1Data.rentalIncome,
         taxBenefit: year1Data.taxBenefit,
@@ -982,11 +983,21 @@ const InstanceDetail = () => {
       
       // Calculate investor's share of tax benefit from projections
       const investorTaxBenefit = totalTaxBenefit * ownershipPercentage;
-      const totalIncome = investor.annualIncome + (investor.otherIncome || 0);
       
-      // Calculate taxes using actual projection results
-      const taxWithoutProperty = totalTaxAU(totalIncome, investor.hasMedicareLevy);
-      const taxWithProperty = taxWithoutProperty + investorTaxBenefit; // Add tax benefit (negative = refund)
+      // Apply CPI indexing to investor income (consistent with projection calculations)
+      const adjustedTotalIncome = (investor.annualIncome + (investor.otherIncome || 0)) * cpiMultiplier;
+      
+      // Calculate taxes using CPI-adjusted income and correct sign convention
+      const taxWithoutProperty = totalTaxAU(adjustedTotalIncome, investor.hasMedicareLevy);
+      const taxWithProperty = taxWithoutProperty - Math.abs(investorTaxBenefit); // FIXED: Subtract tax benefit (benefit reduces tax)
+      
+      console.log(`🧾 Tax calculation for ${investor.name}:`, {
+        investorTaxBenefit,
+        taxWithoutProperty,
+        taxWithProperty,
+        taxDifference: investorTaxBenefit,
+        calculation: `${taxWithoutProperty} - ${Math.abs(investorTaxBenefit)} = ${taxWithProperty}`
+      });
       
       return {
         investor: {
@@ -1000,9 +1011,9 @@ const InstanceDetail = () => {
         ownershipPercentage,
         taxWithoutProperty,
         taxWithProperty,
-        taxDifference: investorTaxBenefit, // Use projection-based tax benefit
-        marginalTaxRate: marginalRateAU(totalIncome),
-        propertyTaxableIncome: (annualRent - totalDeductibleExpenses) * ownershipPercentage
+        taxDifference: investorTaxBenefit, // Use projection-based tax benefit (negative = savings)
+        marginalTaxRate: marginalRateAU(adjustedTotalIncome),
+        propertyTaxableIncome: year1Data.rentalIncome - totalDeductibleExpenses // Use projection rental income
       };
     });
   }, [projections, propertyData.investors, propertyData.ownershipAllocations, totalDeductibleExpenses]);
@@ -1010,16 +1021,39 @@ const InstanceDetail = () => {
   // Calculate total tax refund or liability using projections for consistency
   const totalTaxRefundOrLiability = useMemo(() => {
     const year1Data = projections.find(p => p.year === 1);
-    const result = year1Data ? -year1Data.taxBenefit : 0; // Negative taxBenefit = tax liability, positive = refund
+    const result = year1Data ? year1Data.taxBenefit : 0; // FIXED: Use taxBenefit directly (negative = benefit/savings)
     
-    console.log('🧾 Tax Refund/Liability Calculation:', {
+    console.log('🧾 Tax Refund/Liability Calculation (CORRECTED):', {
       year1TaxBenefit: year1Data?.taxBenefit,
       totalTaxRefundOrLiability: result,
-      meaning: result > 0 ? 'Tax Liability (pay more)' : 'Tax Refund (get back)'
+      meaning: result < 0 ? 'Tax Savings/Benefit (reduces tax)' : 'Tax Liability (increases tax)',
+      note: 'Negative values = SAVINGS, Positive values = INCREASED TAX'
     });
     
     return result;
   }, [projections]);
+
+  // Add comprehensive validation logging for tax calculations
+  useEffect(() => {
+    if (projections.length > 0 && investorTaxResults.length > 0) {
+      console.log('🔍 COMPREHENSIVE TAX VALIDATION:', {
+        projectionTaxBenefit: projections[0]?.taxBenefit,
+        totalTaxRefundOrLiability,
+        investorTaxResultsSum: investorTaxResults.reduce((sum, result) => sum + result.taxDifference, 0),
+        signConventionCheck: {
+          negative_means: 'Tax SAVINGS/BENEFIT (good for investor)',
+          positive_means: 'Tax INCREASE/COST (bad for investor)',
+          current_value: totalTaxRefundOrLiability,
+          interpretation: totalTaxRefundOrLiability < 0 ? 'TAX SAVINGS ✅' : 'TAX INCREASE ⚠️'
+        },
+        cpiIndexingCheck: {
+          note: 'Investor incomes should be CPI-adjusted for consistency',
+          multiplier: 'Math.pow(1 + 2.5 / 100, year - 1)',
+          year1Multiplier: 1
+        }
+      });
+    }
+  }, [projections, investorTaxResults, totalTaxRefundOrLiability]);
 
   // Calculate net of tax cost/income using projections data for consistency
   const netOfTaxCostIncome = useMemo(() => {
