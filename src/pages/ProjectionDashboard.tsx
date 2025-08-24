@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
+import { Slider } from "@/components/ui/slider";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Legend } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Legend } from "recharts";
 import { TrendingUp, DollarSign, PiggyBank, Calculator, BarChart3, Building } from "lucide-react";
 import { formatCurrency, formatPercentage } from "@/utils/formatters";
 
@@ -49,6 +50,7 @@ export default function ProjectionDashboard() {
   const isMobile = useIsMobile();
   const [selectedInstanceIds, setSelectedInstanceIds] = useState<string[]>([]);
   const [selectedMetrics, setSelectedMetrics] = useState<MetricComparison[]>([]);
+  const [yearRange, setYearRange] = useState<[number, number]>([1, 10]);
 
   useEffect(() => {
     if (selectedInstanceIds.length > 0 && instances.length > 0) {
@@ -94,7 +96,8 @@ export default function ProjectionDashboard() {
   const generateTimelineData = () => {
     if (selectedMetrics.length === 0) return [];
     
-    const years = Array.from({ length: 10 }, (_, i) => i + 1);
+    const [startYear, endYear] = yearRange;
+    const years = Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i);
     
     return years.map(year => {
       const dataPoint: any = { year: isMobile ? `Y${year}` : `Year ${year}` };
@@ -133,6 +136,28 @@ export default function ProjectionDashboard() {
   };
 
   const timelineData = generateTimelineData();
+
+  // Get summary data for the selected range
+  const getSummaryData = (type: 'equity' | 'cashflow') => {
+    if (timelineData.length === 0) return null;
+    
+    const startData = timelineData[0];
+    const endData = timelineData[timelineData.length - 1];
+    
+    return selectedMetrics.map(metric => {
+      const startValue = startData[`${metric.name}_${type}`];
+      const endValue = endData[`${metric.name}_${type}`];
+      return {
+        name: metric.name,
+        startValue,
+        endValue,
+        growth: startValue > 0 ? ((endValue - startValue) / startValue) * 100 : 0
+      };
+    });
+  };
+
+  const equitySummary = getSummaryData('equity');
+  const cashflowSummary = getSummaryData('cashflow');
 
   if (loading) {
     return <LoadingSpinner message="Loading instances..." />;
@@ -282,11 +307,22 @@ export default function ProjectionDashboard() {
                   <TrendingUp className="h-4 w-4" />
                   Net Equity Projection
                 </CardTitle>
+                {/* Summary Statement */}
+                {equitySummary && equitySummary.length > 0 && (
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    {equitySummary.map(summary => (
+                      <div key={summary.name} className="flex justify-between items-center">
+                        <span className="font-medium">{summary.name}:</span>
+                        <span>{formatCurrency(summary.startValue)} → {formatCurrency(summary.endValue)} ({summary.growth > 0 ? '+' : ''}{summary.growth.toFixed(1)}%)</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardHeader>
               <CardContent>
                 <ChartContainer config={chartConfig} className={isMobile ? "h-64" : "h-80"}>
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart 
+                    <BarChart 
                       data={timelineData} 
                       margin={{ 
                         top: 10, 
@@ -325,24 +361,44 @@ export default function ProjectionDashboard() {
                       {!isMobile && (
                         <Legend 
                           wrapperStyle={{ fontSize: '11px', color: 'hsl(var(--muted-foreground))' }}
-                          iconType="line"
+                          iconType="rect"
                         />
                       )}
                       {selectedMetrics.map((metric, index) => (
-                        <Line
+                        <Bar
                           key={`${metric.instanceId}_equity`}
-                          type="monotone"
                           dataKey={`${metric.name}_equity`}
-                          stroke={`hsl(var(--chart-${(index % 5) + 1}))`}
-                          strokeWidth={isMobile ? 2 : 2.5}
+                          fill={`hsl(var(--chart-${(index % 5) + 1}))`}
                           name={metric.name}
-                          dot={false}
-                          activeDot={{ r: isMobile ? 4 : 5, stroke: `hsl(var(--chart-${(index % 5) + 1}))` }}
+                          radius={[2, 2, 0, 0]}
                         />
                       ))}
-                    </LineChart>
+                    </BarChart>
                   </ResponsiveContainer>
                 </ChartContainer>
+                
+                {/* Year Range Slider */}
+                <div className="mt-4 space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Year Range:</span>
+                    <span className="text-sm text-muted-foreground">
+                      Year {yearRange[0]} - {yearRange[1]} ({yearRange[1] - yearRange[0] + 1} years)
+                    </span>
+                  </div>
+                  <Slider
+                    value={yearRange}
+                    onValueChange={([start, end]) => setYearRange([start, end])}
+                    max={30}
+                    min={1}
+                    step={1}
+                    minStepsBetweenThumbs={9} // Minimum 10 year span
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Year 1</span>
+                    <span>Year 30</span>
+                  </div>
+                </div>
                 
                 {/* Mobile Legend */}
                 {isMobile && selectedMetrics.length > 0 && (
@@ -350,7 +406,7 @@ export default function ProjectionDashboard() {
                     {selectedMetrics.map((metric, index) => (
                       <div key={metric.instanceId} className="flex items-center gap-1.5">
                         <div 
-                          className="w-4 h-0.5 rounded"
+                          className="w-3 h-3 rounded-sm"
                           style={{ backgroundColor: `hsl(var(--chart-${(index % 5) + 1}))` }}
                         />
                         <span className="text-xs font-medium text-muted-foreground truncate max-w-24">{metric.name}</span>
@@ -368,6 +424,17 @@ export default function ProjectionDashboard() {
                   <BarChart3 className="h-4 w-4" />
                   Weekly Cashflow Projection
                 </CardTitle>
+                {/* Summary Statement */}
+                {cashflowSummary && cashflowSummary.length > 0 && (
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    {cashflowSummary.map(summary => (
+                      <div key={summary.name} className="flex justify-between items-center">
+                        <span className="font-medium">{summary.name}:</span>
+                        <span>{formatCurrency(summary.startValue)} → {formatCurrency(summary.endValue)} ({summary.growth > 0 ? '+' : ''}{summary.growth.toFixed(1)}%)</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardHeader>
               <CardContent>
                 <ChartContainer config={chartConfig} className={isMobile ? "h-64" : "h-80"}>
@@ -424,6 +491,29 @@ export default function ProjectionDashboard() {
                     </BarChart>
                   </ResponsiveContainer>
                 </ChartContainer>
+                
+                {/* Year Range Slider */}
+                <div className="mt-4 space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Year Range:</span>
+                    <span className="text-sm text-muted-foreground">
+                      Year {yearRange[0]} - {yearRange[1]} ({yearRange[1] - yearRange[0] + 1} years)
+                    </span>
+                  </div>
+                  <Slider
+                    value={yearRange}
+                    onValueChange={([start, end]) => setYearRange([start, end])}
+                    max={30}
+                    min={1}
+                    step={1}
+                    minStepsBetweenThumbs={9} // Minimum 10 year span
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Year 1</span>
+                    <span>Year 30</span>
+                  </div>
+                </div>
                 
                 {/* Mobile Legend */}
                 {isMobile && selectedMetrics.length > 0 && (
