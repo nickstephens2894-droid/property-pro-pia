@@ -258,17 +258,17 @@ export const FundingSummaryPanel = () => {
                         <span>Land & Acquisition Costs</span>
                         <span>${(holdingCosts.landInterest + holdingCosts.stampDutyInterest).toLocaleString()}</span>
                       </div>
-                      <div className="pl-2 space-y-1 text-xs text-muted-foreground">
-                        <div className="flex justify-between">
-                          <span>• Land value interest (${propertyData.landValue.toLocaleString()})</span>
-                          <span>${holdingCosts.landInterest.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>• Stamp duty interest (${propertyData.stampDuty.toLocaleString()})</span>
-                          <span>${holdingCosts.stampDutyInterest.toLocaleString()}</span>
-                        </div>
-                      </div>
-                      <div className="text-xs text-orange-600 italic pl-2">Full amount from day 1</div>
+                       <div className="pl-2 space-y-1 text-xs text-muted-foreground">
+                         <div className="flex justify-between">
+                           <span>• Land value interest (${propertyData.landValue.toLocaleString()})</span>
+                           <span>${holdingCosts.landInterest.toLocaleString()}</span>
+                         </div>
+                         <div className="flex justify-between">
+                           <span>• Stamp duty interest (${propertyData.stampDuty.toLocaleString()})</span>
+                           <span>${holdingCosts.stampDutyInterest.toLocaleString()}</span>
+                         </div>
+                       </div>
+                       <div className="text-xs text-orange-600 italic pl-2">Non-deductible, from settlement</div>
                     </div>
 
                     {/* Construction Costs */}
@@ -277,22 +277,22 @@ export const FundingSummaryPanel = () => {
                         <span>Construction Costs</span>
                         <span>${holdingCosts.constructionInterest.toLocaleString()}</span>
                       </div>
-                      <div className="pl-2 space-y-1 text-xs text-muted-foreground">
-                        <div className="flex justify-between">
-                          <span>• Construction value (${propertyData.constructionValue.toLocaleString()})</span>
-                          <span>${holdingCosts.constructionInterest.toLocaleString()}</span>
-                        </div>
-                      </div>
-                      <div className="text-xs text-blue-600 italic pl-2">Progressive drawdown (50% average)</div>
+                       <div className="pl-2 space-y-1 text-xs text-muted-foreground">
+                         <div className="flex justify-between">
+                           <span>• Construction value (${propertyData.constructionValue.toLocaleString()})</span>
+                           <span>${holdingCosts.constructionInterest.toLocaleString()}</span>
+                         </div>
+                       </div>
+                       <div className="text-xs text-blue-600 italic pl-2">Progressive drawdown based on payment schedule</div>
                     </div>
 
                     {/* Development & Professional Fees */}
                     {holdingCosts.developmentCostsInterest > 0 && (
-                      <div className="border rounded p-2 space-y-1">
-                        <div className="flex justify-between text-xs font-medium">
-                          <span>Development & Professional Fees</span>
-                          <span>${holdingCosts.developmentCostsInterest.toLocaleString()}</span>
-                        </div>
+                       <div className="border rounded p-2 space-y-1">
+                         <div className="flex justify-between text-xs font-medium">
+                           <span>Development & Professional Fees</span>
+                           <span>${holdingCosts.developmentCostsInterest.toLocaleString()}</span>
+                         </div>
                         <div className="pl-2 space-y-1 text-xs text-muted-foreground">
                           {propertyData.councilFees > 0 && (
                             <div className="flex justify-between">
@@ -313,44 +313,60 @@ export const FundingSummaryPanel = () => {
                             </div>
                           )}
                         </div>
-                        <div className="text-xs text-green-600 italic pl-2">Paid upfront or early construction</div>
+                        <div className="text-xs text-green-600 italic pl-2">Deductible, from payment date (typically upfront)</div>
                       </div>
                     )}
 
                     {/* Transaction Costs */}
                     {holdingCosts.transactionCostsInterest > 0 && (
-                      <div className="border rounded p-2 space-y-1">
-                        <div className="flex justify-between text-xs font-medium">
-                          <span>Transaction Costs</span>
-                          <span>${holdingCosts.transactionCostsInterest.toLocaleString()}</span>
-                        </div>
-                        <div className="pl-2 space-y-1 text-xs text-muted-foreground">
-                          <div className="flex justify-between">
-                            <span>• Legal fees (${propertyData.legalFees.toLocaleString()})</span>
-                            <span>${holdingCosts.transactionCostsInterest.toLocaleString()}</span>
-                          </div>
-                        </div>
+                       <div className="border rounded p-2 space-y-1">
+                         <div className="flex justify-between text-xs font-medium">
+                           <span>Transaction Costs</span>
+                           <span>${holdingCosts.transactionCostsInterest.toLocaleString()}</span>
+                         </div>
+                         <div className="pl-2 space-y-1 text-xs text-muted-foreground">
+                           {propertyData.legalFees > 0 && (
+                             <div className="flex justify-between">
+                               <span>• Legal fees (${propertyData.legalFees.toLocaleString()})</span>
+                               <span>${Math.round(propertyData.legalFees * ((Math.pow(1 + propertyData.constructionInterestRate/100/12, propertyData.constructionPeriod) - 1))).toLocaleString()}</span>
+                             </div>
+                           )}
+                           {propertyData.inspectionFees > 0 && (
+                             <div className="flex justify-between">
+                               <span>• Inspection fees (${propertyData.inspectionFees.toLocaleString()})</span>
+                               <span>${Math.round(propertyData.inspectionFees * ((Math.pow(1 + propertyData.constructionInterestRate/100/12, propertyData.constructionPeriod) - 1))).toLocaleString()}</span>
+                             </div>
+                           )}
+                         </div>
                         <div className="text-xs text-purple-600 italic pl-2">Upfront costs only</div>
                       </div>
                     )}
                   </div>
 
-                  {/* Summary */}
-                  <div className="bg-primary/5 border border-primary/20 p-3 rounded">
-                    <div className="flex justify-between text-sm font-medium">
-                      <span>Total Interest During Construction</span>
-                      <span>${holdingCosts.total.toLocaleString()}</span>
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      <div className="flex justify-between">
-                        <span>Monthly average</span>
-                        <span>${Math.round(holdingCosts.total / propertyData.constructionPeriod).toLocaleString()}</span>
-                      </div>
-                    </div>
-                    <div className="text-xs text-green-600 mt-2 italic">
-                      ✓ Tax-deductible construction interest
-                    </div>
-                  </div>
+                   {/* Summary */}
+                   <div className="bg-primary/5 border border-primary/20 p-3 rounded">
+                     <div className="flex justify-between text-sm font-medium">
+                       <span>Total Interest During Construction</span>
+                       <span>${holdingCosts.total.toLocaleString()}</span>
+                     </div>
+                     <div className="text-xs text-muted-foreground space-y-1 mt-2">
+                       <div className="flex justify-between">
+                         <span>Non-deductible (land + stamp duty):</span>
+                         <span>${(holdingCosts.totalNonDeductible || 0).toLocaleString()}</span>
+                       </div>
+                       <div className="flex justify-between">
+                         <span>Deductible (construction + costs):</span>
+                         <span>${(holdingCosts.totalDeductible || 0).toLocaleString()}</span>
+                       </div>
+                       <div className="flex justify-between font-medium">
+                         <span>Average per month:</span>
+                         <span>${(holdingCosts.averageMonthlyInterest || Math.round(holdingCosts.total / propertyData.constructionPeriod)).toLocaleString()}</span>
+                       </div>
+                     </div>
+                     <div className="text-xs text-green-600 mt-2 italic">
+                       ✓ Tax-deductible construction interest uses monthly compounding
+                     </div>
+                   </div>
                 </CollapsibleContent>
               </Collapsible>
             )}

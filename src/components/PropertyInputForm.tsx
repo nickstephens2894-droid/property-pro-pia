@@ -1041,29 +1041,29 @@ export const PropertyInputForm = ({
           <div className="bg-orange-50/50 dark:bg-orange-950/20 rounded-lg p-4 border border-orange-200 dark:border-orange-800 mt-4">
             <h5 className="text-sm font-medium mb-3 flex items-center gap-2 text-orange-700 dark:text-orange-300">
               <DollarSign className="h-4 w-4" />
-              Holding Cost Estimates ({propertyData.constructionPeriod || 12} months)
+              Enhanced Holding Cost Estimates ({propertyData.constructionPeriod || 12} months) - Monthly Compounding
             </h5>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
               <div className="bg-red-50 dark:bg-red-950/30 rounded-lg p-3 border border-red-200 dark:border-red-800">
                 <div className="text-xs text-red-600 dark:text-red-400 font-medium mb-1">
-                  Land Interest (Non-deductible)
+                  Land Interest (Non-deductible, from settlement)
                 </div>
                 <div className="text-lg font-bold text-red-700 dark:text-red-300">
                   ${holdingCosts.landHoldingInterest.toLocaleString()}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  On ${propertyData.landValue.toLocaleString()}
+                  On ${propertyData.landValue.toLocaleString()} + stamp duty
                 </div>
               </div>
               <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3 border border-green-200 dark:border-green-800">
                 <div className="text-xs text-green-600 dark:text-green-400 font-medium mb-1">
-                  Construction Interest (Deductible)
+                  Construction Interest (Deductible, progressive drawdown)
                 </div>
                 <div className="text-lg font-bold text-green-700 dark:text-green-300">
                   ${holdingCosts.constructionHoldingInterest.toLocaleString()}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  On construction progress
+                  Based on payment schedule timing
                 </div>
               </div>
               <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
@@ -1074,7 +1074,7 @@ export const PropertyInputForm = ({
                   ${holdingCosts.totalHoldingCosts.toLocaleString()}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  During construction
+                  Avg: ${Math.round(holdingCosts.totalHoldingCosts / (propertyData.constructionPeriod || 12)).toLocaleString()}/month
                 </div>
               </div>
             </div>
@@ -1084,8 +1084,9 @@ export const PropertyInputForm = ({
                 Tax Implications:
               </div>
               <div className="text-xs text-muted-foreground space-y-1">
-                <div>• <strong>Land Interest:</strong> Non-deductible as it relates to land acquisition</div>
-                <div>• <strong>Construction Interest:</strong> Can be claimed as immediate deduction or capitalized to building cost</div>
+                <div>• <strong>Land Interest:</strong> Non-deductible, calculated from settlement date using monthly compounding</div>
+                <div>• <strong>Construction Interest:</strong> Deductible, calculated from each drawdown date based on payment schedule</div>
+                <div>• <strong>Enhanced calculation:</strong> Uses monthly compound interest for accuracy vs simplified annual calculations</div>
                 <div>• <strong>Total deductible amount:</strong> ${holdingCosts.constructionHoldingInterest.toLocaleString()}</div>
               </div>
             </div>
