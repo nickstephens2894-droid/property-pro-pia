@@ -24,7 +24,7 @@ export const formatDate = (dateString: string) => {
 export const formatPercentage = (value: number) => {
   // Add safety checks for invalid inputs
   if (value === null || value === undefined || isNaN(value)) {
-    return '0.0%';
+    return '0.00%';
   }
-  return `${value.toFixed(1)}%`;
-}; 
+  return `${value.toFixed(2)}%`;
+};

@@ -233,7 +233,7 @@ export const FundingSummaryPanel = () => {
                        </div>
                        <div className="flex justify-between">
                          <span className="text-muted-foreground">Ongoing Rate</span>
-                         <span className="font-medium">{(propertyData.constructionInterestRate - propertyData.postConstructionRateReduction).toFixed(1)}%</span>
+                         <span className="font-medium">{(propertyData.constructionInterestRate - propertyData.postConstructionRateReduction).toFixed(2)}%</span>
                        </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Funding Method</span>
@@ -391,7 +391,7 @@ export const FundingSummaryPanel = () => {
                     </div>
                     <div className="flex justify-between text-xs text-muted-foreground">
                       <span>Ongoing Rate</span>
-                      <span>{(propertyData.constructionInterestRate - propertyData.postConstructionRateReduction).toFixed(1)}%</span>
+                      <span>{(propertyData.constructionInterestRate - propertyData.postConstructionRateReduction).toFixed(2)}%</span>
                     </div>
                     <div className="flex justify-between text-xs text-muted-foreground">
                       <span>Rate Reduction</span>
