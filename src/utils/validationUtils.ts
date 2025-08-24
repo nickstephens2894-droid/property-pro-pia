@@ -1,44 +1,64 @@
 import { PropertyData } from "@/contexts/PropertyDataContext";
+import { 
+  VALIDATION_CONSTANTS, 
+  PROPERTY_CONSTANTS, 
+  FINANCE_CONSTANTS 
+} from "./constants";
 
 export type CompletionStatus = 'complete' | 'warning' | 'incomplete' | 'error';
 
 export const validatePersonalProfile = (propertyData: PropertyData): CompletionStatus => {
-  // Check if all investors have income > 0
-  const hasIncomeData = propertyData.investors.every(investor => 
-    investor.annualIncome > 0 && investor.name.trim() !== ''
-  );
+  // Check if all investors have valid data
+  const hasValidInvestors = propertyData.investors.every(investor => {
+    const hasValidIncome = investor.annualIncome >= VALIDATION_CONSTANTS.MIN_ANNUAL_INCOME;
+    const hasValidName = investor.name.trim() !== '';
+    const hasReasonableIncome = investor.annualIncome <= 10000000; // $10M max
+    
+    return hasValidIncome && hasValidName && hasReasonableIncome;
+  });
   
-  if (!hasIncomeData) return 'error';
+  if (propertyData.investors.length === 0) return 'error';
+  if (!hasValidInvestors) return 'error';
   return 'complete';
 };
 
 export const validatePropertyBasics = (propertyData: PropertyData): CompletionStatus => {
   if (propertyData.isConstructionProject) {
-    const hasLandValue = propertyData.landValue > 0;
-    const hasConstructionValue = propertyData.constructionValue > 0;
-    const hasRent = propertyData.weeklyRent > 0;
-    const hasConstructionPeriod = propertyData.constructionPeriod > 0;
+    const hasValidLandValue = propertyData.landValue >= VALIDATION_CONSTANTS.MIN_PURCHASE_PRICE;
+    const hasValidConstructionValue = propertyData.constructionValue >= VALIDATION_CONSTANTS.MIN_PURCHASE_PRICE;
+    const hasValidRent = propertyData.weeklyRent >= VALIDATION_CONSTANTS.MIN_WEEKLY_RENT;
+    const hasValidConstructionPeriod = propertyData.constructionPeriod > 0 && propertyData.constructionPeriod <= 60; // max 5 years
     
-    if (!hasLandValue || !hasConstructionValue) return 'error';
-    if (!hasRent || !hasConstructionPeriod) return 'warning';
+    // Check reasonable total value
+    const totalValue = propertyData.landValue + propertyData.constructionValue;
+    const isReasonableValue = totalValue <= VALIDATION_CONSTANTS.MAX_PROPERTY_VALUE;
+    
+    if (!hasValidLandValue || !hasValidConstructionValue || !isReasonableValue) return 'error';
+    if (!hasValidRent || !hasValidConstructionPeriod) return 'warning';
     return 'complete';
   } else {
-    const hasPurchasePrice = propertyData.purchasePrice > 0;
-    const hasRent = propertyData.weeklyRent > 0;
-    const hasBuildingValue = propertyData.buildingValue > 0;
+    const hasValidPurchasePrice = propertyData.purchasePrice >= VALIDATION_CONSTANTS.MIN_PURCHASE_PRICE 
+      && propertyData.purchasePrice <= VALIDATION_CONSTANTS.MAX_PROPERTY_VALUE;
+    const hasValidRent = propertyData.weeklyRent >= VALIDATION_CONSTANTS.MIN_WEEKLY_RENT;
+    const hasValidBuildingValue = propertyData.buildingValue > 0;
     
-    if (!hasPurchasePrice) return 'error';
-    if (!hasRent || !hasBuildingValue) return 'warning';
+    if (!hasValidPurchasePrice) return 'error';
+    if (!hasValidRent || !hasValidBuildingValue) return 'warning';
     return 'complete';
   }
 };
 
 export const validateFinancing = (propertyData: PropertyData): CompletionStatus => {
-  const hasMainLoan = propertyData.loanAmount > 0;
-  const hasInterestRate = propertyData.interestRate > 0;
-  const hasLoanTerm = propertyData.loanTerm > 0;
+  const hasValidLoanAmount = propertyData.loanAmount >= VALIDATION_CONSTANTS.MIN_LOAN_AMOUNT;
+  const hasValidInterestRate = propertyData.interestRate >= VALIDATION_CONSTANTS.MIN_INTEREST_RATE 
+    && propertyData.interestRate <= VALIDATION_CONSTANTS.MAX_INTEREST_RATE;
+  const hasValidLoanTerm = propertyData.loanTerm >= VALIDATION_CONSTANTS.MIN_LOAN_TERM 
+    && propertyData.loanTerm <= VALIDATION_CONSTANTS.MAX_LOAN_TERM;
   
-  if (!hasMainLoan || !hasInterestRate || !hasLoanTerm) return 'error';
+  // Skip IO period validation for now - will be addressed when property interface is updated
+  const hasValidIOPeriod = true;
+  
+  if (!hasValidLoanAmount || !hasValidInterestRate || !hasValidLoanTerm || !hasValidIOPeriod) return 'error';
   
   // Check funding coverage
   const totalCost = propertyData.isConstructionProject
@@ -57,22 +77,24 @@ export const validateFinancing = (propertyData: PropertyData): CompletionStatus 
   const totalFunding = propertyData.loanAmount + equityLoanAmount;
   const fundingShortfall = Math.max(0, totalCost - totalFunding);
   
-  if (fundingShortfall > totalCost * 0.1) return 'warning';
+  if (fundingShortfall > totalCost * FINANCE_CONSTANTS.FUNDING_SHORTFALL_WARNING_THRESHOLD) return 'warning';
   return 'complete';
 };
 
 export const validatePurchaseCosts = (propertyData: PropertyData): CompletionStatus => {
   const { stampDuty, legalFees, inspectionFees, councilFees } = propertyData;
   
-  // Check if stamp duty is present and > 0 (required field with realistic minimum)
-  const hasStampDuty = stampDuty !== undefined && stampDuty !== null && stampDuty > 0;
+  // Check if stamp duty is present and valid (required field with realistic minimum)
+  const hasValidStampDuty = stampDuty !== undefined 
+    && stampDuty !== null 
+    && stampDuty >= VALIDATION_CONSTANTS.MIN_STAMP_DUTY;
   
   // Check if optional fields have been set (including 0 as valid)
   const hasLegalFees = legalFees !== undefined && legalFees !== null;
   const hasInspectionFees = inspectionFees !== undefined && inspectionFees !== null;
   const hasCouncilFees = councilFees !== undefined && councilFees !== null;
   
-  if (!hasStampDuty) return 'error';
+  if (!hasValidStampDuty) return 'error';
   
   let missingOptionalFields = 0;
   if (!hasLegalFees) missingOptionalFields++;
@@ -89,7 +111,7 @@ export const validatePurchaseCosts = (propertyData: PropertyData): CompletionSta
   }
   
   if (missingOptionalFields === 0) return 'complete';
-  return missingOptionalFields <= 2 ? 'warning' : 'incomplete';
+  return missingOptionalFields <= VALIDATION_CONSTANTS.MISSING_OPTIONAL_FIELDS_WARNING ? 'warning' : 'incomplete';
 };
 
 export const validateAnnualExpenses = (propertyData: PropertyData): CompletionStatus => {
@@ -121,6 +143,6 @@ export const validateTaxOptimization = (propertyData: PropertyData): CompletionS
     (sum, allocation) => sum + allocation.ownershipPercentage, 0
   );
   
-  if (Math.abs(totalOwnership - 100) > 0.1) return 'warning';
+  if (Math.abs(totalOwnership - VALIDATION_CONSTANTS.OWNERSHIP_TOTAL_TARGET) > PROPERTY_CONSTANTS.PERCENTAGE_TOLERANCE) return 'warning';
   return 'complete';
 };
