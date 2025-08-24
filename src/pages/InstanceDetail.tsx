@@ -1003,19 +1003,37 @@ const InstanceDetail = () => {
     });
   }, [propertyData.investors, propertyData.ownershipAllocations, propertyData.weeklyRent, propertyData.councilRates, propertyData.insurance, propertyData.repairs, depreciation.total]);
 
-  // Calculate total tax refund or liability from all investors
+  // Calculate total tax refund or liability using projections for consistency
   const totalTaxRefundOrLiability = useMemo(() => {
-    return investorTaxResults.reduce((total, result) => total + result.taxDifference, 0);
-  }, [investorTaxResults]);
+    const year1Data = projections.find(p => p.year === 1);
+    return year1Data ? -year1Data.taxBenefit : 0; // Negative taxBenefit = tax liability, positive = refund
+  }, [projections]);
 
-  // Calculate net of tax cost/income: rental income +/- tax impact - cash expenses
+  // Calculate net of tax cost/income using projections data for consistency
   const netOfTaxCostIncome = useMemo(() => {
-    const annualRent = (propertyData.weeklyRent || 0) * 52;
-    const taxImpact = -totalTaxRefundOrLiability; // Negative for refund (income), positive for liability (expense)
-    return annualRent + taxImpact - cashDeductions;
-  }, [propertyData.weeklyRent, totalTaxRefundOrLiability, cashDeductions]);
+    const year1Data = projections.find(p => p.year === 1);
+    if (!year1Data) return 0;
+    
+    const annualRent = year1Data.rentalIncome;
+    const taxImpact = -(-year1Data.taxBenefit); // Double negative: -(-taxBenefit) = taxBenefit
+    const result = annualRent + taxImpact - cashDeductions;
+    
+    console.log('💰 Net of Tax Calculation Validation:', {
+      annualRent,
+      taxBenefit: year1Data.taxBenefit,
+      taxImpact,
+      cashDeductions,
+      result,
+      comparison: {
+        oldAnnualRent: (propertyData.weeklyRent || 0) * 52,
+        oldTaxImpact: -investorTaxResults.reduce((total, result) => total + result.taxDifference, 0)
+      }
+    });
+    
+    return result;
+  }, [projections, cashDeductions]);
 
-  // Calculate investment summary metrics
+  // Calculate investment summary metrics using projections as single source of truth
   const investmentSummary = useMemo(() => {
     const yearFrom = yearRange[0];
     const yearTo = yearRange[1];
@@ -1039,6 +1057,29 @@ const InstanceDetail = () => {
       ? Math.max(...propertyData.investors.map(c => marginalRateAU((c.annualIncome + c.otherIncome) * cpiMultiplier)))
       : 0.325;
     
+    // Also calculate standardized values for PropertyCalculationDetails to ensure consistency
+    const year1Data = projections.find(p => p.year === 1);
+    const annualRentFromProjections = year1Data?.rentalIncome ?? 0;
+    const taxBenefitFromProjections = year1Data?.taxBenefit ?? 0;
+    
+    console.log('📊 Investment Summary Calculation Validation:', {
+      year1Data: {
+        rentalIncome: year1Data?.rentalIncome,
+        taxBenefit: year1Data?.taxBenefit,
+        afterTaxCashFlow: year1Data?.afterTaxCashFlow
+      },
+      calculatedValues: {
+        annualRentFromProjections,
+        taxBenefitFromProjections,
+        weeklyAfterTaxCashFlowSummary,
+        taxDifferenceSummary
+      },
+      comparisonValues: {
+        oldAnnualRent: (propertyData.weeklyRent || 0) * 52,
+        oldTaxDifference: -(currentYearData?.taxBenefit ?? 0)
+      }
+    });
+    
     return {
       weeklyAfterTaxCashFlowSummary,
       taxDifferenceSummary,
@@ -1046,7 +1087,10 @@ const InstanceDetail = () => {
       cumulativeTaxImpact,
       equityAtYearTo,
       roiAtYearTo,
-      marginalTaxRateSummary
+      marginalTaxRateSummary,
+      // Add standardized values for consistent display
+      annualRentFromProjections,
+      taxBenefitFromProjections
     };
   }, [projections, yearRange, propertyData.investors]);
 
@@ -1270,11 +1314,11 @@ const InstanceDetail = () => {
               <div className={isMobile ? 'col-span-1' : 'col-span-5'}>
                 <div className="space-y-6">
                   <FundingSummaryPanel />
-                  <PropertyCalculationDetails
-                    monthlyRepayment={monthlyPayments.total}
-                    annualRepayment={monthlyPayments.total * 12}
-                    annualRent={(propertyData.weeklyRent || 0) * 52}
-                    propertyManagementCost={(propertyData.weeklyRent || 0) * 52 * (propertyData.propertyManagement || 0.07) / 100}
+                   <PropertyCalculationDetails
+                     monthlyRepayment={monthlyPayments.total}
+                     annualRepayment={monthlyPayments.total * 12}
+                     annualRent={investmentSummary.annualRentFromProjections || (propertyData.weeklyRent || 0) * 52}
+                     propertyManagementCost={(investmentSummary.annualRentFromProjections || (propertyData.weeklyRent || 0) * 52) * (propertyData.propertyManagement || 0.07) / 100}
                     councilRates={propertyData.councilRates || 0}
                     insurance={propertyData.insurance || 0}
                     repairs={propertyData.repairs || 0}
@@ -1346,7 +1390,7 @@ const InstanceDetail = () => {
             {/* Investment Summary Dashboard */}
             <PropertySummaryDashboard
               weeklyCashflowYear1={investmentSummary.weeklyAfterTaxCashFlowSummary}
-              taxSavingsYear1={-investmentSummary.taxDifferenceSummary}
+              taxSavingsYear1={investmentSummary.taxBenefitFromProjections || -investmentSummary.taxDifferenceSummary}
               taxSavingsTotal={investmentSummary.taxSavingsTotal}
               netEquityAtYearTo={investmentSummary.equityAtYearTo}
               roiAtYearTo={investmentSummary.roiAtYearTo}
