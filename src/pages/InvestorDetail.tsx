@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency } from "@/utils/formatters";
 import { toast } from "sonner";
+import { EditInvestorDialog } from "@/components/EditInvestorDialog";
 
 interface Investor {
   id: string;
@@ -63,6 +64,10 @@ export default function InvestorDetail() {
     if (!user || !id) return;
     loadInvestorData();
   }, [user, id]);
+
+  const handleInvestorUpdate = (updatedInvestor: Investor) => {
+    setInvestor(updatedInvestor);
+  };
 
   const loadInvestorData = async () => {
     if (!user || !id) return;
@@ -210,6 +215,7 @@ export default function InvestorDetail() {
             <p className="text-muted-foreground">Investor Details & Portfolio</p>
           </div>
         </div>
+        <EditInvestorDialog investor={investor} onUpdate={handleInvestorUpdate} />
       </div>
 
       {/* Investor Overview Cards */}
