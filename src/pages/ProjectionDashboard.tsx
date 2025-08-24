@@ -126,6 +126,16 @@ export default function ProjectionDashboard() {
         const netGrowthRate = rentalGrowthRate - (expenseInflationRate * 0.3); // Expenses are ~30% of rental income
         const projectedCashflow = metric.weeklyCashflowYear1 * Math.pow(1 + netGrowthRate, year - 1);
         
+        // Debug logging for cashflow calculations
+        console.log(`📊 Cashflow projection for ${metric.name}, Year ${year}:`, {
+          baseWeeklyCashflow: metric.weeklyCashflowYear1,
+          rentalGrowthRate,
+          expenseInflationRate,
+          netGrowthRate,
+          growthMultiplier: Math.pow(1 + netGrowthRate, year - 1),
+          projectedCashflow
+        });
+        
         // Apply realistic minimums and maximums
         dataPoint[`${metric.name}_equity`] = Math.max(0, projectedEquity);
         dataPoint[`${metric.name}_cashflow`] = projectedCashflow; // Allow negative cashflow values
@@ -159,47 +169,79 @@ export default function ProjectionDashboard() {
   const equitySummary = getSummaryData('equity');
   const cashflowSummary = getSummaryData('cashflow');
 
-  // Calculate Income vs Out-of-Pocket breakdown for pie chart
-  const getIncomeBreakdown = () => {
+  // Calculate expense coverage breakdown for pie chart (Rent vs Tax vs Owner)
+  const getExpenseBreakdown = () => {
     if (selectedMetrics.length === 0) return [];
     
-    let totalIncome = 0;
-    let totalOutOfPocket = 0;
+    let totalRentIncome = 0;
+    let totalTaxSavings = 0;
+    let totalOwnerOutOfPocket = 0;
     
     selectedMetrics.forEach(metric => {
-      // Annual calculations for better representation
-      const annualCashflow = metric.weeklyCashflowYear1 * 52;
-      const annualTaxSavings = metric.taxSavingsYear1;
+      // Get the actual instance data to calculate properly
+      const instance = instances.find(i => i.id === metric.instanceId);
+      if (!instance) return;
       
-      // Income includes positive cashflow and tax benefits
-      if (annualCashflow > 0) {
-        totalIncome += annualCashflow;
-      } else {
-        totalOutOfPocket += Math.abs(annualCashflow);
+      console.log('🏠 Processing instance:', {
+        name: instance.name,
+        weeklyRent: instance.weekly_rent,
+        weeklyCashflow: instance.weekly_cashflow_year1,
+        taxSavings: instance.tax_savings_year1
+      });
+      
+      const annualRent = (instance.weekly_rent || 0) * 52;
+      const annualTaxSavings = instance.tax_savings_year1 || 0;
+      const annualCashflow = (instance.weekly_cashflow_year1 || 0) * 52;
+      
+      // Rent income contribution
+      totalRentIncome += annualRent;
+      
+      // Tax savings contribution  
+      totalTaxSavings += annualTaxSavings;
+      
+      // If there's still negative cashflow after rent and tax benefits, it's owner out-of-pocket
+      const netResult = annualRent + annualTaxSavings + annualCashflow;
+      if (netResult < 0) {
+        totalOwnerOutOfPocket += Math.abs(netResult);
       }
-      
-      // Tax savings are always considered income
-      totalIncome += annualTaxSavings;
     });
     
-    // Only show pie chart if there's meaningful data
-    if (totalIncome === 0 && totalOutOfPocket === 0) return [];
+    console.log('💰 Expense breakdown totals:', {
+      totalRentIncome,
+      totalTaxSavings, 
+      totalOwnerOutOfPocket
+    });
     
-    return [
-      { 
-        name: 'Income', 
-        value: totalIncome,
+    const breakdown = [];
+    
+    if (totalRentIncome > 0) {
+      breakdown.push({
+        name: 'Rent Income',
+        value: totalRentIncome,
         color: 'hsl(var(--chart-1))'
-      },
-      { 
-        name: 'Out-of-Pocket', 
-        value: totalOutOfPocket,
+      });
+    }
+    
+    if (totalTaxSavings > 0) {
+      breakdown.push({
+        name: 'Tax Savings',
+        value: totalTaxSavings, 
         color: 'hsl(var(--chart-2))'
-      }
-    ].filter(item => item.value > 0);
+      });
+    }
+    
+    if (totalOwnerOutOfPocket > 0) {
+      breakdown.push({
+        name: 'Owner Out-of-Pocket',
+        value: totalOwnerOutOfPocket,
+        color: 'hsl(var(--chart-3))'
+      });
+    }
+    
+    return breakdown;
   };
 
-  const incomeBreakdown = getIncomeBreakdown();
+  const expenseBreakdown = getExpenseBreakdown();
 
   if (loading) {
     return <LoadingSpinner message="Loading instances..." />;
@@ -337,16 +379,16 @@ export default function ProjectionDashboard() {
         </Card>
       </div>
 
-      {/* Income vs Out-of-Pocket Breakdown */}
-      {selectedMetrics.length > 0 && incomeBreakdown.length > 0 && (
+      {/* Expense Coverage Breakdown */}
+      {selectedMetrics.length > 0 && expenseBreakdown.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base sm:text-lg flex items-center gap-2">
               <PiggyBank className="h-4 w-4" />
-              Income vs Out-of-Pocket Breakdown (Annual)
+              Property Expense Coverage (Annual)
             </CardTitle>
             <div className="text-sm text-muted-foreground">
-              Based on Year 1 cashflow and tax savings across selected instances
+              How property expenses are covered: rent income, tax savings, and owner out-of-pocket
             </div>
           </CardHeader>
           <CardContent>
@@ -356,7 +398,7 @@ export default function ProjectionDashboard() {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={incomeBreakdown}
+                        data={expenseBreakdown}
                         cx="50%"
                         cy="50%"
                         innerRadius={40}
@@ -364,7 +406,7 @@ export default function ProjectionDashboard() {
                         paddingAngle={2}
                         dataKey="value"
                       >
-                        {incomeBreakdown.map((entry, index) => (
+                        {expenseBreakdown.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
@@ -378,7 +420,7 @@ export default function ProjectionDashboard() {
               </div>
               
               <div className="space-y-4">
-                {incomeBreakdown.map((item, index) => (
+                {expenseBreakdown.map((item, index) => (
                   <div key={item.name} className="flex items-center justify-between p-3 rounded-lg border">
                     <div className="flex items-center gap-3">
                       <div 
@@ -388,14 +430,16 @@ export default function ProjectionDashboard() {
                       <div>
                         <div className="font-medium">{item.name}</div>
                         <div className="text-sm text-muted-foreground">
-                          {item.name === 'Income' ? 'Positive cashflow + tax savings' : 'Negative cashflow costs'}
+                          {item.name === 'Rent Income' ? 'Rental income covers expenses' : 
+                           item.name === 'Tax Savings' ? 'Tax deductions offset costs' :
+                           'Owner contributes additional funds'}
                         </div>
                       </div>
                     </div>
                     <div className="text-right">
                       <div className="font-semibold">{formatCurrency(item.value)}</div>
                       <div className="text-sm text-muted-foreground">
-                        {((item.value / incomeBreakdown.reduce((sum, i) => sum + i.value, 0)) * 100).toFixed(1)}%
+                        {((item.value / expenseBreakdown.reduce((sum, i) => sum + i.value, 0)) * 100).toFixed(1)}%
                       </div>
                     </div>
                   </div>
