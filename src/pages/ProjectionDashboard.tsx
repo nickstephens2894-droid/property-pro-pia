@@ -377,27 +377,6 @@ export default function ProjectionDashboard() {
                   </ResponsiveContainer>
                 </ChartContainer>
                 
-                {/* Year Slider */}
-                <div className="mt-4 space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Year Range:</span>
-                    <span className="text-sm text-muted-foreground">
-                      Year {startYear} - {startYear + 9} (10 years)
-                    </span>
-                  </div>
-                  <Slider
-                    value={[startYear]}
-                    onValueChange={([value]) => setStartYear(value)}
-                    max={21}
-                    min={1}
-                    step={5}
-                    className="w-full"
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Years 1-10</span>
-                    <span>Years 21-30</span>
-                  </div>
-                </div>
                 
                 {/* Mobile Legend */}
                 {isMobile && selectedMetrics.length > 0 && (
@@ -491,27 +470,6 @@ export default function ProjectionDashboard() {
                   </ResponsiveContainer>
                 </ChartContainer>
                 
-                {/* Year Slider */}
-                <div className="mt-4 space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Year Range:</span>
-                    <span className="text-sm text-muted-foreground">
-                      Year {startYear} - {startYear + 9} (10 years)
-                    </span>
-                  </div>
-                  <Slider
-                    value={[startYear]}
-                    onValueChange={([value]) => setStartYear(value)}
-                    max={21}
-                    min={1}
-                    step={5}
-                    className="w-full"
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Years 1-10</span>
-                    <span>Years 21-30</span>
-                  </div>
-                </div>
                 
                 {/* Mobile Legend */}
                 {isMobile && selectedMetrics.length > 0 && (
@@ -530,6 +488,41 @@ export default function ProjectionDashboard() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Shared Year Range Slider */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <Calculator className="h-4 w-4" />
+                Timeline Control
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Display Period:</span>
+                  <span className="text-sm text-muted-foreground">
+                    Year {startYear} - {startYear + 9} (10 years)
+                  </span>
+                </div>
+                <Slider
+                  value={[startYear]}
+                  onValueChange={([value]) => setStartYear(value)}
+                  max={21}
+                  min={1}
+                  step={5}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Years 1-10</span>
+                  <span>Years 6-15</span>
+                  <span>Years 11-20</span>
+                  <span>Years 16-25</span>
+                  <span>Years 21-30</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
           
           {/* Mobile: Additional chart info */}
           {isMobile && (
