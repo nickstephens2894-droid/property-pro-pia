@@ -79,6 +79,8 @@ interface PropertyCalculationDetailsProps {
   mainLoanPayments: LoanPaymentDetails;
   equityLoanPayments: LoanPaymentDetails | null;
   totalAnnualInterest: number;
+  taxRefundOrLiability: number;
+  netOfTaxCostIncome: number;
 }
 
 export const PropertyCalculationDetails = ({
@@ -111,7 +113,9 @@ export const PropertyCalculationDetails = ({
   holdingCostFunding,
   mainLoanPayments,
   equityLoanPayments,
-  totalAnnualInterest
+  totalAnnualInterest,
+  taxRefundOrLiability,
+  netOfTaxCostIncome
 }: PropertyCalculationDetailsProps) => {
 
   const currentYear = new Date().getFullYear();
@@ -325,12 +329,18 @@ export const PropertyCalculationDetails = ({
               <div className="space-y-6">
                 {/* Income Section */}
                 <div>
-                  <h4 className="font-medium text-sm mb-3 text-success">Rental Income</h4>
-                  <div className="p-4 bg-success/5 border border-success/20 rounded-lg">
+                  <h4 className="font-medium text-sm mb-3 text-success">Income</h4>
+                  <div className="p-4 bg-success/5 border border-success/20 rounded-lg space-y-2">
                     <div className="flex justify-between items-center">
                       <span className="text-sm">Annual Rental Income</span>
                       <span className="font-bold text-success">${annualRent.toLocaleString()}</span>
                     </div>
+                    {taxRefundOrLiability < 0 && (
+                      <div className="flex justify-between items-center border-t border-success/30 pt-2">
+                        <span className="text-sm">Tax Refund</span>
+                        <span className="font-bold text-success">${Math.abs(taxRefundOrLiability).toLocaleString()}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -358,12 +368,18 @@ export const PropertyCalculationDetails = ({
                       <span className="text-sm">Repairs & Maintenance</span>
                       <span className="text-destructive">${repairs.toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between items-center py-2 border-b border-border/30">
-                      <span className="text-sm">Depreciation (Total)</span>
-                      <span className="text-destructive">${depreciation.total.toLocaleString()}</span>
-                    </div>
-                    
-                    {/* Subtotals */}
+                     <div className="flex justify-between items-center py-2 border-b border-border/30">
+                       <span className="text-sm">Depreciation (Total)</span>
+                       <span className="text-destructive">${depreciation.total.toLocaleString()}</span>
+                     </div>
+                     {taxRefundOrLiability > 0 && (
+                       <div className="flex justify-between items-center py-2 border-b border-border/30">
+                         <span className="text-sm">Additional Tax Liability</span>
+                         <span className="text-destructive">${taxRefundOrLiability.toLocaleString()}</span>
+                       </div>
+                     )}
+                     
+                     {/* Subtotals */}
                     <div className="flex justify-between items-center py-2 border-t border-border/50 bg-muted/20 px-3 rounded-lg mt-2">
                       <span className="text-sm font-medium">Cash Deductions Subtotal</span>
                       <span className="font-semibold text-destructive">${cashDeductionsSubtotal.toLocaleString()}</span>
@@ -373,15 +389,39 @@ export const PropertyCalculationDetails = ({
                       <span className="font-semibold text-destructive">${paperDeductionsSubtotal.toLocaleString()}</span>
                     </div>
                     
-                    <div className="flex justify-between items-center py-3 bg-destructive/5 px-3 rounded-lg border-t-2 border-destructive/20 mt-2">
-                      <span className="font-medium">Total Deductible Expenses</span>
-                      <span className="font-bold text-destructive">${totalDeductibleExpenses.toLocaleString()}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
+                     <div className="flex justify-between items-center py-3 bg-destructive/5 px-3 rounded-lg border-t-2 border-destructive/20 mt-2">
+                       <span className="font-medium">Total Deductible Expenses</span>
+                       <span className="font-bold text-destructive">${totalDeductibleExpenses.toLocaleString()}</span>
+                     </div>
+                   </div>
+                 </div>
+
+                 {/* Net Position Section */}
+                 <div>
+                   <h4 className="font-medium text-sm mb-3">Net Annual Cash Position (after tax)</h4>
+                   <div className={`p-4 rounded-lg border-2 ${
+                     netOfTaxCostIncome >= 0 
+                       ? 'bg-success/5 border-success/20' 
+                       : 'bg-destructive/5 border-destructive/20'
+                   }`}>
+                     <div className="flex justify-between items-center">
+                       <span className="text-sm font-medium">
+                         {netOfTaxCostIncome >= 0 ? 'Net Annual Income' : 'Net Annual Cost'}
+                       </span>
+                       <span className={`text-xl font-bold ${
+                         netOfTaxCostIncome >= 0 ? 'text-success' : 'text-destructive'
+                       }`}>
+                         ${Math.abs(netOfTaxCostIncome).toLocaleString()}
+                       </span>
+                     </div>
+                     <div className="text-xs text-muted-foreground mt-1">
+                       Rental income {taxRefundOrLiability < 0 ? '+ tax refund' : taxRefundOrLiability > 0 ? '- additional tax' : ''} - cash expenses
+                     </div>
+                   </div>
+                 </div>
+               </div>
+             </AccordionContent>
+           </AccordionItem>
 
           {/* Depreciation Analysis */}
           <AccordionItem value="depreciation-analysis" className="border-b">

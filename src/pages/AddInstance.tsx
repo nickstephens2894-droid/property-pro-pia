@@ -638,6 +638,26 @@ const AddInstance = () => {
     };
   }, [projections, yearRange, propertyData.investors]);
 
+  // Calculate total tax refund or liability from all investors
+  const totalTaxRefundOrLiability = useMemo(() => {
+    return investorTaxResults.reduce((total, result) => total + result.taxDifference, 0);
+  }, [investorTaxResults]);
+
+  // Calculate net of tax cost/income: rental income +/- tax impact - cash expenses
+  const netOfTaxCostIncome = useMemo(() => {
+    const annualRent = (propertyData.weeklyRent || 0) * 52;
+    const annualInterest = ((propertyData.loanAmount || 0) * (propertyData.interestRate || 0.06) / 100) +
+      (propertyData.useEquityFunding && equityLoanAmount ? 
+        (equityLoanAmount * (propertyData.equityLoanInterestRate || 7.2) / 100) : 0);
+    const cashDeductions = annualInterest + 
+      (propertyData.councilRates || 0) + 
+      (propertyData.insurance || 0) + 
+      (propertyData.repairs || 0) + 
+      ((propertyData.weeklyRent || 0) * 52 * (propertyData.propertyManagement || 0.07) / 100);
+    const taxImpact = -totalTaxRefundOrLiability; // Negative for refund (income), positive for liability (expense)
+    return annualRent + taxImpact - cashDeductions;
+  }, [propertyData.weeklyRent, propertyData.loanAmount, propertyData.interestRate, propertyData.useEquityFunding, equityLoanAmount, propertyData.equityLoanInterestRate, propertyData.councilRates, propertyData.insurance, propertyData.repairs, propertyData.propertyManagement, totalTaxRefundOrLiability]);
+
   const handleSave = async () => {
     if (!instanceName.trim()) {
       alert('Please enter an instance name');
@@ -1042,12 +1062,14 @@ const AddInstance = () => {
                       currentPayment: loanPaymentDetails.equityLoanDetails.isIO && loanPaymentDetails.equityLoanDetails.ioTermYears > 0 ? loanPaymentDetails.equityLoanDetails.ioPayment : loanPaymentDetails.equityLoanDetails.piPayment,
                       futurePayment: loanPaymentDetails.equityLoanDetails.isIO && loanPaymentDetails.equityLoanDetails.ioTermYears > 0 ? loanPaymentDetails.equityLoanDetails.piPayment : 0
                     } : null}
-                    totalAnnualInterest={
-                      ((propertyData.loanAmount || 0) * (propertyData.interestRate || 0.06) / 100) +
-                      (propertyData.useEquityFunding && equityLoanAmount ? 
-                        (equityLoanAmount * (propertyData.equityLoanInterestRate || 7.2) / 100) : 0)
-                    }
-                  />
+                     totalAnnualInterest={
+                       ((propertyData.loanAmount || 0) * (propertyData.interestRate || 0.06) / 100) +
+                       (propertyData.useEquityFunding && equityLoanAmount ? 
+                         (equityLoanAmount * (propertyData.equityLoanInterestRate || 7.2) / 100) : 0)
+                     }
+                     taxRefundOrLiability={totalTaxRefundOrLiability}
+                     netOfTaxCostIncome={netOfTaxCostIncome}
+                   />
                 </div>
               </div>
             </div>

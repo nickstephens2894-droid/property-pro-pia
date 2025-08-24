@@ -1003,6 +1003,18 @@ const InstanceDetail = () => {
     });
   }, [propertyData.investors, propertyData.ownershipAllocations, propertyData.weeklyRent, propertyData.councilRates, propertyData.insurance, propertyData.repairs, depreciation.total]);
 
+  // Calculate total tax refund or liability from all investors
+  const totalTaxRefundOrLiability = useMemo(() => {
+    return investorTaxResults.reduce((total, result) => total + result.taxDifference, 0);
+  }, [investorTaxResults]);
+
+  // Calculate net of tax cost/income: rental income +/- tax impact - cash expenses
+  const netOfTaxCostIncome = useMemo(() => {
+    const annualRent = (propertyData.weeklyRent || 0) * 52;
+    const taxImpact = -totalTaxRefundOrLiability; // Negative for refund (income), positive for liability (expense)
+    return annualRent + taxImpact - cashDeductions;
+  }, [propertyData.weeklyRent, totalTaxRefundOrLiability, cashDeductions]);
+
   // Calculate investment summary metrics
   const investmentSummary = useMemo(() => {
     const yearFrom = yearRange[0];
@@ -1319,9 +1331,11 @@ const InstanceDetail = () => {
                       totalInterest: (equityLoanAmount || 0) * (propertyData.equityLoanInterestRate || 7.2) / 100,
                       currentPayment: loanPaymentDetails.equityLoanDetails.isIO && loanPaymentDetails.equityLoanDetails.ioTermYears > 0 ? loanPaymentDetails.equityLoanDetails.ioPayment : loanPaymentDetails.equityLoanDetails.piPayment,
                       futurePayment: loanPaymentDetails.equityLoanDetails.isIO && loanPaymentDetails.equityLoanDetails.ioTermYears > 0 ? loanPaymentDetails.equityLoanDetails.piPayment : 0
-                    } : null}
-                    totalAnnualInterest={annualInterest}
-                  />
+                     } : null}
+                     totalAnnualInterest={annualInterest}
+                     taxRefundOrLiability={totalTaxRefundOrLiability}
+                     netOfTaxCostIncome={netOfTaxCostIncome}
+                   />
                 </div>
               </div>
             </div>
