@@ -1,6 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Calculator, Building2, TrendingDown, AlertCircle, Receipt } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useState, useEffect } from "react";
 
 interface DepreciationDetails {
   capitalWorks: number;
@@ -117,14 +119,14 @@ export const PropertyCalculationDetails = ({
   taxRefundOrLiability,
   netOfTaxCostIncome
 }: PropertyCalculationDetailsProps) => {
-
+  const isMobile = useIsMobile();
   const currentYear = new Date().getFullYear();
   const propertyAge = currentYear - constructionYear;
 
   return (
     <Card className="w-full">
       <CardContent className="p-0">
-        <Accordion type="multiple" className="w-full">
+        <Accordion type={isMobile ? "single" : "multiple"} className="w-full" collapsible={isMobile}>
           
           {/* Project Costs & Funding (for construction projects) */}
           {isConstructionProject && (

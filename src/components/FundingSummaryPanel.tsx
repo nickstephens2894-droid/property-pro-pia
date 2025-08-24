@@ -5,19 +5,31 @@ import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { DollarSign, AlertTriangle, CheckCircle, TrendingUp, ChevronDown, ChevronRight } from "lucide-react";
 import { usePropertyData } from "@/contexts/PropertyDataContext";
-import { useState } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useState, useEffect } from "react";
 import { PROPERTY_METHODS, FUNDING_METHODS } from "@/types/presets";
 
 export const FundingSummaryPanel = () => {
   const { propertyData, calculateTotalProjectCost, calculateEquityLoanAmount, calculateAvailableEquity, calculateHoldingCosts } = usePropertyData();
+  const isMobile = useIsMobile();
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
 
   const toggleSection = (section: string) => {
-    setExpandedSections(prev => 
-      prev.includes(section) 
-        ? prev.filter(s => s !== section)
-        : [...prev, section]
-    );
+    if (isMobile) {
+      // On mobile, only allow one section open at a time
+      setExpandedSections(prev => 
+        prev.includes(section) 
+          ? []  // Close if already open
+          : [section]  // Open only this section
+      );
+    } else {
+      // On desktop, allow multiple sections open
+      setExpandedSections(prev => 
+        prev.includes(section) 
+          ? prev.filter(s => s !== section)
+          : [...prev, section]
+      );
+    }
   };
 
   // Calculate breakdown for display
