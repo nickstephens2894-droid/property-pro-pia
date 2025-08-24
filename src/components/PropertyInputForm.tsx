@@ -1177,24 +1177,37 @@ export const PropertyInputForm = ({
 
 {/* 5. Transaction & Setup Costs */}
 <AccordionItem value="transaction-costs" className="border-b">
-  <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
-    <div className="flex items-center gap-2 w-full">
-      <Receipt className="h-4 w-4 text-primary" />
-      <span className="font-medium">Transaction & Setup Costs</span>
-      <div className="ml-auto">
+  <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50 group">
+    <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
+      <div className="flex items-center gap-3 flex-1 min-w-0">
+        <Receipt className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
+        <span className="font-medium text-sm md:text-base truncate">Transaction & Setup Costs</span>
+      </div>
+      <div className="flex items-center gap-2">
         <AccordionCompletionIndicator status={purchaseCostsStatus} />
+        <div className="text-muted-foreground group-hover:text-foreground transition-colors">
+          <div className="transform transition-transform group-data-[state=open]:rotate-180">
+            ▼
+          </div>
+        </div>
       </div>
     </div>
   </AccordionTrigger>
-            <AccordionContent className="px-6 pb-6">
-              <div className="space-y-6">
+  <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
+              <div className="space-y-4 md:space-y-6">
                 <div className="space-y-4">
-                  <h4 className="font-medium text-sm">Purchase Costs</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                      <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-sm md:text-base">Purchase Costs</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                         <Label htmlFor="stampDuty" className="text-sm font-medium">Stamp Duty</Label>
-                        <Button type="button" size="sm" variant="outline" onClick={() => setDutyCalcOpen(true)}>
+                        <Button 
+                          type="button" 
+                          size={isMobile ? "default" : "sm"} 
+                          variant="outline" 
+                          className="w-full md:w-auto min-h-[44px] md:min-h-0"
+                          onClick={() => setDutyCalcOpen(true)}
+                        >
                           Calculate
                         </Button>
                       </div>
@@ -1202,30 +1215,30 @@ export const PropertyInputForm = ({
                         id="stampDuty"
                         value={propertyData.stampDuty}
                         onChange={(value) => updateFieldWithCascade('stampDuty', value)}
-                        className="mt-1"
+                        className="min-h-[44px] md:min-h-10"
                         placeholder="Enter stamp duty"
                       />
                       {showModelPrompt(propertyData.stampDuty, 'Stamp Duty')}
                       <StampDutyCalculator open={dutyCalcOpen} onOpenChange={setDutyCalcOpen} />
                     </div>
-                    <div>
+                    <div className="space-y-2">
                       <Label htmlFor="legalFees" className="text-sm font-medium">Legal Fees</Label>
                       <CurrencyInput
                         id="legalFees"
                         value={propertyData.legalFees}
                         onChange={(value) => updateFieldWithCascade('legalFees', value)}
-                        className="mt-1"
+                        className="min-h-[44px] md:min-h-10"
                         placeholder="Enter legal fees"
                       />
                       {showModelPrompt(propertyData.legalFees, 'Legal Fees')}
                     </div>
-                    <div>
+                    <div className="space-y-2">
                       <Label htmlFor="inspectionFees" className="text-sm font-medium">Inspection Fees</Label>
                       <CurrencyInput
                         id="inspectionFees"
                         value={propertyData.inspectionFees}
                         onChange={(value) => updateFieldWithCascade('inspectionFees', value)}
-                        className="mt-1"
+                        className="min-h-[44px] md:min-h-10"
                         placeholder="Enter inspection fees"
                       />
                       {showModelPrompt(propertyData.inspectionFees, 'Inspection Fees')}
@@ -1235,35 +1248,35 @@ export const PropertyInputForm = ({
 
                 {propertyData.isConstructionProject && (
                   <div className="space-y-4">
-                    <h4 className="font-medium text-sm">Development Costs</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <div>
+                    <h4 className="font-medium text-sm md:text-base">Development Costs</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
                         <Label htmlFor="councilFees" className="text-sm font-medium">Council Fees & Approvals</Label>
                         <CurrencyInput
                           id="councilFees"
                           value={propertyData.councilFees}
                           onChange={(value) => updateFieldWithCascade('councilFees', value)}
-                          className="mt-1"
+                          className="min-h-[44px] md:min-h-10"
                           placeholder="Enter council fees"
                         />
                       </div>
-                      <div>
+                      <div className="space-y-2">
                         <Label htmlFor="architectFees" className="text-sm font-medium">Architect/Design Fees</Label>
                         <CurrencyInput
                           id="architectFees"
                           value={propertyData.architectFees}
                           onChange={(value) => updateFieldWithCascade('architectFees', value)}
-                          className="mt-1"
+                          className="min-h-[44px] md:min-h-10"
                           placeholder="Enter architect fees"
                         />
                       </div>
-                      <div>
+                      <div className="space-y-2">
                         <Label htmlFor="siteCosts" className="text-sm font-medium">Site Costs & Utilities</Label>
                         <CurrencyInput
                           id="siteCosts"
                           value={propertyData.siteCosts}
                           onChange={(value) => updateFieldWithCascade('siteCosts', value)}
-                          className="mt-1"
+                          className="min-h-[44px] md:min-h-10"
                           placeholder="Enter site costs"
                         />
                       </div>
@@ -1276,21 +1289,28 @@ export const PropertyInputForm = ({
 
           {/* 6. Funding & Finance Structure */}
           <AccordionItem value="funding-finance" className="border-b">
-            <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
-              <div className="flex items-center gap-2 w-full">
-                <CreditCard className="h-4 w-4 text-primary" />
-                <span className="font-medium">Funding & Finance Structure</span>
-                <div className="ml-auto">
+            <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50 group">
+              <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <CreditCard className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
+                  <span className="font-medium text-sm md:text-base truncate">Funding & Finance Structure</span>
+                </div>
+                <div className="flex items-center gap-2">
                   <AccordionCompletionIndicator status={financingStatus} sectionKey="funding-finance" />
+                  <div className="text-muted-foreground group-hover:text-foreground transition-colors">
+                    <div className="transform transition-transform group-data-[state=open]:rotate-180">
+                      ▼
+                    </div>
+                  </div>
                 </div>
               </div>
             </AccordionTrigger>
-            <AccordionContent className="px-6 pb-6">
-              <div className="space-y-6">
+            <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
+              <div className="space-y-4 md:space-y-6">
                 {/* Funding Method Selection */}
                 <div className="space-y-4">
-                  <h4 className="font-medium text-sm">Funding Method</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <h4 className="font-medium text-sm md:text-base">Funding Method</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {Object.entries(FUNDING_METHODS).map(([key, method]) => {
                       const active = propertyData.currentFundingMethod === (key as FundingMethod);
                       return (
@@ -1298,7 +1318,7 @@ export const PropertyInputForm = ({
                           key={key}
                           type="button"
                           variant={active ? "default" : "outline"}
-                          className="justify-start h-auto py-3 px-3 text-left w-full"
+                          className="justify-start h-auto py-3 px-3 text-left w-full min-h-[44px] md:min-h-auto"
                           onClick={() => {
                             const fundingData = getFundingMethodData(key as FundingMethod, propertyData.purchasePrice || 0);
                             // Apply the funding method data
@@ -1324,40 +1344,40 @@ export const PropertyInputForm = ({
 
                 {/* Cash Deposit - Always show regardless of funding method */}
                 <div className="space-y-4">
-                  <h4 className="font-medium text-sm">Cash Deposit Requirements</h4>
-                  <div>
+                  <h4 className="font-medium text-sm md:text-base">Cash Deposit Requirements</h4>
+                  <div className="space-y-3">
                     <Label htmlFor="depositAmount" className="text-sm font-medium">Cash Deposit Amount</Label>
                     <CurrencyInput
                       id="depositAmount"
                       value={propertyData.depositAmount}
                       onChange={(value) => updateFieldWithCascade('depositAmount', value)}
-                      className="mt-1"
+                      className="min-h-[44px] md:min-h-10"
                       placeholder="Enter deposit amount"
                     />
                     {propertyData.useEquityFunding && propertyData.depositAmount > 0 && (
-                      <div className="flex items-center gap-2 mt-2 text-blue-600 text-sm">
-                        <AlertTriangle className="h-4 w-4" />
-                        Additional cash deposit on top of equity funding
+                      <div className="flex items-start gap-2 mt-2 text-blue-600 text-sm p-3 bg-blue-50 rounded-lg">
+                        <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                        <span>Additional cash deposit on top of equity funding</span>
                       </div>
                     )}
                     {!propertyData.useEquityFunding && propertyData.depositAmount < propertyData.minimumDepositRequired && (
-                      <div className="flex items-center gap-2 mt-2 text-warning text-sm">
-                        <AlertTriangle className="h-4 w-4" />
-                        Shortfall of ${(propertyData.minimumDepositRequired - propertyData.depositAmount).toLocaleString()} - require additional cash or equity financing
+                      <div className="flex items-start gap-2 mt-2 text-warning text-sm p-3 bg-warning/10 rounded-lg">
+                        <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                        <span>Shortfall of ${(propertyData.minimumDepositRequired - propertyData.depositAmount).toLocaleString()} - require additional cash or equity financing</span>
                       </div>
                     )}
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2">
+                <div className="flex items-start space-x-3 py-2">
                   <input
                     type="checkbox"
                     id="useEquityFunding"
                     checked={propertyData.useEquityFunding}
                     onChange={(e) => updateField('useEquityFunding', e.target.checked)}
-                    className="rounded border-border"
+                    className="rounded border-border w-4 h-4 md:w-3 md:h-3 mt-1"
                   />
-                 <Label htmlFor="useEquityFunding" className="text-sm font-medium">
+                 <Label htmlFor="useEquityFunding" className="text-sm font-medium cursor-pointer">
                    Use Equity from Existing Property
                  </Label>
                  </div>
@@ -1443,12 +1463,12 @@ export const PropertyInputForm = ({
 
                 {/* Main Loan Structure */}
                 <div className="space-y-4">
-                  <h4 className="font-medium text-sm">Main Loan Structure</h4>
+                  <h4 className="font-medium text-sm md:text-base">Main Loan Structure</h4>
                   {propertyData.isConstructionProject && (
                     <Alert variant="info" className="mb-4">
                       <Info className="h-4 w-4" />
                       <AlertTitle>Construction Loan Structure</AlertTitle>
-                      <AlertDescription>
+                      <AlertDescription className="text-xs md:text-sm">
                         The main loan acts as your construction loan during building. Rate is set in Construction Timeline section.
                         <br />
                         <strong>Construction Rate:</strong> {propertyData.constructionInterestRate}% →  
@@ -1458,8 +1478,8 @@ export const PropertyInputForm = ({
                     </Alert>
                   )}
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
                         <Label htmlFor="interestRate" className="text-sm font-medium">
                           {propertyData.isConstructionProject ? 'Ongoing Interest Rate (Post-Construction)' : 'Interest Rate'}
                         </Label>
@@ -1477,32 +1497,32 @@ export const PropertyInputForm = ({
                               updateField('interestRate', value);
                             }
                           }}
-                          className="mt-1"
+                          className="min-h-[44px] md:min-h-10"
                         />
                         {propertyData.isConstructionProject && (
-                          <div className="text-xs text-muted-foreground mt-1">
+                          <div className="text-xs text-muted-foreground">
                             Calculated from construction rate minus reduction
                           </div>
                         )}
                       </div>
-                      <div>
+                      <div className="space-y-2">
                         <Label htmlFor="loanTerm" className="text-sm font-medium">Loan Term (years)</Label>
                         <NumberInput
                           id="loanTerm"
                           value={propertyData.loanTerm}
                           onChange={(value) => updateField('loanTerm', value)}
-                          className="mt-1"
+                          className="min-h-[44px] md:min-h-10"
                           min={1}
                           max={50}
                         />
                       </div>
-                      <div>
+                      <div className="space-y-2">
                         <Label htmlFor="lvr" className="text-sm font-medium">Loan to Value Ratio (LVR)</Label>
                         <PercentageInput
                           id="lvr"
                           value={propertyData.lvr}
                           onChange={(value) => updateField('lvr', value)}
-                          className="mt-1"
+                          className="min-h-[44px] md:min-h-10"
                         />
                       </div>
                     </div>
@@ -1513,38 +1533,38 @@ export const PropertyInputForm = ({
                       <RadioGroup
                         value={propertyData.mainLoanType}
                         onValueChange={(value: 'io' | 'pi') => updateField('mainLoanType', value)}
-                        className="flex flex-row space-x-6"
+                        className="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-6"
                       >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="pi" id="pi" />
-                          <Label htmlFor="pi" className="text-sm">Principal & Interest</Label>
+                        <div className="flex items-center space-x-3 py-2">
+                          <RadioGroupItem value="pi" id="pi" className="w-4 h-4 md:w-3 md:h-3" />
+                          <Label htmlFor="pi" className="text-sm cursor-pointer">Principal & Interest</Label>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="io" id="io" />
-                          <Label htmlFor="io" className="text-sm">Interest Only</Label>
+                        <div className="flex items-center space-x-3 py-2">
+                          <RadioGroupItem value="io" id="io" className="w-4 h-4 md:w-3 md:h-3" />
+                          <Label htmlFor="io" className="text-sm cursor-pointer">Interest Only</Label>
                         </div>
                       </RadioGroup>
                     </div>
 
                     {/* Interest Only Period */}
                     {propertyData.mainLoanType === 'io' && (
-                      <div className="ml-4 space-y-2">
+                      <div className="ml-4 space-y-3">
                         <Label htmlFor="ioTermYears" className="text-sm font-medium">Interest Only Period (years)</Label>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                           <NumberInput
                             id="ioTermYears"
                             value={propertyData.ioTermYears}
                             onChange={(value) => updateField('ioTermYears', value)}
-                            className="mt-1"
+                            className="min-h-[44px] md:min-h-10"
                             min={1}
                             max={40}
                           />
                           <div className="text-xs text-muted-foreground">
                             Maximum 40 years allowed
                             {propertyData.ioTermYears > 10 && (
-                              <div className="flex items-center gap-1 text-warning mt-1">
-                                <AlertTriangle className="h-3 w-3" />
-                                Long IO periods increase total interest cost
+                              <div className="flex items-start gap-2 text-warning mt-2 p-2 bg-warning/10 rounded">
+                                <AlertTriangle className="h-3 w-3 flex-shrink-0 mt-0.5" />
+                                <span>Long IO periods increase total interest cost</span>
                               </div>
                             )}
                           </div>
@@ -1557,59 +1577,59 @@ export const PropertyInputForm = ({
                      {/* Equity Funding Details */}
                 {propertyData.useEquityFunding && (
                   <div className="space-y-4">
-                    <h4 className="font-medium text-sm">Equity Property Details</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <div>
+                    <h4 className="font-medium text-sm md:text-base">Equity Property Details</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
                         <Label htmlFor="primaryPropertyValue" className="text-sm font-medium">Primary Property Value</Label>
                         <CurrencyInput
                           id="primaryPropertyValue"
                           value={propertyData.primaryPropertyValue}
                           onChange={(value) => updateFieldWithCascade('primaryPropertyValue', value)}
-                          className="mt-1"
+                          className="min-h-[44px] md:min-h-10"
                           placeholder="Enter property value"
                         />
                       </div>
-                      <div>
+                      <div className="space-y-2">
                         <Label htmlFor="existingDebt" className="text-sm font-medium">Existing Debt</Label>
                         <CurrencyInput
                           id="existingDebt"
                           value={propertyData.existingDebt}
                           onChange={(value) => updateFieldWithCascade('existingDebt', value)}
-                          className="mt-1"
+                          className="min-h-[44px] md:min-h-10"
                           placeholder="Enter existing debt"
                         />
                       </div>
-                      <div>
+                      <div className="space-y-2">
                         <Label htmlFor="maxLVR" className="text-sm font-medium">Maximum LVR Available</Label>
                         <PercentageInput
                           id="maxLVR"
                           value={propertyData.maxLVR}
                           onChange={(value) => updateField('maxLVR', value)}
-                          className="mt-1"
+                          className="min-h-[44px] md:min-h-10"
                         />
                       </div>
                     </div>
 
                     {/* Equity Loan Calculation Display */}
-                    <div className="bg-muted/30 rounded-lg p-4 space-y-3">
+                    <div className="bg-muted/30 rounded-lg p-3 md:p-4 space-y-3">
                       <h5 className="font-medium text-sm flex items-center gap-2">
-                        <Calculator className="h-4 w-4" />
+                        <Calculator className="h-4 w-4 flex-shrink-0" />
                         Equity Calculation Summary
                       </h5>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-                        <div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div className="space-y-1">
                           <span className="text-muted-foreground">Available Equity:</span>
                           <div className="font-medium text-primary">
                             ${calculateAvailableEquity().toLocaleString()}
                           </div>
                         </div>
-                        <div>
+                        <div className="space-y-1">
                           <span className="text-muted-foreground">Required Equity Loan:</span>
                           <div className={`font-medium ${calculateEquityLoanAmount() > calculateAvailableEquity() ? 'text-destructive' : 'text-success'}`}>
                             ${calculateEquityLoanAmount().toLocaleString()}
                           </div>
                         </div>
-                        <div>
+                        <div className="space-y-1">
                           <span className="text-muted-foreground">Remaining Equity:</span>
                           <div className="font-medium">
                             ${Math.max(0, calculateAvailableEquity() - calculateEquityLoanAmount()).toLocaleString()}
@@ -1617,33 +1637,33 @@ export const PropertyInputForm = ({
                         </div>
                       </div>
                       {calculateEquityLoanAmount() > calculateAvailableEquity() && (
-                        <div className="flex items-center gap-2 text-destructive text-sm">
-                          <AlertTriangle className="h-4 w-4" />
-                          Insufficient equity available. Consider increasing property value or reducing loan amount.
+                        <div className="flex items-start gap-2 text-destructive text-sm p-2 bg-destructive/10 rounded">
+                          <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                          <span>Insufficient equity available. Consider increasing property value or reducing loan amount.</span>
                         </div>
                       )}
                     </div>
 
                     {/* Equity Loan Options */}
                     <div className="space-y-4 border-t pt-4">
-                      <h5 className="font-medium text-sm">Equity Loan Terms</h5>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div>
+                      <h5 className="font-medium text-sm md:text-base">Equity Loan Terms</h5>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
                           <Label htmlFor="equityLoanInterestRate" className="text-sm font-medium">Equity Loan Interest Rate</Label>
                           <PercentageInput
                             id="equityLoanInterestRate"
                             value={propertyData.equityLoanInterestRate}
                             onChange={(value) => updateField('equityLoanInterestRate', value)}
-                            className="mt-1"
+                            className="min-h-[44px] md:min-h-10"
                           />
                         </div>
-                        <div>
+                        <div className="space-y-2">
                           <Label htmlFor="equityLoanTerm" className="text-sm font-medium">Equity Loan Term (years)</Label>
                           <NumberInput
                             id="equityLoanTerm"
                             value={propertyData.equityLoanTerm}
                             onChange={(value) => updateField('equityLoanTerm', value)}
-                            className="mt-1"
+                            className="min-h-[44px] md:min-h-10"
                             min={1}
                             max={50}
                           />
@@ -1656,28 +1676,28 @@ export const PropertyInputForm = ({
                         <RadioGroup
                           value={propertyData.equityLoanType}
                           onValueChange={(value: 'io' | 'pi') => updateField('equityLoanType', value)}
-                          className="flex flex-row space-x-6"
+                          className="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-6"
                         >
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="pi" id="equity-pi" />
-                            <Label htmlFor="equity-pi" className="text-sm">Principal & Interest</Label>
+                          <div className="flex items-center space-x-3 py-2">
+                            <RadioGroupItem value="pi" id="equity-pi" className="w-4 h-4 md:w-3 md:h-3" />
+                            <Label htmlFor="equity-pi" className="text-sm cursor-pointer">Principal & Interest</Label>
                           </div>
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="io" id="equity-io" />
-                            <Label htmlFor="equity-io" className="text-sm">Interest Only</Label>
+                          <div className="flex items-center space-x-3 py-2">
+                            <RadioGroupItem value="io" id="equity-io" className="w-4 h-4 md:w-3 md:h-3" />
+                            <Label htmlFor="equity-io" className="text-sm cursor-pointer">Interest Only</Label>
                           </div>
                         </RadioGroup>
                       </div>
 
                       {/* Equity Loan IO Period */}
                       {propertyData.equityLoanType === 'io' && (
-                        <div className="ml-4 space-y-2">
+                        <div className="ml-4 space-y-3">
                           <Label htmlFor="equityLoanIoTermYears" className="text-sm font-medium">Equity Loan IO Period (years)</Label>
                           <NumberInput
                             id="equityLoanIoTermYears"
                             value={propertyData.equityLoanIoTermYears}
                             onChange={(value) => updateField('equityLoanIoTermYears', value)}
-                            className="mt-1"
+                            className="min-h-[44px] md:min-h-10"
                             min={1}
                             max={40}
                           />
@@ -1689,10 +1709,10 @@ export const PropertyInputForm = ({
                 
                 {propertyData.isConstructionProject && (
                   <div className="space-y-4">
-                    <h4 className="font-medium text-sm">Construction Holding Costs Funding</h4>
-                    <div className="space-y-3">
+                    <h4 className="font-medium text-sm md:text-base">Construction Holding Costs Funding</h4>
+                    <div className="space-y-4">
                       {/* Quick toggle to capitalise everything */}
-                      <div className="flex items-center space-x-3">
+                      <div className="flex items-start space-x-3 py-2">
                         <input
                           type="checkbox"
                           id="capitalizeConstructionCosts"
@@ -1705,62 +1725,67 @@ export const PropertyInputForm = ({
                               updateField('holdingCostCashPercentage', 0);
                             }
                           }}
-                          className="rounded border-border"
+                          className="rounded border-border w-4 h-4 md:w-3 md:h-3 mt-1"
                         />
-                        <Label htmlFor="capitalizeConstructionCosts" className="text-sm">Capitalise all costs during construction</Label>
-                      </div>
-                      <div className="text-xs text-muted-foreground ml-6 -mt-1">
-                        Interest and eligible holding costs will be added to the loan balance instead of paid from cash.
-                      </div>
-                      {/* Detailed funding split */}
-                      <div className="flex items-center space-x-3">
-                        <input
-                          type="radio"
-                          id="holdingCostCash"
-                          name="holdingCostFunding"
-                          checked={propertyData.holdingCostFunding === 'cash'}
-                          onChange={() => {
-                            updateField('holdingCostFunding', 'cash');
-                            updateField('holdingCostCashPercentage', 100);
-                            updateField('capitalizeConstructionCosts', false);
-                          }}
-                          className="rounded-full"
-                        />
-                        <Label htmlFor="holdingCostCash" className="text-sm">Pay holding costs in cash</Label>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <input
-                          type="radio"
-                          id="holdingCostDebt"
-                          name="holdingCostFunding"
-                          checked={propertyData.holdingCostFunding === 'debt'}
-                          onChange={() => updateField('holdingCostFunding', 'debt')}
-                          className="rounded-full"
-                        />
-                        <Label htmlFor="holdingCostDebt" className="text-sm">Capitalize holding costs into loan</Label>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <input
-                          type="radio"
-                          id="holdingCostHybrid"
-                          name="holdingCostFunding"
-                          checked={propertyData.holdingCostFunding === 'hybrid'}
-                          onChange={() => updateField('holdingCostFunding', 'hybrid')}
-                          className="rounded-full"
-                        />
-                        <Label htmlFor="holdingCostHybrid" className="text-sm">Hybrid (partial cash, partial debt)</Label>
-                      </div>
-                      {propertyData.holdingCostFunding === 'hybrid' && (
-                        <div className="ml-6">
-                          <Label htmlFor="holdingCostCashPercentage" className="text-sm font-medium">Percentage to pay in cash</Label>
-                          <PercentageInput
-                            id="holdingCostCashPercentage"
-                            value={propertyData.holdingCostCashPercentage}
-                            onChange={(value) => updateField('holdingCostCashPercentage', value)}
-                            className="mt-1"
-                          />
+                        <div>
+                          <Label htmlFor="capitalizeConstructionCosts" className="text-sm font-medium cursor-pointer">Capitalise all costs during construction</Label>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Interest and eligible holding costs will be added to the loan balance instead of paid from cash.
+                          </div>
                         </div>
-                      )}
+                      </div>
+                      
+                      {/* Detailed funding split */}
+                      <div className="space-y-3">
+                        <div className="flex items-start space-x-3 py-2">
+                          <input
+                            type="radio"
+                            id="holdingCostCash"
+                            name="holdingCostFunding"
+                            checked={propertyData.holdingCostFunding === 'cash'}
+                            onChange={() => {
+                              updateField('holdingCostFunding', 'cash');
+                              updateField('holdingCostCashPercentage', 100);
+                              updateField('capitalizeConstructionCosts', false);
+                            }}
+                            className="rounded-full w-4 h-4 md:w-3 md:h-3 mt-1"
+                          />
+                          <Label htmlFor="holdingCostCash" className="text-sm cursor-pointer">Pay holding costs in cash</Label>
+                        </div>
+                        <div className="flex items-start space-x-3 py-2">
+                          <input
+                            type="radio"
+                            id="holdingCostDebt"
+                            name="holdingCostFunding"
+                            checked={propertyData.holdingCostFunding === 'debt'}
+                            onChange={() => updateField('holdingCostFunding', 'debt')}
+                            className="rounded-full w-4 h-4 md:w-3 md:h-3 mt-1"
+                          />
+                          <Label htmlFor="holdingCostDebt" className="text-sm cursor-pointer">Capitalize holding costs into loan</Label>
+                        </div>
+                        <div className="flex items-start space-x-3 py-2">
+                          <input
+                            type="radio"
+                            id="holdingCostHybrid"
+                            name="holdingCostFunding"
+                            checked={propertyData.holdingCostFunding === 'hybrid'}
+                            onChange={() => updateField('holdingCostFunding', 'hybrid')}
+                            className="rounded-full w-4 h-4 md:w-3 md:h-3 mt-1"
+                          />
+                          <Label htmlFor="holdingCostHybrid" className="text-sm cursor-pointer">Hybrid (partial cash, partial debt)</Label>
+                        </div>
+                        {propertyData.holdingCostFunding === 'hybrid' && (
+                          <div className="ml-6 space-y-2">
+                            <Label htmlFor="holdingCostCashPercentage" className="text-sm font-medium">Percentage to pay in cash</Label>
+                            <PercentageInput
+                              id="holdingCostCashPercentage"
+                              value={propertyData.holdingCostCashPercentage}
+                              onChange={(value) => updateField('holdingCostCashPercentage', value)}
+                              className="min-h-[44px] md:min-h-10"
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Equity repayments during construction */}
