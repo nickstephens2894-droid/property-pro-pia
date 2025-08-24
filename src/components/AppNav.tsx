@@ -2,7 +2,7 @@ import * as React from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Home, BarChart3, Users, Building2, FileText, PiggyBank, Layers } from "lucide-react";
+import { Home, BarChart3, Users, Building2, FileText, PiggyBank, Layers, HelpCircle } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserProfile } from "./UserProfile";
@@ -53,6 +53,7 @@ export default function AppNav({ className = "" }: { className?: string }) {
             {/* Center - Navigation Tabs */}
             <nav className="flex items-center gap-2" aria-label="Primary">
               {items.map(({ to, label }) => link(to, label))}
+              {link("/how-to", "How To")}
             </nav>
             
             {/* Right side - User profile */}
