@@ -550,20 +550,13 @@ export const PropertyInputForm = ({
           >
           {/* 1. Personal Financial Profile */}
           <AccordionItem value="personal-profile" className="border-b">
-            <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50 group">
+            <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50">
               <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <Users className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
                   <span className="font-medium text-sm md:text-base truncate">Personal Financial Profile</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <AccordionCompletionIndicator status={personalProfileStatus} sectionKey="personal-profile" />
-                  <div className="text-muted-foreground group-hover:text-foreground transition-colors">
-                    <div className="transform transition-transform group-data-[state=open]:rotate-180">
-                      ▼
-                    </div>
-                  </div>
-                </div>
+                <AccordionCompletionIndicator status={personalProfileStatus} sectionKey="personal-profile" />
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
@@ -676,20 +669,13 @@ export const PropertyInputForm = ({
 
           {/* 2. Property Basics */}
           <AccordionItem value="property-basics" className="border-b">
-            <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50 group">
+            <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50">
               <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <Building2 className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
                   <span className="font-medium text-sm md:text-base truncate">Property Basics</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <AccordionCompletionIndicator status={propertyBasicsStatus} />
-                  <div className="text-muted-foreground group-hover:text-foreground transition-colors">
-                    <div className="transform transition-transform group-data-[state=open]:rotate-180">
-                      ▼
-                    </div>
-                  </div>
-                </div>
+                <AccordionCompletionIndicator status={propertyBasicsStatus} />
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
@@ -789,20 +775,13 @@ export const PropertyInputForm = ({
 {/* 3. Construction Costs */}
 {propertyData.isConstructionProject && (
   <AccordionItem value="construction" className="border-b">
-    <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50 group">
+    <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50">
       <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <Hammer className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
           <span className="font-medium text-sm md:text-base truncate">Construction Costs</span>
         </div>
-        <div className="flex items-center gap-2">
-          <AccordionCompletionIndicator status={constructionStatus} sectionKey="construction" />
-          <div className="text-muted-foreground group-hover:text-foreground transition-colors">
-            <div className="transform transition-transform group-data-[state=open]:rotate-180">
-              ▼
-            </div>
-          </div>
-        </div>
+        <AccordionCompletionIndicator status={constructionStatus} sectionKey="construction" />
       </div>
     </AccordionTrigger>
     <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
@@ -949,20 +928,13 @@ export const PropertyInputForm = ({
 {/* 4. Construction Timeline */}
 {propertyData.isConstructionProject && (
   <AccordionItem value="construction-timeline" className="border-b">
-    <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50 group">
+    <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50">
       <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <Clock className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
           <span className="font-medium text-sm md:text-base truncate">Construction Timeline</span>
         </div>
-        <div className="flex items-center gap-2">
-          <AccordionCompletionIndicator status={constructionStatus} sectionKey="construction-timeline" />
-          <div className="text-muted-foreground group-hover:text-foreground transition-colors">
-            <div className="transform transition-transform group-data-[state=open]:rotate-180">
-              ▼
-            </div>
-          </div>
-        </div>
+        <AccordionCompletionIndicator status={constructionStatus} sectionKey="construction-timeline" />
       </div>
     </AccordionTrigger>
     <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
@@ -1177,20 +1149,13 @@ export const PropertyInputForm = ({
 
 {/* 5. Transaction & Setup Costs */}
 <AccordionItem value="transaction-costs" className="border-b">
-  <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50 group">
+  <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50">
     <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
       <div className="flex items-center gap-3 flex-1 min-w-0">
         <Receipt className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
         <span className="font-medium text-sm md:text-base truncate">Transaction & Setup Costs</span>
       </div>
-      <div className="flex items-center gap-2">
-        <AccordionCompletionIndicator status={purchaseCostsStatus} />
-        <div className="text-muted-foreground group-hover:text-foreground transition-colors">
-          <div className="transform transition-transform group-data-[state=open]:rotate-180">
-            ▼
-          </div>
-        </div>
-      </div>
+      <AccordionCompletionIndicator status={purchaseCostsStatus} />
     </div>
   </AccordionTrigger>
   <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
@@ -1289,20 +1254,13 @@ export const PropertyInputForm = ({
 
           {/* 6. Funding & Finance Structure */}
           <AccordionItem value="funding-finance" className="border-b">
-            <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50 group">
+            <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50">
               <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <CreditCard className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
                   <span className="font-medium text-sm md:text-base truncate">Funding & Finance Structure</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <AccordionCompletionIndicator status={financingStatus} sectionKey="funding-finance" />
-                  <div className="text-muted-foreground group-hover:text-foreground transition-colors">
-                    <div className="transform transition-transform group-data-[state=open]:rotate-180">
-                      ▼
-                    </div>
-                  </div>
-                </div>
+                <AccordionCompletionIndicator status={financingStatus} sectionKey="funding-finance" />
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
