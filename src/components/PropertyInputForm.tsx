@@ -1969,7 +1969,7 @@ export const PropertyInputForm = ({
                           <div>
                             <span className="text-muted-foreground">Tax Difference:</span>
                             <div className={`font-medium ${result.taxDifference < 0 ? 'text-success' : 'text-destructive'}`}>
-                              ${result.taxDifference.toLocaleString()}
+                              ${Math.abs(result.taxDifference).toLocaleString()}
                             </div>
                           </div>
                         </div>
@@ -1980,7 +1980,7 @@ export const PropertyInputForm = ({
                     <div className="flex items-center justify-between bg-primary/5 rounded-lg p-3 text-sm">
                       <span className="font-medium">Total Tax Impact</span>
                       <span className={`font-semibold ${investorTaxResults.reduce((s, r) => s + r.taxDifference, 0) < 0 ? 'text-success' : 'text-destructive'}`}>
-                        ${investorTaxResults.reduce((s, r) => s + r.taxDifference, 0).toLocaleString()}
+                        ${Math.abs(investorTaxResults.reduce((s, r) => s + r.taxDifference, 0)).toLocaleString()}
                       </span>
                     </div>
                   </div>
