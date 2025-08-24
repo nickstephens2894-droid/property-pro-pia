@@ -222,7 +222,7 @@ export default function InvestorDetail() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${formatCurrency(investor.annual_income)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(investor.annual_income)}</div>
             <p className="text-xs text-muted-foreground">Primary income source</p>
           </CardContent>
         </Card>
@@ -235,7 +235,7 @@ export default function InvestorDetail() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${formatCurrency(totalIncome)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(totalIncome)}</div>
             <p className="text-xs text-muted-foreground">Including other income</p>
           </CardContent>
         </Card>
@@ -279,15 +279,15 @@ export default function InvestorDetail() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <Label className="text-sm font-medium text-muted-foreground">Annual Income</Label>
-              <p className="text-lg font-semibold">${formatCurrency(investor.annual_income)}</p>
+              <p className="text-lg font-semibold">{formatCurrency(investor.annual_income)}</p>
             </div>
             <div>
               <Label className="text-sm font-medium text-muted-foreground">Other Income</Label>
-              <p className="text-lg font-semibold">${formatCurrency(investor.other_income)}</p>
+              <p className="text-lg font-semibold">{formatCurrency(investor.other_income)}</p>
             </div>
             <div>
               <Label className="text-sm font-medium text-muted-foreground">Non-taxable Income</Label>
-              <p className="text-lg font-semibold">${formatCurrency(investor.non_taxable_income)}</p>
+              <p className="text-lg font-semibold">{formatCurrency(investor.non_taxable_income)}</p>
             </div>
             <div>
               <Label className="text-sm font-medium text-muted-foreground">Medicare Levy</Label>
@@ -311,22 +311,22 @@ export default function InvestorDetail() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <Label className="text-sm font-medium text-muted-foreground">Total Property Value</Label>
-              <p className="text-lg font-semibold">${formatCurrency(totalPropertyValue)}</p>
+              <p className="text-lg font-semibold">{formatCurrency(totalPropertyValue)}</p>
             </div>
             <div>
               <Label className="text-sm font-medium text-muted-foreground">Weekly Cashflow</Label>
               <p className={`text-lg font-semibold ${totalCashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                ${formatCurrency(Math.abs(totalCashflow))} {totalCashflow >= 0 ? 'positive' : 'negative'}
+                {formatCurrency(Math.abs(totalCashflow))} {totalCashflow >= 0 ? 'positive' : 'negative'}
               </p>
             </div>
             <div>
               <Label className="text-sm font-medium text-muted-foreground">Annual Tax Savings</Label>
-              <p className="text-lg font-semibold text-green-600">${formatCurrency(totalTaxSavings)}</p>
+              <p className="text-lg font-semibold text-green-600">{formatCurrency(totalTaxSavings)}</p>
             </div>
             <div>
               <Label className="text-sm font-medium text-muted-foreground">Net Annual Benefit</Label>
               <p className={`text-lg font-semibold ${(totalCashflow * 52 + totalTaxSavings) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                ${formatCurrency(Math.abs(totalCashflow * 52 + totalTaxSavings))}
+                {formatCurrency(Math.abs(totalCashflow * 52 + totalTaxSavings))}
               </p>
             </div>
           </div>
@@ -361,8 +361,8 @@ export default function InvestorDetail() {
                         <h4 className="font-semibold">{propertyInvestor.properties.name}</h4>
                         <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
                           <span>Type: {propertyInvestor.properties.type}</span>
-                          <span>Value: ${formatCurrency(propertyInvestor.properties.purchase_price)}</span>
-                          <span>Rent: ${formatCurrency(propertyInvestor.properties.weekly_rent)}/week</span>
+                          <span>Value: {formatCurrency(propertyInvestor.properties.purchase_price)}</span>
+                          <span>Rent: {formatCurrency(propertyInvestor.properties.weekly_rent)}/week</span>
                           {propertyInvestor.properties.location && (
                             <span className="flex items-center gap-1">
                               <MapPin className="h-3 w-3" />
@@ -375,7 +375,7 @@ export default function InvestorDetail() {
                     <div className="text-right">
                       <div className="font-semibold">{propertyInvestor.ownership_percentage}% ownership</div>
                       <div className="text-sm text-muted-foreground">
-                        ${formatCurrency(propertyInvestor.cash_contribution)} contribution
+                        {formatCurrency(propertyInvestor.cash_contribution)} contribution
                       </div>
                     </div>
                   </div>
@@ -426,8 +426,8 @@ export default function InvestorDetail() {
                         </h4>
                         <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
                           <span>Type: {instance.property_type}</span>
-                          <span>Value: ${formatCurrency(instance.purchase_price)}</span>
-                          <span>Rent: ${formatCurrency(instance.weekly_rent)}/week</span>
+                          <span>Value: {formatCurrency(instance.purchase_price)}</span>
+                          <span>Rent: {formatCurrency(instance.weekly_rent)}/week</span>
                           <span className="flex items-center gap-1">
                             <MapPin className="h-3 w-3" />
                             {instance.location}
@@ -438,7 +438,7 @@ export default function InvestorDetail() {
                     <div className="text-right">
                       <div className="font-semibold">{instance.ownership_percentage}% ownership</div>
                       <div className="text-sm text-muted-foreground">
-                        Weekly: ${formatCurrency(Math.abs(instance.weekly_cashflow_year1 * (instance.ownership_percentage || 0) / 100))} 
+                        Weekly: {formatCurrency(Math.abs(instance.weekly_cashflow_year1 * (instance.ownership_percentage || 0) / 100))} 
                         {(instance.weekly_cashflow_year1 * (instance.ownership_percentage || 0) / 100) >= 0 ? ' positive' : ' negative'}
                       </div>
                     </div>
@@ -447,13 +447,13 @@ export default function InvestorDetail() {
                     <div>
                       <span className="text-muted-foreground">Weekly Cashflow: </span>
                       <span className={instance.weekly_cashflow_year1 >= 0 ? 'text-green-600' : 'text-red-600'}>
-                        ${formatCurrency(Math.abs(instance.weekly_cashflow_year1))} 
+                        {formatCurrency(Math.abs(instance.weekly_cashflow_year1))} 
                         {instance.weekly_cashflow_year1 >= 0 ? ' positive' : ' negative'}
                       </span>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Annual Tax Savings: </span>
-                      <span className="text-green-600">${formatCurrency(instance.tax_savings_year1)}</span>
+                      <span className="text-green-600">{formatCurrency(instance.tax_savings_year1)}</span>
                     </div>
                   </div>
                 </div>
