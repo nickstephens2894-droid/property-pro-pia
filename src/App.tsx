@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 // import Projections from "./pages/Projections"; // Commented out - functionality integrated into instances
 import NotFound from "./pages/NotFound";
 import Investors from "./pages/Investors";
+import InvestorDetail from "./pages/InvestorDetail";
 import Properties from "./pages/Properties";
 import Funds from "./pages/Funds";
 import Scenarios from "./pages/Scenarios";
@@ -42,6 +43,7 @@ function AppLayout() {
           <Route path="/" element={<RequireAuth><Index /></RequireAuth>} />
           {/* <Route path="/projections" element={<RequireAuth><Projections /></RequireAuth>} /> */}
           <Route path="/investors" element={<RequireAuth><Investors /></RequireAuth>} />
+          <Route path="/investors/:id" element={<RequireAuth><InvestorDetail /></RequireAuth>} />
           <Route path="/properties" element={<RequireAuth><Properties /></RequireAuth>} />
           <Route path="/funds" element={<RequireAuth><Funds /></RequireAuth>} />
           <Route path="/scenarios" element={<RequireAuth><Scenarios /></RequireAuth>} />
