@@ -22,6 +22,7 @@ import EditProperty from "./pages/EditProperty";
 import Auth from "./pages/Auth";
 import SpecPage from "./pages/SpecPage";
 import HowTo from "./pages/HowTo";
+import ProjectionDashboard from "./pages/ProjectionDashboard";
 import { RepositoryProvider } from "./services/repository";
 import { PropertiesProvider } from "./contexts/PropertiesContext";
 import RequireAuth from "./components/RequireAuth";
@@ -47,6 +48,7 @@ function AppLayout() {
           <Route path="/instances" element={<RequireAuth><Instances /></RequireAuth>} />
           <Route path="/instances/add" element={<RequireAuth><AddInstance /></RequireAuth>} />
           <Route path="/instances/:id" element={<RequireAuth><InstanceDetail /></RequireAuth>} />
+          <Route path="/projection-dashboard" element={<RequireAuth><ProjectionDashboard /></RequireAuth>} />
           <Route path="/properties/create" element={<RequireAuth><CreateProperty /></RequireAuth>} />
           <Route path="/properties/:propertyId/edit" element={<RequireAuth><EditProperty /></RequireAuth>} />
           <Route path="/how-to" element={<RequireAuth><HowTo /></RequireAuth>} />
