@@ -459,31 +459,76 @@ export const PropertyInputForm = ({
     applyPreset(dataToApply, propertyMethod, fundingMethod);
   };
 
+  // Create completion summary for mobile
+  const completionSummary = [
+    { key: 'personal', status: personalProfileStatus, label: 'Personal Profile' },
+    { key: 'property', status: propertyBasicsStatus, label: 'Property Basics' },
+    { key: 'construction', status: constructionStatus, label: 'Construction', show: propertyData.isConstructionProject },
+    { key: 'financing', status: financingStatus, label: 'Financing' },
+    { key: 'purchase', status: purchaseCostsStatus, label: 'Purchase Costs' },
+    { key: 'expenses', status: annualExpensesStatus, label: 'Annual Expenses' },
+    { key: 'tax', status: taxOptimizationStatus, label: 'Tax Optimization' }
+  ].filter(item => item.show !== false);
+
+  const completedSections = completionSummary.filter(s => s.status === 'complete').length;
+  const totalSections = completionSummary.length;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Edit Mode Banner */}
       {isEditMode && (
-        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 md:p-4">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-orange-500"></div>
-            <h3 className="font-medium text-orange-800">Edit Mode Active</h3>
+            <div className="w-2 h-2 rounded-full bg-orange-500 flex-shrink-0"></div>
+            <h3 className="font-medium text-orange-800 text-sm md:text-base">Edit Mode Active</h3>
           </div>
-          <p className="text-sm text-orange-700 mt-1">
+          <p className="text-xs md:text-sm text-orange-700 mt-1">
             You can now modify the investment parameters. Changes will be saved to this instance only.
           </p>
         </div>
+      )}
+      
+      {/* Mobile Progress Summary */}
+      {isMobile && (
+        <Card className="border-primary/20">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-medium text-sm">Form Completion</h3>
+              <span className="text-xs text-muted-foreground">
+                {completedSections}/{totalSections} sections
+              </span>
+            </div>
+            <div className="w-full bg-muted rounded-full h-2 mb-3">
+              <div 
+                className="bg-primary h-2 rounded-full transition-all duration-300"
+                style={{ width: `${(completedSections / totalSections) * 100}%` }}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              {completionSummary.map((item) => (
+                <div key={item.key} className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                    item.status === 'complete' ? 'bg-green-500' : 
+                    item.status === 'warning' ? 'bg-yellow-500' : 'bg-muted-foreground'
+                  }`} />
+                  <span className="text-muted-foreground truncate">{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
       
       {/* Validation Warnings */}
       <ValidationWarnings />
       
       <Card className="w-full border-2 border-primary/20 shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-primary/10 to-accent/10 border-b-2 border-primary/20">
-          <CardTitle className="flex items-center gap-3 text-primary text-xl">
-            <Home className="h-6 w-6" />
-            <div>
-              <div>Investment Details</div>
-              <div className="text-sm font-normal text-muted-foreground mt-1">
+        <CardHeader className="bg-gradient-to-r from-primary/10 to-accent/10 border-b-2 border-primary/20 p-4 md:p-6">
+          <CardTitle className="flex items-center gap-3 text-primary">
+            <Home className="h-5 w-5 md:h-6 md:w-6 flex-shrink-0" />
+            <div className="min-w-0">
+              <div className="text-lg md:text-xl font-semibold">Investment Details</div>
+              <div className="text-xs md:text-sm font-normal text-muted-foreground mt-1">
                 Configure your property investment parameters
               </div>
             </div>
@@ -505,86 +550,96 @@ export const PropertyInputForm = ({
           >
           {/* 1. Personal Financial Profile */}
           <AccordionItem value="personal-profile" className="border-b">
-            <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
-              <div className="flex items-center gap-2 w-full">
-                <Users className="h-4 w-4 text-primary" />
-                <span className="font-medium">Personal Financial Profile</span>
-                <div className="ml-auto">
+            <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50 group">
+              <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <Users className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
+                  <span className="font-medium text-sm md:text-base truncate">Personal Financial Profile</span>
+                </div>
+                <div className="flex items-center gap-2">
                   <AccordionCompletionIndicator status={personalProfileStatus} sectionKey="personal-profile" />
+                  <div className="text-muted-foreground group-hover:text-foreground transition-colors">
+                    <div className="transform transition-transform group-data-[state=open]:rotate-180">
+                      ▼
+                    </div>
+                  </div>
                 </div>
               </div>
             </AccordionTrigger>
-            <AccordionContent className="px-6 pb-6">
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium text-sm">Investors</h4>
+            <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
+              <div className="space-y-4 md:space-y-6">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <h4 className="font-medium text-sm md:text-base">Investors</h4>
                   <Button 
                     onClick={addInvestor}
-                    size="sm"
+                    size={isMobile ? "default" : "sm"}
                     variant="outline"
                     disabled={propertyData.investors.length >= 4}
+                    className="w-full md:w-auto min-h-[44px] md:min-h-0"
                   >
-                    <Plus className="h-4 w-4 mr-1" />
+                    <Plus className="h-4 w-4 mr-2" />
                     Add Investor
                   </Button>
                 </div>
 
                 {propertyData.investors.map((investor) => (
-                  <div key={investor.id} className="border rounded-lg p-4 space-y-4">
-                    <div className="flex items-center justify-between">
+                  <div key={investor.id} className="border rounded-lg p-3 md:p-4 space-y-4">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                       <Input
                         value={investor.name}
                         onChange={(e) => updateInvestor(investor.id, 'name', e.target.value)}
                         placeholder="Investor name"
-                        className="max-w-[200px] font-medium"
+                        className="w-full md:max-w-[200px] font-medium min-h-[44px] md:min-h-10"
                       />
                       {propertyData.investors.length > 1 && (
                         <Button
                           onClick={() => removeInvestor(investor.id)}
-                          size="sm"
+                          size={isMobile ? "default" : "sm"}
                           variant="ghost"
+                          className="w-full md:w-auto min-h-[44px] md:min-h-0"
                         >
-                          <X className="h-4 w-4" />
+                          <X className="h-4 w-4 mr-2 md:mr-0" />
+                          <span className="md:hidden">Remove Investor</span>
                         </Button>
                       )}
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor={`income-${investor.id}`} className="text-sm font-medium">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor={`income-${investor.id}`} className="text-sm md:text-sm font-medium">
                           Annual Income
                         </Label>
                         <CurrencyInput
                           id={`income-${investor.id}`}
                           value={investor.annualIncome}
                           onChange={(value) => updateInvestor(investor.id, 'annualIncome', value)}
-                          className="mt-1"
+                          className="min-h-[44px] md:min-h-10"
                           placeholder="Enter annual income"
                         />
                       </div>
-                      <div>
-                        <Label htmlFor={`other-income-${investor.id}`} className="text-sm font-medium">
+                      <div className="space-y-2">
+                        <Label htmlFor={`other-income-${investor.id}`} className="text-sm md:text-sm font-medium">
                           Other Income
                         </Label>
                         <CurrencyInput
                           id={`other-income-${investor.id}`}
                           value={investor.otherIncome}
                           onChange={(value) => updateInvestor(investor.id, 'otherIncome', value)}
-                          className="mt-1"
+                          className="min-h-[44px] md:min-h-10"
                           placeholder="Enter other income"
                         />
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-3 py-2">
                       <input
                         type="checkbox"
                         id={`medicare-${investor.id}`}
                         checked={investor.hasMedicareLevy}
                         onChange={(e) => updateInvestor(investor.id, 'hasMedicareLevy', e.target.checked)}
-                        className="rounded border-border"
+                        className="rounded border-border w-4 h-4 md:w-3 md:h-3"
                       />
-                      <Label htmlFor={`medicare-${investor.id}`} className="text-sm">
+                      <Label htmlFor={`medicare-${investor.id}`} className="text-sm cursor-pointer">
                         Subject to Medicare Levy
                       </Label>
                     </div>
@@ -621,100 +676,106 @@ export const PropertyInputForm = ({
 
           {/* 2. Property Basics */}
           <AccordionItem value="property-basics" className="border-b">
-            <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
-              <div className="flex items-center gap-2 w-full">
-                <Building2 className="h-4 w-4 text-primary" />
-                <span className="font-medium">Property Basics</span>
-                <div className="ml-auto">
+            <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50 group">
+              <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <Building2 className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
+                  <span className="font-medium text-sm md:text-base truncate">Property Basics</span>
+                </div>
+                <div className="flex items-center gap-2">
                   <AccordionCompletionIndicator status={propertyBasicsStatus} />
+                  <div className="text-muted-foreground group-hover:text-foreground transition-colors">
+                    <div className="transform transition-transform group-data-[state=open]:rotate-180">
+                      ▼
+                    </div>
+                  </div>
                 </div>
               </div>
             </AccordionTrigger>
-            <AccordionContent className="px-6 pb-6">
-              <div className="space-y-6">
-<div className="space-y-2">
-  <Label className="text-sm font-medium">Property Method</Label>
-  <Select
-    value={propertyData.currentPropertyMethod}
-    onValueChange={(value) => {
-      updateField('currentPropertyMethod', value as PropertyMethod);
-      updateField('isConstructionProject', value === 'house-land-construction');
-    }}
-  >
-    <SelectTrigger>
-      <SelectValue placeholder="Select property method..." />
-    </SelectTrigger>
-    <SelectContent className="bg-background border border-border">
-      {Object.entries(PROPERTY_METHODS).map(([key, method]) => (
-        <SelectItem key={key} value={key}>
-          {method.name}
-        </SelectItem>
-      ))}
-    </SelectContent>
-  </Select>
-</div>
+            <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
+              <div className="space-y-4 md:space-y-6">
+                <div className="space-y-3">
+                  <Label className="text-sm md:text-sm font-medium">Property Method</Label>
+                  <Select
+                    value={propertyData.currentPropertyMethod}
+                    onValueChange={(value) => {
+                      updateField('currentPropertyMethod', value as PropertyMethod);
+                      updateField('isConstructionProject', value === 'house-land-construction');
+                    }}
+                  >
+                    <SelectTrigger className="min-h-[44px] md:min-h-10">
+                      <SelectValue placeholder="Select property method..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border border-border z-50">
+                      {Object.entries(PROPERTY_METHODS).map(([key, method]) => (
+                        <SelectItem key={key} value={key} className="min-h-[44px] md:min-h-auto">
+                          {method.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-  <div className="space-y-2">
-    <Label className="text-sm font-medium">State</Label>
-    <Select
-      value={propertyData.propertyState ?? 'VIC'}
-      onValueChange={(value) => {
-        const v = value as Jurisdiction;
-        updateField('propertyState', v);
-        const dutiableValue = propertyData.isConstructionProject ? propertyData.landValue : propertyData.purchasePrice;
-        const duty = calculateStampDuty(dutiableValue, v);
-        updateFieldWithCascade('stampDuty', duty);
-      }}
-    >
-      <SelectTrigger>
-        <SelectValue placeholder="Select state" />
-      </SelectTrigger>
-      <SelectContent className="bg-background border border-border">
-        {JURISDICTIONS.map((j) => (
-          <SelectItem key={j} value={j}>{j}</SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-    <div className="text-[11px] text-muted-foreground">Used for stamp duty calculations</div>
-  </div>
+                <div className="space-y-3">
+                  <Label className="text-sm md:text-sm font-medium">State</Label>
+                  <Select
+                    value={propertyData.propertyState ?? 'VIC'}
+                    onValueChange={(value) => {
+                      const v = value as Jurisdiction;
+                      updateField('propertyState', v);
+                      const dutiableValue = propertyData.isConstructionProject ? propertyData.landValue : propertyData.purchasePrice;
+                      const duty = calculateStampDuty(dutiableValue, v);
+                      updateFieldWithCascade('stampDuty', duty);
+                    }}
+                  >
+                    <SelectTrigger className="min-h-[44px] md:min-h-10">
+                      <SelectValue placeholder="Select state" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border border-border z-50">
+                      {JURISDICTIONS.map((j) => (
+                        <SelectItem key={j} value={j} className="min-h-[44px] md:min-h-auto">{j}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="text-xs text-muted-foreground">Used for stamp duty calculations</div>
+                </div>
 
                 {propertyData.isConstructionProject ? (
                   <div className="space-y-4">
-
                     {/* Total Property Value */}
                     <div className="bg-primary/10 rounded-lg p-4 border-l-4 border-primary">
-                      <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
-                        <Home className="h-4 w-4" />
+                      <h4 className="text-sm md:text-sm font-medium mb-2 flex items-center gap-2">
+                        <Home className="h-4 w-4 flex-shrink-0" />
                         Total Property Value
                       </h4>
-                      <div className="text-2xl font-bold text-primary">
+                      <div className="text-xl md:text-2xl font-bold text-primary">
                         ${(propertyData.landValue + propertyData.constructionValue).toLocaleString()}
                       </div>
-                      <div className="text-sm text-muted-foreground mt-1">
+                      <div className="text-xs md:text-sm text-muted-foreground mt-1">
                         Land: ${propertyData.landValue.toLocaleString()} + Construction: ${propertyData.constructionValue.toLocaleString()}
                       </div>
                     </div>
 
-<div>
-  <Label htmlFor="landValue" className="text-sm font-medium">Land Value</Label>
-  <CurrencyInput
-    id="landValue"
-    value={propertyData.landValue}
-    onChange={(value) => updateFieldWithCascade('landValue', value)}
-    className="mt-1"
-    placeholder="Enter land value"
-  />
-  <p className="text-xs text-muted-foreground mt-2">Set construction amount and details in the Construction section.</p>
-</div>
+                    <div className="space-y-3">
+                      <Label htmlFor="landValue" className="text-sm md:text-sm font-medium">Land Value</Label>
+                      <CurrencyInput
+                        id="landValue"
+                        value={propertyData.landValue}
+                        onChange={(value) => updateFieldWithCascade('landValue', value)}
+                        className="min-h-[44px] md:min-h-10"
+                        placeholder="Enter land value"
+                      />
+                      <p className="text-xs text-muted-foreground">Set construction amount and details in the Construction section.</p>
+                    </div>
                   </div>
                 ) : (
-                  <div>
-                    <Label htmlFor="purchasePrice" className="text-sm font-medium">Purchase Price</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="purchasePrice" className="text-sm md:text-sm font-medium">Purchase Price</Label>
                     <CurrencyInput
                       id="purchasePrice"
                       value={propertyData.purchasePrice}
                       onChange={(value) => updateFieldWithCascade('purchasePrice', value)}
-                      className="mt-1"
+                      className="min-h-[44px] md:min-h-10"
                       placeholder="Enter purchase price"
                     />
                   </div>
@@ -728,36 +789,43 @@ export const PropertyInputForm = ({
 {/* 3. Construction Costs */}
 {propertyData.isConstructionProject && (
   <AccordionItem value="construction" className="border-b">
-    <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
-      <div className="flex items-center justify-between w-full">
-        <div className="flex items-center gap-2">
-          <Hammer className="h-4 w-4 text-primary" />
-          <span className="font-medium">Construction Costs</span>
+    <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50 group">
+      <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <Hammer className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
+          <span className="font-medium text-sm md:text-base truncate">Construction Costs</span>
         </div>
-        <AccordionCompletionIndicator status={constructionStatus} sectionKey="construction" />
+        <div className="flex items-center gap-2">
+          <AccordionCompletionIndicator status={constructionStatus} sectionKey="construction" />
+          <div className="text-muted-foreground group-hover:text-foreground transition-colors">
+            <div className="transform transition-transform group-data-[state=open]:rotate-180">
+              ▼
+            </div>
+          </div>
+        </div>
       </div>
     </AccordionTrigger>
-    <AccordionContent className="px-6 pb-6">
-      <div className="space-y-6">
+    <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
+      <div className="space-y-4 md:space-y-6">
         {/* Total Property Value Summary */}
-        <div className="bg-primary/10 rounded-lg p-4 border-l-4 border-primary">
+        <div className="bg-primary/10 rounded-lg p-3 md:p-4 border-l-4 border-primary">
           <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
-            <Home className="h-4 w-4" />
+            <Home className="h-4 w-4 flex-shrink-0" />
             Total Property Value
           </h4>
-          <div className="text-2xl font-bold text-primary">
+          <div className="text-xl md:text-2xl font-bold text-primary">
             ${(propertyData.landValue + propertyData.constructionValue).toLocaleString()}
           </div>
-          <div className="text-sm text-muted-foreground mt-1">
+          <div className="text-xs md:text-sm text-muted-foreground mt-1">
             Land: ${propertyData.landValue.toLocaleString()} + Construction: ${propertyData.constructionValue.toLocaleString()}
           </div>
         </div>
 
         {/* Total Construction Value */}
-        <div className="bg-accent/30 rounded-lg p-4 border border-accent/50">
-          <div className="flex items-center justify-between mb-3">
+        <div className="bg-accent/30 rounded-lg p-3 md:p-4 border border-accent/50">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-3">
             <h4 className="text-sm font-medium flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
+              <DollarSign className="h-4 w-4 flex-shrink-0" />
               Total Construction Value
             </h4>
             {totalConstructionValue !== propertyData.constructionValue && (
@@ -773,18 +841,19 @@ export const PropertyInputForm = ({
               protectField('constructionValue', 2000);
               updateFieldWithCascade('constructionValue', value);
             }}
+            className="min-h-[44px] md:min-h-10"
             placeholder="Enter total construction value"
           />
         </div>
 
         {/* Building Values */}
-        <div className="bg-muted/20 rounded-lg p-4">
+        <div className="bg-muted/20 rounded-lg p-3 md:p-4">
           <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-            <Receipt className="h-4 w-4" />
+            <Receipt className="h-4 w-4 flex-shrink-0" />
             Construction Value Breakdown
           </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
               <Label htmlFor="buildingValue" className="text-sm font-medium">Building Value (excl. land)</Label>
               <CurrencyInput
                 id="buildingValue"
@@ -793,11 +862,11 @@ export const PropertyInputForm = ({
                   protectField('buildingValue', 2000);
                   updateFieldWithCascade('buildingValue', value);
                 }}
-                className="mt-1"
+                className="min-h-[44px] md:min-h-10"
                 placeholder="Enter building value"
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="plantEquipmentValue" className="text-sm font-medium">Plant & Equipment Value</Label>
               <CurrencyInput
                 id="plantEquipmentValue"
@@ -806,17 +875,17 @@ export const PropertyInputForm = ({
                   protectField('plantEquipmentValue', 2000);
                   updateFieldWithCascade('plantEquipmentValue', value);
                 }}
-                className="mt-1"
+                className="min-h-[44px] md:min-h-10"
                 placeholder="Enter equipment value"
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="constructionYear" className="text-sm font-medium">Construction Year</Label>
               <NumberInput
                 id="constructionYear"
                 value={propertyData.constructionYear}
                 onChange={(value) => updateField('constructionYear', value)}
-                className="mt-1"
+                className="min-h-[44px] md:min-h-10"
                 placeholder="2020"
                 min={1900}
                 max={new Date().getFullYear() + 10}
@@ -824,7 +893,7 @@ export const PropertyInputForm = ({
               />
             </div>
           </div>
-          <div className="mt-3">
+          <div className="mt-4">
             <div className="bg-accent/30 rounded-lg p-3">
               <div className="text-sm font-medium text-accent-foreground">
                 Total Construction Value: ${totalConstructionValue.toLocaleString()}
@@ -834,40 +903,39 @@ export const PropertyInputForm = ({
               </div>
             </div>
           </div>
-
         </div>
 
         {/* Development Costs */}
         <div className="space-y-4">
-          <h4 className="font-medium text-sm">Development Costs</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
+          <h4 className="font-medium text-sm md:text-base">Development Costs</h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
               <Label htmlFor="councilFees" className="text-sm font-medium">Council Fees & Approvals</Label>
               <CurrencyInput
                 id="councilFees"
                 value={propertyData.councilFees}
                 onChange={(value) => updateFieldWithCascade('councilFees', value)}
-                className="mt-1"
+                className="min-h-[44px] md:min-h-10"
                 placeholder="Enter council fees"
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="architectFees" className="text-sm font-medium">Architect/Design Fees</Label>
               <CurrencyInput
                 id="architectFees"
                 value={propertyData.architectFees}
                 onChange={(value) => updateFieldWithCascade('architectFees', value)}
-                className="mt-1"
+                className="min-h-[44px] md:min-h-10"
                 placeholder="Enter architect fees"
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="siteCosts" className="text-sm font-medium">Site Costs & Utilities</Label>
               <CurrencyInput
                 id="siteCosts"
                 value={propertyData.siteCosts}
                 onChange={(value) => updateFieldWithCascade('siteCosts', value)}
-                className="mt-1"
+                className="min-h-[44px] md:min-h-10"
                 placeholder="Enter site costs"
               />
             </div>
@@ -881,59 +949,66 @@ export const PropertyInputForm = ({
 {/* 4. Construction Timeline */}
 {propertyData.isConstructionProject && (
   <AccordionItem value="construction-timeline" className="border-b">
-    <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
-      <div className="flex items-center justify-between w-full">
-        <div className="flex items-center gap-2">
-          <Clock className="h-4 w-4 text-primary" />
-          <span className="font-medium">Construction Timeline</span>
+    <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50 group">
+      <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <Clock className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
+          <span className="font-medium text-sm md:text-base truncate">Construction Timeline</span>
         </div>
-        <AccordionCompletionIndicator status={constructionStatus} sectionKey="construction-timeline" />
+        <div className="flex items-center gap-2">
+          <AccordionCompletionIndicator status={constructionStatus} sectionKey="construction-timeline" />
+          <div className="text-muted-foreground group-hover:text-foreground transition-colors">
+            <div className="transform transition-transform group-data-[state=open]:rotate-180">
+              ▼
+            </div>
+          </div>
+        </div>
       </div>
     </AccordionTrigger>
-    <AccordionContent className="px-6 pb-6">
-      <div className="space-y-6">
+    <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
+      <div className="space-y-4 md:space-y-6">
         {/* Construction Timeline & Financing */}
-        <div className="bg-accent/20 rounded-lg p-4">
+        <div className="bg-accent/20 rounded-lg p-3 md:p-4">
           <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-            <Clock className="h-4 w-4" />
+            <Clock className="h-4 w-4 flex-shrink-0" />
             Construction Timeline & Loan Structure
           </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-            <div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="space-y-2">
               <Label htmlFor="constructionPeriod" className="text-sm font-medium">Construction Period (months)</Label>
               <NumberInput
                 id="constructionPeriod"
                 value={propertyData.constructionPeriod || 0}
                 onChange={(value) => updateField('constructionPeriod', value)}
-                className="mt-1"
+                className="min-h-[44px] md:min-h-10"
                 placeholder="e.g., 12"
                 min={1}
                 max={60}
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="constructionInterestRate" className="text-sm font-medium">Main Loan Rate (Construction Period)</Label>
               <PercentageInput
                 id="constructionInterestRate"
                 value={propertyData.constructionInterestRate}
                 onChange={(value) => updateField('constructionInterestRate', value)}
-                className="mt-1"
+                className="min-h-[44px] md:min-h-10"
                 placeholder="Enter rate"
               />
-              <div className="text-xs text-muted-foreground mt-1">
+              <div className="text-xs text-muted-foreground">
                 Interest rate during construction
               </div>
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="postConstructionRateReduction" className="text-sm font-medium">Rate Reduction After Construction</Label>
               <PercentageInput
                 id="postConstructionRateReduction"
                 value={propertyData.postConstructionRateReduction}
                 onChange={(value) => updateField('postConstructionRateReduction', value)}
-                className="mt-1"
+                className="min-h-[44px] md:min-h-10"
                 placeholder="0.5"
               />
-              <div className="text-xs text-muted-foreground mt-1">
+              <div className="text-xs text-muted-foreground">
                 Ongoing rate: {(propertyData.constructionInterestRate - propertyData.postConstructionRateReduction).toFixed(2)}%
               </div>
             </div>
@@ -941,12 +1016,13 @@ export const PropertyInputForm = ({
 
           {/* Construction Progress Payments */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <Label className="text-sm font-medium">Construction Progress Payments</Label>
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
+                size={isMobile ? "default" : "sm"}
+                className="w-full md:w-auto min-h-[44px] md:min-h-0"
                 onClick={() => {
                   const newPayment = {
                     id: Date.now().toString(),
@@ -960,11 +1036,11 @@ export const PropertyInputForm = ({
                 Add Payment
               </Button>
             </div>
-            <div className="space-y-2 max-h-60 overflow-y-auto">
+            <div className="space-y-3 max-h-60 overflow-y-auto">
               {propertyData.constructionProgressPayments?.map((payment, index) => (
-                <div key={payment.id} className="grid grid-cols-12 gap-2 items-end bg-muted/30 p-3 rounded">
-                  <div className="col-span-4">
-                    <Label className="text-xs">Description</Label>
+                <div key={payment.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-2 items-end bg-muted/30 p-3 rounded">
+                  <div className="md:col-span-4">
+                    <Label className="text-xs font-medium">Description</Label>
                     <Input
                       value={payment.description}
                       onChange={(e) => {
@@ -972,12 +1048,12 @@ export const PropertyInputForm = ({
                         updated[index] = { ...payment, description: e.target.value };
                         updateField('constructionProgressPayments', updated);
                       }}
-                      className="mt-1 text-sm"
+                      className="mt-1 text-sm min-h-[44px] md:min-h-9"
                       placeholder="Payment description"
                     />
                   </div>
-                  <div className="col-span-3">
-                    <Label className="text-xs">Percentage (%)</Label>
+                  <div className="md:col-span-3">
+                    <Label className="text-xs font-medium">Percentage (%)</Label>
                     <NumberInput
                       value={payment.percentage}
                       onChange={(value) => {
@@ -985,15 +1061,15 @@ export const PropertyInputForm = ({
                         updated[index] = { ...payment, percentage: value };
                         updateField('constructionProgressPayments', updated);
                       }}
-                      className="mt-1 text-sm"
+                      className="mt-1 text-sm min-h-[44px] md:min-h-9"
                       placeholder="0"
                       min={0}
                       max={100}
                       id={`percentage-${payment.id}`}
                     />
                   </div>
-                  <div className="col-span-3">
-                    <Label className="text-xs">Month</Label>
+                  <div className="md:col-span-3">
+                    <Label className="text-xs font-medium">Month</Label>
                     <NumberInput
                       value={payment.month}
                       onChange={(value) => {
@@ -1001,25 +1077,26 @@ export const PropertyInputForm = ({
                         updated[index] = { ...payment, month: value };
                         updateField('constructionProgressPayments', updated);
                       }}
-                      className="mt-1 text-sm"
+                      className="mt-1 text-sm min-h-[44px] md:min-h-9"
                       placeholder="1"
                       min={1}
                       max={60}
                       id={`month-${payment.id}`}
                     />
                   </div>
-                  <div className="col-span-2">
+                  <div className="md:col-span-2">
                     <Button
                       type="button"
                       variant="ghost"
-                      size="sm"
+                      size={isMobile ? "default" : "sm"}
+                      className="w-full md:w-auto min-h-[44px] md:min-h-0 text-destructive hover:bg-destructive/10"
                       onClick={() => {
                         const updated = (propertyData.constructionProgressPayments || []).filter((_, i) => i !== index);
                         updateField('constructionProgressPayments', updated);
                       }}
-                      className="text-destructive hover:bg-destructive/10"
                     >
-                      Remove
+                      <X className="h-4 w-4 mr-2 md:mr-0" />
+                      <span className="md:hidden">Remove</span>
                     </Button>
                   </div>
                 </div>
