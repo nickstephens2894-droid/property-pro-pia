@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Legend } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Legend, PieChart, Pie, Cell, ReferenceLine } from "recharts";
 import { TrendingUp, DollarSign, PiggyBank, Calculator, BarChart3, Building } from "lucide-react";
 import { formatCurrency, formatPercentage } from "@/utils/formatters";
 
@@ -128,7 +128,7 @@ export default function ProjectionDashboard() {
         
         // Apply realistic minimums and maximums
         dataPoint[`${metric.name}_equity`] = Math.max(0, projectedEquity);
-        dataPoint[`${metric.name}_cashflow`] = Math.max(0, projectedCashflow);
+        dataPoint[`${metric.name}_cashflow`] = projectedCashflow; // Allow negative cashflow values
       });
       
       return dataPoint;
@@ -158,6 +158,48 @@ export default function ProjectionDashboard() {
 
   const equitySummary = getSummaryData('equity');
   const cashflowSummary = getSummaryData('cashflow');
+
+  // Calculate Income vs Out-of-Pocket breakdown for pie chart
+  const getIncomeBreakdown = () => {
+    if (selectedMetrics.length === 0) return [];
+    
+    let totalIncome = 0;
+    let totalOutOfPocket = 0;
+    
+    selectedMetrics.forEach(metric => {
+      // Annual calculations for better representation
+      const annualCashflow = metric.weeklyCashflowYear1 * 52;
+      const annualTaxSavings = metric.taxSavingsYear1;
+      
+      // Income includes positive cashflow and tax benefits
+      if (annualCashflow > 0) {
+        totalIncome += annualCashflow;
+      } else {
+        totalOutOfPocket += Math.abs(annualCashflow);
+      }
+      
+      // Tax savings are always considered income
+      totalIncome += annualTaxSavings;
+    });
+    
+    // Only show pie chart if there's meaningful data
+    if (totalIncome === 0 && totalOutOfPocket === 0) return [];
+    
+    return [
+      { 
+        name: 'Income', 
+        value: totalIncome,
+        color: 'hsl(var(--chart-1))'
+      },
+      { 
+        name: 'Out-of-Pocket', 
+        value: totalOutOfPocket,
+        color: 'hsl(var(--chart-2))'
+      }
+    ].filter(item => item.value > 0);
+  };
+
+  const incomeBreakdown = getIncomeBreakdown();
 
   if (loading) {
     return <LoadingSpinner message="Loading instances..." />;
@@ -295,6 +337,75 @@ export default function ProjectionDashboard() {
         </Card>
       </div>
 
+      {/* Income vs Out-of-Pocket Breakdown */}
+      {selectedMetrics.length > 0 && incomeBreakdown.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <PiggyBank className="h-4 w-4" />
+              Income vs Out-of-Pocket Breakdown (Annual)
+            </CardTitle>
+            <div className="text-sm text-muted-foreground">
+              Based on Year 1 cashflow and tax savings across selected instances
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+              <div className="flex justify-center">
+                <ChartContainer config={chartConfig} className="h-64 w-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={incomeBreakdown}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={100}
+                        paddingAngle={2}
+                        dataKey="value"
+                      >
+                        {incomeBreakdown.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <ChartTooltip 
+                        content={<ChartTooltipContent />}
+                        formatter={(value) => [formatCurrency(value as number), ""]}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
+              </div>
+              
+              <div className="space-y-4">
+                {incomeBreakdown.map((item, index) => (
+                  <div key={item.name} className="flex items-center justify-between p-3 rounded-lg border">
+                    <div className="flex items-center gap-3">
+                      <div 
+                        className="w-4 h-4 rounded-full"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <div>
+                        <div className="font-medium">{item.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {item.name === 'Income' ? 'Positive cashflow + tax savings' : 'Negative cashflow costs'}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold">{formatCurrency(item.value)}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {((item.value / incomeBreakdown.reduce((sum, i) => sum + i.value, 0)) * 100).toFixed(1)}%
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Timeline Charts */}
       {selectedMetrics.length > 0 && timelineData.length > 0 && (
         <div className="space-y-4 sm:space-y-6">
@@ -320,7 +431,7 @@ export default function ProjectionDashboard() {
                 )}
               </CardHeader>
               <CardContent>
-                <ChartContainer config={chartConfig} className={isMobile ? "h-64" : "h-80"}>
+                <ChartContainer config={chartConfig} className={`${isMobile ? "h-64" : "h-80"} overflow-hidden`}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart 
                       data={timelineData} 
@@ -415,7 +526,7 @@ export default function ProjectionDashboard() {
                 )}
               </CardHeader>
               <CardContent>
-                <ChartContainer config={chartConfig} className={isMobile ? "h-64" : "h-80"}>
+                <ChartContainer config={chartConfig} className={`${isMobile ? "h-64" : "h-80"} overflow-hidden`}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart 
                       data={timelineData} 
@@ -435,6 +546,7 @@ export default function ProjectionDashboard() {
                         tick={{ fill: 'hsl(var(--muted-foreground))' }}
                       />
                       <YAxis 
+                        domain={['dataMin', 'dataMax']}
                         tickFormatter={(value) => {
                           if (isMobile) {
                             return value >= 1000 ? `$${(value / 1000).toFixed(1)}K` : `$${value.toFixed(0)}`;
@@ -447,6 +559,7 @@ export default function ProjectionDashboard() {
                         width={isMobile ? 45 : 80}
                         tick={{ fill: 'hsl(var(--muted-foreground))' }}
                       />
+                      <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
                       <ChartTooltip 
                         content={<ChartTooltipContent />}
                         formatter={(value) => [formatCurrency(value as number), ""]}
