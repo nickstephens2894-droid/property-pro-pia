@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { NumberInput } from "@/components/ui/number-input";
 import { FieldUpdateConfirmDialog } from "@/components/FieldUpdateConfirmDialog";
@@ -30,7 +32,7 @@ import {
   validateConstruction,
   validateTaxOptimization
 } from "@/utils/validationUtils";
-import { Users, Home, Receipt, Calculator, Building2, Hammer, CreditCard, Clock, DollarSign, TrendingUp, Percent, X, Plus, AlertTriangle, Info, Search, Check } from "lucide-react";
+import { Users, Home, Receipt, Calculator, Building2, Hammer, CreditCard, Clock, DollarSign, TrendingUp, Percent, X, Plus, AlertTriangle, Info, Search, Check, ChevronDown, Wrench } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { formatFinancialValue } from "@/utils/calculationUtils";
@@ -1267,548 +1269,540 @@ export const PropertyInputForm = ({
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
-              <div className="space-y-4 md:space-y-6">
-                {/* Funding Method Selection */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-sm md:text-base">Funding Method</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {Object.entries(FUNDING_METHODS).map(([key, method]) => {
-                      const active = propertyData.currentFundingMethod === (key as FundingMethod);
-                      return (
-                        <Button
-                          key={key}
-                          type="button"
-                          variant={active ? "default" : "outline"}
-                          className="justify-start h-auto py-3 px-3 text-left w-full min-h-[44px] md:min-h-auto"
-                          onClick={() => {
-                            const fundingData = getFundingMethodData(key as FundingMethod, propertyData.purchasePrice || 0);
-                            // Apply the funding method data
-                            Object.entries(fundingData).forEach(([field, value]) => {
-                              if (value !== undefined) {
-                                updateField(field as keyof PropertyData, value);
-                              }
-                            });
-                            // Set the current funding method
-                            updateField('currentFundingMethod', key as FundingMethod);
-                          }}
-                        >
-                          <div className="flex items-center gap-2 w-full">
-                            <CreditCard className="h-4 w-4 flex-shrink-0" />
-                            <span className="text-sm font-medium">{method.name}</span>
-                            {active && <Check className="h-4 w-4 ml-auto flex-shrink-0" />}
-                          </div>
-                        </Button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Cash Deposit - Always show regardless of funding method */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-sm md:text-base">Cash Deposit Requirements</h4>
-                  <div className="space-y-3">
-                    <Label htmlFor="depositAmount" className="text-sm font-medium">Cash Deposit Amount</Label>
-                    <CurrencyInput
-                      id="depositAmount"
-                      value={propertyData.depositAmount}
-                      onChange={(value) => updateFieldWithCascade('depositAmount', value)}
-                      className="min-h-[44px] md:min-h-10"
-                      placeholder="Enter deposit amount"
-                    />
-                    {propertyData.useEquityFunding && propertyData.depositAmount > 0 && (
-                      <div className="flex items-start gap-2 mt-2 text-blue-600 text-sm p-3 bg-blue-50 rounded-lg">
-                        <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                        <span>Additional cash deposit on top of equity funding</span>
-                      </div>
-                    )}
-                    {!propertyData.useEquityFunding && propertyData.depositAmount < propertyData.minimumDepositRequired && (
-                      <div className="flex items-start gap-2 mt-2 text-warning text-sm p-3 bg-warning/10 rounded-lg">
-                        <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                        <span>Shortfall of ${(propertyData.minimumDepositRequired - propertyData.depositAmount).toLocaleString()} - require additional cash or equity financing</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-3 py-2">
-                  <input
-                    type="checkbox"
-                    id="useEquityFunding"
-                    checked={propertyData.useEquityFunding}
-                    onChange={(e) => updateField('useEquityFunding', e.target.checked)}
-                    className="rounded border-border w-4 h-4 md:w-3 md:h-3 mt-1"
-                  />
-                 <Label htmlFor="useEquityFunding" className="text-sm font-medium cursor-pointer">
-                   Use Equity from Existing Property
-                 </Label>
-                 </div>
-
-                {/* Funding Analysis Alerts */}
+              <div className="space-y-6">
+                {/* Quick Funding Status - Mobile Priority */}
                 {(() => {
                   const fundingAnalysis = calculateFundingAnalysis();
+                  const fundingGap = fundingAnalysis.fundingShortfall;
                   
-                  // Scenario 1: No equity funding + shortfall
-                  if (!propertyData.useEquityFunding && fundingAnalysis.fundingShortfall > 0) {
-                    return (
-                      <Alert variant="warning" className="mt-4">
-                        <AlertTriangle className="h-4 w-4" />
-                        <AlertTitle>Funding Shortfall</AlertTitle>
-                        <AlertDescription>
-                          {formatFinancialValue(fundingAnalysis.fundingShortfall)} additional funding required.
-                          <br />
-                          Consider: Increase cash deposit, enable equity funding, or reduce loan amount.
-                        </AlertDescription>
-                      </Alert>
-                    );
-                  }
-                  
-                  // Scenario 2: Equity enabled + sufficient equity + additional cash
-                  if (propertyData.useEquityFunding && fundingAnalysis.equitySurplus > 0 && propertyData.depositAmount > 0) {
-                    return (
-                      <Alert variant="info" className="mt-4">
-                        <Info className="h-4 w-4" />
-                        <AlertTitle>Additional Cash Deposit</AlertTitle>
-                        <AlertDescription>
-                          You have {formatFinancialValue(fundingAnalysis.availableEquity)} available equity. Your {formatFinancialValue(propertyData.depositAmount)} cash deposit is additional funding.
-                          <br /><br />
-                          <strong>During construction:</strong> Additional cash will offset non-deductible land interest first for tax optimization.
-                          <br />
-                          <strong>After completion:</strong> Excess funds will be placed in offset account, reflected in 40-year projections.
-                        </AlertDescription>
-                      </Alert>
-                    );
-                  }
-                  
-                  // Scenario 3: Equity enabled + insufficient equity
-                  if (propertyData.useEquityFunding && fundingAnalysis.fundingShortfall > 0) {
-                    return (
-                      <Alert variant="warning" className="mt-4">
-                        <AlertTriangle className="h-4 w-4" />
-                        <AlertTitle>Partial Equity Funding</AlertTitle>
-                        <AlertDescription>
-                          Equity covers {formatFinancialValue(fundingAnalysis.equityLoanAmount)} of required {formatFinancialValue(fundingAnalysis.minimumCashRequired + fundingAnalysis.equityLoanAmount)} deposit. 
-                          Additional {formatFinancialValue(fundingAnalysis.fundingShortfall)} cash needed.
-                        </AlertDescription>
-                      </Alert>
-                    );
-                  }
-                  
-                  // Scenario 4: Equity enabled + surplus funds
-                  if (propertyData.useEquityFunding && fundingAnalysis.offsetAccountBalance > 0) {
-                    return (
-                      <Alert variant="info" className="mt-4">
-                        <DollarSign className="h-4 w-4" />
-                        <AlertTitle>Surplus Funding - Offset Account</AlertTitle>
-                        <AlertDescription>
-                          Total funding ({formatFinancialValue(fundingAnalysis.mainLoanAmount + fundingAnalysis.equityLoanAmount + fundingAnalysis.actualCashDeposit)}) exceeds project cost ({formatFinancialValue(fundingAnalysis.totalProjectCost)}).
-                          <br />
-                          Surplus {formatFinancialValue(fundingAnalysis.offsetAccountBalance)} will be allocated to offset account for ongoing tax benefits.
-                        </AlertDescription>
-                      </Alert>
-                    );
-                  }
-                  
-                  return null;
+                  return (
+                    <Card className="bg-muted/30 border-0">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <CreditCard className="h-4 w-4 text-primary" />
+                            <span className="text-sm font-medium">Funding Status</span>
+                          </div>
+                          <div className={`text-xs px-2 py-1 rounded-full ${
+                            fundingGap === 0 ? 'bg-success/20 text-success' : 
+                            fundingGap > 0 ? 'bg-destructive/20 text-destructive' : 
+                            'bg-warning/20 text-warning'
+                          }`}>
+                            {fundingGap === 0 ? '✓ Complete' : fundingGap > 0 ? '⚠ Shortfall' : '⚠ Excess'}
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <div className="text-xs text-muted-foreground">Project Cost:</div>
+                            <div className="font-medium">{formatCurrency(fundingAnalysis.totalProjectCost)}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-muted-foreground">Total Funding:</div>
+                            <div className="font-medium">{formatCurrency(fundingAnalysis.mainLoanAmount + fundingAnalysis.equityLoanAmount + fundingAnalysis.actualCashDeposit)}</div>
+                          </div>
+                          {fundingGap !== 0 && (
+                            <div className="col-span-2">
+                              <div className="text-xs text-muted-foreground">
+                                {fundingGap > 0 ? 'Additional Needed:' : 'Excess Funds:'}
+                              </div>
+                              <div className={`font-medium ${fundingGap > 0 ? 'text-destructive' : 'text-warning'}`}>
+                                {formatCurrency(Math.abs(fundingGap))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
                 })()}
 
-                {/* Construction Interest Optimization Note */}
-                {propertyData.isConstructionProject && propertyData.depositAmount > 0 && (
-                  <Alert variant="info" className="mt-4">
-                    <Info className="h-4 w-4" />
-                    <AlertTitle>Tax Optimization</AlertTitle>
-                    <AlertDescription>
-                      Additional cash funds during construction will be applied to offset non-deductible land holding costs first, then deductible construction interest, maximizing your tax position.
-                    </AlertDescription>
-                  </Alert>
-                )}
+                {/* Essential Funding Inputs - Card Layout */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Essential Funding</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Cash Deposit */}
+                    <div className="space-y-2">
+                      <Label htmlFor="depositAmount" className="text-sm font-medium">Cash Deposit</Label>
+                      <CurrencyInput
+                        id="depositAmount"
+                        value={propertyData.depositAmount}
+                        onChange={(value) => updateFieldWithCascade('depositAmount', value)}
+                        className="min-h-[48px]"
+                        placeholder="Enter deposit amount"
+                      />
+                    </div>
 
-                {/* Main Loan Structure */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-sm md:text-base">Main Loan Structure</h4>
-                  {propertyData.isConstructionProject && (
-                    <Alert variant="info" className="mb-4">
-                      <Info className="h-4 w-4" />
-                      <AlertTitle>Construction Loan Structure</AlertTitle>
-                      <AlertDescription className="text-xs md:text-sm">
-                        The main loan acts as your construction loan during building. Rate is set in Construction Timeline section.
-                        <br />
-                        <strong>Construction Rate:</strong> {propertyData.constructionInterestRate}% →  
-                        <strong>Ongoing Rate:</strong> {(propertyData.constructionInterestRate - propertyData.postConstructionRateReduction).toFixed(2)}% 
-                        (after {propertyData.postConstructionRateReduction}% reduction)
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="interestRate" className="text-sm font-medium">
-                          {propertyData.isConstructionProject ? 'Ongoing Interest Rate (Post-Construction)' : 'Interest Rate'}
+                    {/* Equity Toggle */}
+                    <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                      <div className="flex-1">
+                        <Label htmlFor="useEquityFunding" className="text-sm font-medium cursor-pointer">
+                          Use Equity Funding
                         </Label>
-                        <PercentageInput
-                          id="interestRate"
-                          value={propertyData.isConstructionProject ? 
-                            (propertyData.constructionInterestRate - propertyData.postConstructionRateReduction) : 
-                            propertyData.interestRate
-                          }
-                          onChange={(value) => {
-                            if (propertyData.isConstructionProject) {
-                              // Update construction rate to maintain the reduction amount
-                              updateField('constructionInterestRate', value + propertyData.postConstructionRateReduction);
-                            } else {
-                              updateField('interestRate', value);
-                            }
-                          }}
-                          className="min-h-[44px] md:min-h-10"
-                        />
-                        {propertyData.isConstructionProject && (
-                          <div className="text-xs text-muted-foreground">
-                            Calculated from construction rate minus reduction
-                          </div>
-                        )}
+                        <div className="text-xs text-muted-foreground">Access property equity</div>
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="loanTerm" className="text-sm font-medium">Loan Term (years)</Label>
-                        <NumberInput
-                          id="loanTerm"
-                          value={propertyData.loanTerm}
-                          onChange={(value) => updateField('loanTerm', value)}
-                          className="min-h-[44px] md:min-h-10"
-                          min={1}
-                          max={50}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="lvr" className="text-sm font-medium">Loan to Value Ratio (LVR)</Label>
-                        <PercentageInput
-                          id="lvr"
-                          value={propertyData.lvr}
-                          onChange={(value) => updateField('lvr', value)}
-                          className="min-h-[44px] md:min-h-10"
-                        />
-                      </div>
+                      <Switch
+                        id="useEquityFunding"
+                        checked={propertyData.useEquityFunding}
+                        onCheckedChange={(checked) => updateField('useEquityFunding', checked)}
+                      />
                     </div>
 
-                    {/* Loan Type Selection */}
+                    {/* Quick Funding Method Selection */}
                     <div className="space-y-3">
-                      <Label className="text-sm font-medium">Loan Payment Type</Label>
-                      <RadioGroup
-                        value={propertyData.mainLoanType}
-                        onValueChange={(value: 'io' | 'pi') => updateField('mainLoanType', value)}
-                        className="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-6"
-                      >
-                        <div className="flex items-center space-x-3 py-2">
-                          <RadioGroupItem value="pi" id="pi" className="w-4 h-4 md:w-3 md:h-3" />
-                          <Label htmlFor="pi" className="text-sm cursor-pointer">Principal & Interest</Label>
-                        </div>
-                        <div className="flex items-center space-x-3 py-2">
-                          <RadioGroupItem value="io" id="io" className="w-4 h-4 md:w-3 md:h-3" />
-                          <Label htmlFor="io" className="text-sm cursor-pointer">Interest Only</Label>
-                        </div>
-                      </RadioGroup>
+                      <Label className="text-sm font-medium">Funding Strategy</Label>
+                      <div className="grid grid-cols-1 gap-2">
+                        {Object.entries(FUNDING_METHODS).map(([key, method]) => {
+                          const active = propertyData.currentFundingMethod === (key as FundingMethod);
+                          return (
+                            <Button
+                              key={key}
+                              type="button"
+                              variant={active ? "default" : "outline"}
+                              size="sm"
+                              className="justify-start h-12 text-left"
+                              onClick={() => {
+                                const fundingData = getFundingMethodData(key as FundingMethod, propertyData.purchasePrice || 0);
+                                Object.entries(fundingData).forEach(([field, value]) => {
+                                  if (value !== undefined) {
+                                    updateField(field as keyof PropertyData, value);
+                                  }
+                                });
+                                updateField('currentFundingMethod', key as FundingMethod);
+                              }}
+                            >
+                              <div className="flex items-center gap-2 w-full">
+                                <div className={`w-2 h-2 rounded-full ${active ? 'bg-primary-foreground' : 'bg-muted-foreground'}`} />
+                                <span className="text-sm">{method.name}</span>
+                              </div>
+                            </Button>
+                          );
+                        })}
+                      </div>
                     </div>
+                  </CardContent>
+                </Card>
 
-                    {/* Interest Only Period */}
-                    {propertyData.mainLoanType === 'io' && (
-                      <div className="ml-4 space-y-3">
-                        <Label htmlFor="ioTermYears" className="text-sm font-medium">Interest Only Period (years)</Label>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-                          <NumberInput
-                            id="ioTermYears"
-                            value={propertyData.ioTermYears}
-                            onChange={(value) => updateField('ioTermYears', value)}
-                            className="min-h-[44px] md:min-h-10"
-                            min={1}
-                            max={40}
-                          />
-                          <div className="text-xs text-muted-foreground">
-                            Maximum 40 years allowed
-                            {propertyData.ioTermYears > 10 && (
-                              <div className="flex items-start gap-2 text-warning mt-2 p-2 bg-warning/10 rounded">
-                                <AlertTriangle className="h-3 w-3 flex-shrink-0 mt-0.5" />
-                                <span>Long IO periods increase total interest cost</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
+                {/* Main Loan Details - Collapsible */}
+                <Collapsible defaultOpen={true}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="w-full justify-between p-0 h-auto">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4" />
+                        <span className="text-sm font-medium">Main Loan Details</span>
                       </div>
-                    )}
-                  </div>
-                </div>
-
-                      {/* Equity Funding Details */}
-                {propertyData.useEquityFunding && (
-                  <div className="space-y-4">
-                    <h4 className="font-medium text-sm md:text-base">Equity Loan Amount</h4>
-                    
-                    {/* Equity Loan Amount Input with Calculator */}
-                    <div className="space-y-4">
-                      <div className="flex flex-col md:flex-row gap-3">
-                        <div className="flex-1 space-y-2">
-                          <Label htmlFor="equityLoanAmount" className="text-sm font-medium">Equity Loan Amount</Label>
-                          <CurrencyInput
-                            id="equityLoanAmount"
-                            value={propertyData.equityLoanAmount || 0}
-                            onChange={(value) => updateField('equityLoanAmount', value)}
-                            className="min-h-[44px] md:min-h-10"
-                            placeholder="Enter equity loan amount"
-                          />
-                        </div>
-                        <div className="flex items-end">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size={isMobile ? "default" : "sm"}
-                            className="w-full md:w-auto min-h-[44px] md:min-h-10 px-4"
-                            onClick={() => setShowEquityCalculator(true)}
-                          >
-                            <Calculator className="h-4 w-4 mr-2" />
-                            Calculate
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      {/* Quick Funding Analysis Summary */}
-                      {(() => {
-                        const fundingAnalysis = calculateFundingAnalysis();
-                        const hasEquityShortfall = fundingAnalysis.equityLoanAmount > (propertyData.equityLoanAmount || 0);
-                        const fundingGap = fundingAnalysis.fundingShortfall;
-                        
-                        return (
-                          <div className="bg-muted/30 rounded-lg p-3 space-y-2">
-                            <div className="flex items-center gap-2">
-                              <Calculator className="h-4 w-4 flex-shrink-0" />
-                              <span className="text-sm font-medium">Funding Analysis</span>
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-4 mt-4">
+                    <Card>
+                      <CardContent className="p-4 space-y-4">
+                        {/* Key Loan Terms - Mobile Optimized Grid */}
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                              <Label htmlFor="interestRate" className="text-xs font-medium">Interest Rate</Label>
+                              <PercentageInput
+                                id="interestRate"
+                                value={propertyData.isConstructionProject ? 
+                                  (propertyData.constructionInterestRate - propertyData.postConstructionRateReduction) : 
+                                  propertyData.interestRate
+                                }
+                                onChange={(value) => {
+                                  if (propertyData.isConstructionProject) {
+                                    updateField('constructionInterestRate', value + propertyData.postConstructionRateReduction);
+                                  } else {
+                                    updateField('interestRate', value);
+                                  }
+                                }}
+                                className="min-h-[48px] text-sm"
+                              />
                             </div>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                              <div>
-                                <div className="text-xs text-muted-foreground">Required for Project:</div>
-                                <div className="font-medium">{formatCurrency(fundingAnalysis.totalProjectCost)}</div>
-                              </div>
-                              <div>
-                                <div className="text-xs text-muted-foreground">Total Funding:</div>
-                                <div className="font-medium">{formatCurrency(fundingAnalysis.mainLoanAmount + fundingAnalysis.equityLoanAmount + fundingAnalysis.actualCashDeposit)}</div>
-                              </div>
-                              <div>
-                                <div className="text-xs text-muted-foreground">Funding Gap:</div>
-                                <div className={`font-medium ${fundingGap > 0 ? 'text-destructive' : 'text-success'}`}>
-                                  {fundingGap > 0 ? `-${formatCurrency(fundingGap)}` : formatCurrency(Math.abs(fundingGap))}
-                                </div>
-                              </div>
-                              <div>
-                                <div className="text-xs text-muted-foreground">Status:</div>
-                                <div className={`font-medium text-xs ${fundingGap === 0 ? 'text-success' : fundingGap > 0 ? 'text-destructive' : 'text-warning'}`}>
-                                  {fundingGap === 0 ? '✓ Fully Funded' : fundingGap > 0 ? '⚠ Shortfall' : '⚠ Overfunded'}
-                                </div>
-                              </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="lvr" className="text-xs font-medium">Max LVR</Label>
+                              <PercentageInput
+                                id="lvr"
+                                value={propertyData.lvr}
+                                onChange={(value) => updateField('lvr', value)}
+                                className="min-h-[48px] text-sm"
+                              />
                             </div>
                           </div>
-                        );
-                      })()}
-                    </div>
 
-                    <h4 className="font-medium text-sm md:text-base">Equity Property Details</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="primaryPropertyValue" className="text-sm font-medium">Primary Property Value</Label>
-                        <CurrencyInput
-                          id="primaryPropertyValue"
-                          value={propertyData.primaryPropertyValue}
-                          onChange={(value) => updateFieldWithCascade('primaryPropertyValue', value)}
-                          className="min-h-[44px] md:min-h-10"
-                          placeholder="Enter property value"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="existingDebt" className="text-sm font-medium">Existing Debt</Label>
-                        <CurrencyInput
-                          id="existingDebt"
-                          value={propertyData.existingDebt}
-                          onChange={(value) => updateFieldWithCascade('existingDebt', value)}
-                          className="min-h-[44px] md:min-h-10"
-                          placeholder="Enter existing debt"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="maxLVR" className="text-sm font-medium">Maximum LVR Available (%)</Label>
-                        <NumberInput
-                          id="maxLVR"
-                          value={propertyData.maxLVR}
-                          onChange={(value) => updateField('maxLVR', value)}
-                          className="min-h-[44px] md:min-h-10"
-                          min={0}
-                          max={100}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Equity Loan Options */}
-                    <div className="space-y-4 border-t pt-4">
-                      <h5 className="font-medium text-sm md:text-base">Equity Loan Terms</h5>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="equityLoanInterestRate" className="text-sm font-medium">Equity Loan Interest Rate</Label>
-                          <PercentageInput
-                            id="equityLoanInterestRate"
-                            value={propertyData.equityLoanInterestRate}
-                            onChange={(value) => updateField('equityLoanInterestRate', value)}
-                            className="min-h-[44px] md:min-h-10"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="equityLoanTerm" className="text-sm font-medium">Equity Loan Term (years)</Label>
-                          <NumberInput
-                            id="equityLoanTerm"
-                            value={propertyData.equityLoanTerm}
-                            onChange={(value) => updateField('equityLoanTerm', value)}
-                            className="min-h-[44px] md:min-h-10"
-                            min={1}
-                            max={50}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Equity Loan Type */}
-                      <div className="space-y-3">
-                        <Label className="text-sm font-medium">Equity Loan Payment Type</Label>
-                        <RadioGroup
-                          value={propertyData.equityLoanType}
-                          onValueChange={(value: 'io' | 'pi') => updateField('equityLoanType', value)}
-                          className="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-6"
-                        >
-                          <div className="flex items-center space-x-3 py-2">
-                            <RadioGroupItem value="pi" id="equity-pi" className="w-4 h-4 md:w-3 md:h-3" />
-                            <Label htmlFor="equity-pi" className="text-sm cursor-pointer">Principal & Interest</Label>
-                          </div>
-                          <div className="flex items-center space-x-3 py-2">
-                            <RadioGroupItem value="io" id="equity-io" className="w-4 h-4 md:w-3 md:h-3" />
-                            <Label htmlFor="equity-io" className="text-sm cursor-pointer">Interest Only</Label>
-                          </div>
-                        </RadioGroup>
-                      </div>
-
-                      {/* Equity Loan IO Period */}
-                      {propertyData.equityLoanType === 'io' && (
-                        <div className="ml-4 space-y-3">
-                          <Label htmlFor="equityLoanIoTermYears" className="text-sm font-medium">Equity Loan IO Period (years)</Label>
-                          <NumberInput
-                            id="equityLoanIoTermYears"
-                            value={propertyData.equityLoanIoTermYears}
-                            onChange={(value) => updateField('equityLoanIoTermYears', value)}
-                            className="min-h-[44px] md:min-h-10"
-                            min={1}
-                            max={40}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-                
-                {propertyData.isConstructionProject && (
-                  <div className="space-y-4">
-                    <h4 className="font-medium text-sm md:text-base">Construction Holding Costs Funding</h4>
-                    <div className="space-y-4">
-                      {/* Quick toggle to capitalise everything */}
-                      <div className="flex items-start space-x-3 py-2">
-                        <input
-                          type="checkbox"
-                          id="capitalizeConstructionCosts"
-                          checked={propertyData.capitalizeConstructionCosts}
-                          onChange={(e) => {
-                            const checked = e.target.checked;
-                            updateField('capitalizeConstructionCosts', checked);
-                            if (checked) {
-                              updateField('holdingCostFunding', 'debt');
-                              updateField('holdingCostCashPercentage', 0);
-                            }
-                          }}
-                          className="rounded border-border w-4 h-4 md:w-3 md:h-3 mt-1"
-                        />
-                        <div>
-                          <Label htmlFor="capitalizeConstructionCosts" className="text-sm font-medium cursor-pointer">Capitalise all costs during construction</Label>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            Interest and eligible holding costs will be added to the loan balance instead of paid from cash.
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Detailed funding split */}
-                      <div className="space-y-3">
-                        <div className="flex items-start space-x-3 py-2">
-                          <input
-                            type="radio"
-                            id="holdingCostCash"
-                            name="holdingCostFunding"
-                            checked={propertyData.holdingCostFunding === 'cash'}
-                            onChange={() => {
-                              updateField('holdingCostFunding', 'cash');
-                              updateField('holdingCostCashPercentage', 100);
-                              updateField('capitalizeConstructionCosts', false);
-                            }}
-                            className="rounded-full w-4 h-4 md:w-3 md:h-3 mt-1"
-                          />
-                          <Label htmlFor="holdingCostCash" className="text-sm cursor-pointer">Pay holding costs in cash</Label>
-                        </div>
-                        <div className="flex items-start space-x-3 py-2">
-                          <input
-                            type="radio"
-                            id="holdingCostDebt"
-                            name="holdingCostFunding"
-                            checked={propertyData.holdingCostFunding === 'debt'}
-                            onChange={() => updateField('holdingCostFunding', 'debt')}
-                            className="rounded-full w-4 h-4 md:w-3 md:h-3 mt-1"
-                          />
-                          <Label htmlFor="holdingCostDebt" className="text-sm cursor-pointer">Capitalize holding costs into loan</Label>
-                        </div>
-                        <div className="flex items-start space-x-3 py-2">
-                          <input
-                            type="radio"
-                            id="holdingCostHybrid"
-                            name="holdingCostFunding"
-                            checked={propertyData.holdingCostFunding === 'hybrid'}
-                            onChange={() => updateField('holdingCostFunding', 'hybrid')}
-                            className="rounded-full w-4 h-4 md:w-3 md:h-3 mt-1"
-                          />
-                          <Label htmlFor="holdingCostHybrid" className="text-sm cursor-pointer">Hybrid (partial cash, partial debt)</Label>
-                        </div>
-                        {propertyData.holdingCostFunding === 'hybrid' && (
-                          <div className="ml-6 space-y-2">
-                            <Label htmlFor="holdingCostCashPercentage" className="text-sm font-medium">Percentage to pay in cash</Label>
-                            <PercentageInput
-                              id="holdingCostCashPercentage"
-                              value={propertyData.holdingCostCashPercentage}
-                              onChange={(value) => updateField('holdingCostCashPercentage', value)}
-                              className="min-h-[44px] md:min-h-10"
+                          <div className="space-y-2">
+                            <Label htmlFor="loanTerm" className="text-xs font-medium">Loan Term (years)</Label>
+                            <NumberInput
+                              id="loanTerm"
+                              value={propertyData.loanTerm}
+                              onChange={(value) => updateField('loanTerm', value)}
+                              className="min-h-[48px] text-sm"
+                              min={1}
+                              max={50}
                             />
                           </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Equity repayments during construction */}
-                    {propertyData.useEquityFunding && (
-                      <div className="space-y-3">
-                        <Label className="text-sm font-medium">Equity loan repayments during construction</Label>
-                        <RadioGroup
-                          value={propertyData.constructionEquityRepaymentType}
-                          onValueChange={(value: 'io' | 'pi') => updateField('constructionEquityRepaymentType', value)}
-                          className="flex flex-row space-x-6"
-                        >
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="io" id="equity-construct-io" />
-                            <Label htmlFor="equity-construct-io" className="text-sm">Interest Only</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="pi" id="equity-construct-pi" />
-                            <Label htmlFor="equity-construct-pi" className="text-sm">Principal & Interest</Label>
-                          </div>
-                        </RadioGroup>
-                        <div className="text-xs text-muted-foreground">
-                          Construction loan is Interest-Only during construction (progressive drawdown). Equity can be IO or P&I.
                         </div>
-                      </div>
-                    )}
-                  </div>
+
+                        {/* Loan Type - Mobile Toggle Buttons */}
+                        <div className="space-y-3">
+                          <Label className="text-xs font-medium">Payment Type</Label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <Button
+                              type="button"
+                              variant={propertyData.mainLoanType === 'pi' ? "default" : "outline"}
+                              size="sm"
+                              className="h-10"
+                              onClick={() => updateField('mainLoanType', 'pi')}
+                            >
+                              P&I
+                            </Button>
+                            <Button
+                              type="button"
+                              variant={propertyData.mainLoanType === 'io' ? "default" : "outline"}
+                              size="sm"
+                              className="h-10"
+                              onClick={() => updateField('mainLoanType', 'io')}
+                            >
+                              IO
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* IO Period */}
+                        {propertyData.mainLoanType === 'io' && (
+                          <div className="space-y-2 p-3 bg-muted/30 rounded-lg">
+                            <Label htmlFor="ioTermYears" className="text-xs font-medium">IO Period (years)</Label>
+                            <NumberInput
+                              id="ioTermYears"
+                              value={propertyData.ioTermYears}
+                              onChange={(value) => updateField('ioTermYears', value)}
+                              className="min-h-[48px]"
+                              min={1}
+                              max={40}
+                            />
+                            {propertyData.ioTermYears > 10 && (
+                              <div className="text-xs text-warning">⚠ Long IO periods increase total cost</div>
+                            )}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </CollapsibleContent>
+                </Collapsible>
+
+                {/* Equity Funding - Streamlined Mobile Layout */}
+                {propertyData.useEquityFunding && (
+                  <Collapsible defaultOpen={true}>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" className="w-full justify-between p-0 h-auto">
+                        <div className="flex items-center gap-2">
+                          <Home className="h-4 w-4" />
+                          <span className="text-sm font-medium">Equity Loan Setup</span>
+                        </div>
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="space-y-4 mt-4">
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base">Equity Loan Amount</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          {/* Equity Loan Input with Calculator */}
+                          <div className="flex gap-3">
+                            <div className="flex-1 space-y-2">
+                              <CurrencyInput
+                                id="equityLoanAmount"
+                                value={propertyData.equityLoanAmount || 0}
+                                onChange={(value) => updateField('equityLoanAmount', value)}
+                                className="min-h-[48px]"
+                                placeholder="Enter equity loan amount"
+                              />
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="min-h-[48px] px-4"
+                              onClick={() => setShowEquityCalculator(true)}
+                            >
+                              <Calculator className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          
+                          {/* Quick Funding Summary */}
+                          {(() => {
+                            const fundingAnalysis = calculateFundingAnalysis();
+                            const fundingGap = fundingAnalysis.fundingShortfall;
+                            
+                            if (fundingGap === 0) return null;
+                            
+                            return (
+                              <div className={`p-3 rounded-lg text-sm ${
+                                fundingGap > 0 ? 'bg-destructive/10 text-destructive' : 'bg-warning/10 text-warning'
+                              }`}>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <AlertTriangle className="h-3 w-3" />
+                                  <span className="font-medium">
+                                    {fundingGap > 0 ? 'Funding Gap:' : 'Excess Funds:'}
+                                  </span>
+                                </div>
+                                <div className="text-xs">
+                                  {fundingGap > 0 ? 
+                                    `Need ${formatCurrency(fundingGap)} more funding` :
+                                    `${formatCurrency(Math.abs(fundingGap))} surplus to offset account`
+                                  }
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </CardContent>
+                      </Card>
+
+                      {/* Equity Property Details - Compact */}
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base">Equity Property</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="primaryPropertyValue" className="text-xs font-medium">Property Value</Label>
+                              <CurrencyInput
+                                id="primaryPropertyValue"
+                                value={propertyData.primaryPropertyValue}
+                                onChange={(value) => updateFieldWithCascade('primaryPropertyValue', value)}
+                                className="min-h-[48px]"
+                                placeholder="Enter property value"
+                              />
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-2">
+                                <Label htmlFor="existingDebt" className="text-xs font-medium">Existing Debt</Label>
+                                <CurrencyInput
+                                  id="existingDebt"
+                                  value={propertyData.existingDebt}
+                                  onChange={(value) => updateFieldWithCascade('existingDebt', value)}
+                                  className="min-h-[48px]"
+                                  placeholder="Existing debt"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="maxLVR" className="text-xs font-medium">Max LVR (%)</Label>
+                                <NumberInput
+                                  id="maxLVR"
+                                  value={propertyData.maxLVR}
+                                  onChange={(value) => updateField('maxLVR', value)}
+                                  className="min-h-[48px]"
+                                  min={0}
+                                  max={100}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Equity Loan Terms - Simplified */}
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base">Equity Loan Terms</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                              <Label htmlFor="equityLoanInterestRate" className="text-xs font-medium">Interest Rate</Label>
+                              <PercentageInput
+                                id="equityLoanInterestRate"
+                                value={propertyData.equityLoanInterestRate}
+                                onChange={(value) => updateField('equityLoanInterestRate', value)}
+                                className="min-h-[48px]"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="equityLoanTerm" className="text-xs font-medium">Term (years)</Label>
+                              <NumberInput
+                                id="equityLoanTerm"
+                                value={propertyData.equityLoanTerm}
+                                onChange={(value) => updateField('equityLoanTerm', value)}
+                                className="min-h-[48px]"
+                                min={1}
+                                max={50}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Payment Type - Toggle Buttons */}
+                          <div className="space-y-2">
+                            <Label className="text-xs font-medium">Payment Type</Label>
+                            <div className="grid grid-cols-2 gap-2">
+                              <Button
+                                type="button"
+                                variant={propertyData.equityLoanType === 'pi' ? "default" : "outline"}
+                                size="sm"
+                                className="h-10"
+                                onClick={() => updateField('equityLoanType', 'pi')}
+                              >
+                                P&I
+                              </Button>
+                              <Button
+                                type="button"
+                                variant={propertyData.equityLoanType === 'io' ? "default" : "outline"}
+                                size="sm"
+                                className="h-10"
+                                onClick={() => updateField('equityLoanType', 'io')}
+                              >
+                                IO
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* IO Period for Equity Loan */}
+                          {propertyData.equityLoanType === 'io' && (
+                            <div className="space-y-2 p-3 bg-muted/30 rounded-lg">
+                              <Label htmlFor="equityLoanIoTermYears" className="text-xs font-medium">IO Period (years)</Label>
+                              <NumberInput
+                                id="equityLoanIoTermYears"
+                                value={propertyData.equityLoanIoTermYears}
+                                onChange={(value) => updateField('equityLoanIoTermYears', value)}
+                                className="min-h-[48px]"
+                                min={1}
+                                max={40}
+                              />
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
+
+                {/* Construction Holding Costs - Only for Construction Projects */}
+                {propertyData.isConstructionProject && (
+                  <Collapsible>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" className="w-full justify-between p-0 h-auto">
+                        <div className="flex items-center gap-2">
+                          <Wrench className="h-4 w-4" />
+                          <span className="text-sm font-medium">Construction Finance</span>
+                        </div>
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="space-y-4 mt-4">
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base">Holding Costs During Construction</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          {/* Simple Toggle for Capitalize All */}
+                          <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                            <div className="flex-1">
+                              <Label htmlFor="capitalizeConstructionCosts" className="text-sm font-medium cursor-pointer">
+                                Capitalize All Construction Costs
+                              </Label>
+                              <div className="text-xs text-muted-foreground">Add interest & costs to loan balance</div>
+                            </div>
+                            <Switch
+                              id="capitalizeConstructionCosts"
+                              checked={propertyData.capitalizeConstructionCosts}
+                              onCheckedChange={(checked) => {
+                                updateField('capitalizeConstructionCosts', checked);
+                                if (checked) {
+                                  updateField('holdingCostFunding', 'debt');
+                                  updateField('holdingCostCashPercentage', 0);
+                                }
+                              }}
+                            />
+                          </div>
+
+                          {/* Construction Finance Type for Equity */}
+                          {propertyData.useEquityFunding && (
+                            <div className="space-y-3">
+                              <Label className="text-xs font-medium">Equity Loan During Construction</Label>
+                              <div className="grid grid-cols-2 gap-2">
+                                <Button
+                                  type="button"
+                                  variant={propertyData.constructionEquityRepaymentType === 'io' ? "default" : "outline"}
+                                  size="sm"
+                                  className="h-10"
+                                  onClick={() => updateField('constructionEquityRepaymentType', 'io')}
+                                >
+                                  IO
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant={propertyData.constructionEquityRepaymentType === 'pi' ? "default" : "outline"}
+                                  size="sm"
+                                  className="h-10"
+                                  onClick={() => updateField('constructionEquityRepaymentType', 'pi')}
+                                >
+                                  P&I
+                                </Button>
+                              </div>
+                              <div className="text-xs text-muted-foreground p-2 bg-muted/30 rounded">
+                                Main loan is always IO during construction with progressive drawdown
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Funding Method Options - Simplified for Mobile */}
+                          {!propertyData.capitalizeConstructionCosts && (
+                            <div className="space-y-3">
+                              <Label className="text-xs font-medium">Holding Cost Payment</Label>
+                              <div className="space-y-2">
+                                <Button
+                                  type="button"
+                                  variant={propertyData.holdingCostFunding === 'cash' ? "default" : "outline"}
+                                  size="sm"
+                                  className="w-full justify-start h-10"
+                                  onClick={() => {
+                                    updateField('holdingCostFunding', 'cash');
+                                    updateField('holdingCostCashPercentage', 100);
+                                  }}
+                                >
+                                  Pay in Cash
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant={propertyData.holdingCostFunding === 'debt' ? "default" : "outline"}
+                                  size="sm"
+                                  className="w-full justify-start h-10"
+                                  onClick={() => updateField('holdingCostFunding', 'debt')}
+                                >
+                                  Add to Loan
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant={propertyData.holdingCostFunding === 'hybrid' ? "default" : "outline"}
+                                  size="sm"
+                                  className="w-full justify-start h-10"
+                                  onClick={() => updateField('holdingCostFunding', 'hybrid')}
+                                >
+                                  Mixed Funding
+                                </Button>
+                              </div>
+                              
+                              {/* Hybrid Percentage */}
+                              {propertyData.holdingCostFunding === 'hybrid' && (
+                                <div className="space-y-2 p-3 bg-muted/30 rounded-lg">
+                                  <Label htmlFor="holdingCostCashPercentage" className="text-xs font-medium">Cash Percentage</Label>
+                                  <PercentageInput
+                                    id="holdingCostCashPercentage"
+                                    value={propertyData.holdingCostCashPercentage}
+                                    onChange={(value) => updateField('holdingCostCashPercentage', value)}
+                                    className="min-h-[48px]"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </CollapsibleContent>
+                  </Collapsible>
                 )}
               </div>
             </AccordionContent>
