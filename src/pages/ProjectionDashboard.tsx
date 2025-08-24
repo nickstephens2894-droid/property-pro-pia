@@ -193,16 +193,15 @@ export default function ProjectionDashboard() {
       const annualTaxSavings = instance.tax_savings_year1 || 0;
       const annualCashflow = (instance.weekly_cashflow_year1 || 0) * 52;
       
-      // Rent income contribution
+      // Rent income contribution (what rent covers)
       totalRentIncome += annualRent;
       
-      // Tax savings contribution  
+      // Tax savings contribution (what tax deductions cover)
       totalTaxSavings += annualTaxSavings;
       
-      // If there's still negative cashflow after rent and tax benefits, it's owner out-of-pocket
-      const netResult = annualRent + annualTaxSavings + annualCashflow;
-      if (netResult < 0) {
-        totalOwnerOutOfPocket += Math.abs(netResult);
+      // Owner out-of-pocket: If cashflow is negative, that's what owner pays
+      if (annualCashflow < 0) {
+        totalOwnerOutOfPocket += Math.abs(annualCashflow);
       }
     });
     
