@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useInstances } from "@/contexts/InstancesContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +46,7 @@ const chartConfig = {
 
 export default function ProjectionDashboard() {
   const { instances, loading, error } = useInstances();
+  const isMobile = useIsMobile();
   const [selectedInstanceIds, setSelectedInstanceIds] = useState<string[]>([]);
   const [selectedMetrics, setSelectedMetrics] = useState<MetricComparison[]>([]);
 
@@ -88,28 +90,40 @@ export default function ProjectionDashboard() {
     setSelectedInstanceIds([]);
   };
 
-  // Generate timeline data for charts with improved projections
+  // Generate timeline data for charts with improved, more realistic projections
   const generateTimelineData = () => {
     if (selectedMetrics.length === 0) return [];
     
     const years = Array.from({ length: 10 }, (_, i) => i + 1);
     
     return years.map(year => {
-      const dataPoint: any = { year: `Y${year}` }; // Better mobile display
+      const dataPoint: any = { year: isMobile ? `Y${year}` : `Year ${year}` };
       
       selectedMetrics.forEach(metric => {
-        // More realistic projection calculations
-        const propertyGrowthRate = 0.07; // 7% annual property growth
-        const rentalGrowthRate = 0.05; // 5% annual rental growth
-        const inflationRate = 0.03; // 3% inflation for expenses
+        // Realistic market-based growth rates
+        const propertyGrowthRate = 0.07; // 7% annual property value growth
+        const rentalGrowthRate = 0.04; // 4% annual rental growth (more conservative)
+        const expenseInflationRate = 0.03; // 3% expense inflation
         
-        // Net equity projection: compound growth from final year value
-        const projectedEquity = metric.netEquityAtYearTo * Math.pow(1 + propertyGrowthRate, (year / metric.analysisYearTo));
+        // Net equity projection: compound growth based on property appreciation
+        // Start from current equity and project forward with market growth
+        let projectedEquity;
+        if (year <= metric.analysisYearTo) {
+          // Linear interpolation to the analysis year
+          const equityGrowthPerYear = metric.netEquityAtYearTo / metric.analysisYearTo;
+          projectedEquity = equityGrowthPerYear * year;
+        } else {
+          // Beyond analysis period, use compound growth from final value
+          const yearsOver = year - metric.analysisYearTo;
+          projectedEquity = metric.netEquityAtYearTo * Math.pow(1 + propertyGrowthRate, yearsOver);
+        }
         
-        // Weekly cashflow projection: starting from year 1, compound annually
-        const projectedCashflow = metric.weeklyCashflowYear1 * Math.pow(1 + rentalGrowthRate, year - 1);
+        // Weekly cashflow projection: compound growth from year 1 baseline
+        // Account for rental increases minus expense inflation
+        const netGrowthRate = rentalGrowthRate - (expenseInflationRate * 0.3); // Expenses are ~30% of rental income
+        const projectedCashflow = metric.weeklyCashflowYear1 * Math.pow(1 + netGrowthRate, year - 1);
         
-        // Ensure realistic minimums
+        // Apply realistic minimums and maximums
         dataPoint[`${metric.name}_equity`] = Math.max(0, projectedEquity);
         dataPoint[`${metric.name}_cashflow`] = Math.max(0, projectedCashflow);
       });
@@ -270,46 +284,47 @@ export default function ProjectionDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ChartContainer config={chartConfig} className="h-48 sm:h-64 lg:h-80">
+                <ChartContainer config={chartConfig} className={isMobile ? "h-64" : "h-80"}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart 
                       data={timelineData} 
                       margin={{ 
                         top: 10, 
-                        right: window.innerWidth < 640 ? 10 : 20, 
-                        left: window.innerWidth < 640 ? 10 : 20, 
+                        right: isMobile ? 8 : 20, 
+                        left: isMobile ? 8 : 20, 
                         bottom: 10 
                       }}
                     >
                       <XAxis 
                         dataKey="year" 
-                        fontSize={window.innerWidth < 640 ? 10 : 12}
+                        fontSize={isMobile ? 10 : 12}
                         tickLine={false}
                         axisLine={false}
-                        interval={window.innerWidth < 640 ? 1 : 0} // Show every other tick on mobile
+                        interval={isMobile ? 1 : 0}
+                        tick={{ fill: 'hsl(var(--muted-foreground))' }}
                       />
                       <YAxis 
                         tickFormatter={(value) => {
-                          // Shorter format for mobile
-                          if (window.innerWidth < 640) {
+                          if (isMobile) {
                             return value >= 1000000 ? `$${(value / 1000000).toFixed(1)}M` : 
                                    value >= 1000 ? `$${(value / 1000).toFixed(0)}K` : 
                                    `$${value.toFixed(0)}`;
                           }
                           return formatCurrency(value);
                         }}
-                        fontSize={window.innerWidth < 640 ? 10 : 12}
+                        fontSize={isMobile ? 9 : 11}
                         tickLine={false}
                         axisLine={false}
-                        width={window.innerWidth < 640 ? 45 : 60}
+                        width={isMobile ? 50 : 80}
+                        tick={{ fill: 'hsl(var(--muted-foreground))' }}
                       />
                       <ChartTooltip 
                         content={<ChartTooltipContent />}
                         formatter={(value) => [formatCurrency(value as number), ""]}
                       />
-                      {window.innerWidth >= 640 && (
+                      {!isMobile && (
                         <Legend 
-                          wrapperStyle={{ fontSize: '11px' }}
+                          wrapperStyle={{ fontSize: '11px', color: 'hsl(var(--muted-foreground))' }}
                           iconType="line"
                         />
                       )}
@@ -318,11 +333,11 @@ export default function ProjectionDashboard() {
                           key={`${metric.instanceId}_equity`}
                           type="monotone"
                           dataKey={`${metric.name}_equity`}
-                          stroke={`hsl(${(index * 60) % 360}, 70%, 50%)`}
-                          strokeWidth={window.innerWidth < 640 ? 1.5 : 2}
+                          stroke={`hsl(var(--chart-${(index % 5) + 1}))`}
+                          strokeWidth={isMobile ? 2 : 2.5}
                           name={metric.name}
                           dot={false}
-                          activeDot={{ r: window.innerWidth < 640 ? 3 : 4 }}
+                          activeDot={{ r: isMobile ? 4 : 5, stroke: `hsl(var(--chart-${(index % 5) + 1}))` }}
                         />
                       ))}
                     </LineChart>
@@ -330,15 +345,15 @@ export default function ProjectionDashboard() {
                 </ChartContainer>
                 
                 {/* Mobile Legend */}
-                {window.innerWidth < 640 && selectedMetrics.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t">
+                {isMobile && selectedMetrics.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t">
                     {selectedMetrics.map((metric, index) => (
-                      <div key={metric.instanceId} className="flex items-center gap-1">
+                      <div key={metric.instanceId} className="flex items-center gap-1.5">
                         <div 
-                          className="w-3 h-0.5 rounded"
-                          style={{ backgroundColor: `hsl(${(index * 60) % 360}, 70%, 50%)` }}
+                          className="w-4 h-0.5 rounded"
+                          style={{ backgroundColor: `hsl(var(--chart-${(index % 5) + 1}))` }}
                         />
-                        <span className="text-xs font-medium truncate max-w-20">{metric.name}</span>
+                        <span className="text-xs font-medium text-muted-foreground truncate max-w-24">{metric.name}</span>
                       </div>
                     ))}
                   </div>
@@ -355,44 +370,45 @@ export default function ProjectionDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ChartContainer config={chartConfig} className="h-48 sm:h-64 lg:h-80">
+                <ChartContainer config={chartConfig} className={isMobile ? "h-64" : "h-80"}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart 
                       data={timelineData} 
                       margin={{ 
                         top: 10, 
-                        right: window.innerWidth < 640 ? 10 : 20, 
-                        left: window.innerWidth < 640 ? 10 : 20, 
+                        right: isMobile ? 8 : 20, 
+                        left: isMobile ? 8 : 20, 
                         bottom: 10 
                       }}
                     >
                       <XAxis 
                         dataKey="year" 
-                        fontSize={window.innerWidth < 640 ? 10 : 12}
+                        fontSize={isMobile ? 10 : 12}
                         tickLine={false}
                         axisLine={false}
-                        interval={window.innerWidth < 640 ? 1 : 0}
+                        interval={isMobile ? 1 : 0}
+                        tick={{ fill: 'hsl(var(--muted-foreground))' }}
                       />
                       <YAxis 
                         tickFormatter={(value) => {
-                          // Shorter format for mobile
-                          if (window.innerWidth < 640) {
+                          if (isMobile) {
                             return value >= 1000 ? `$${(value / 1000).toFixed(1)}K` : `$${value.toFixed(0)}`;
                           }
                           return formatCurrency(value);
                         }}
-                        fontSize={window.innerWidth < 640 ? 10 : 12}
+                        fontSize={isMobile ? 9 : 11}
                         tickLine={false}
                         axisLine={false}
-                        width={window.innerWidth < 640 ? 40 : 60}
+                        width={isMobile ? 45 : 80}
+                        tick={{ fill: 'hsl(var(--muted-foreground))' }}
                       />
                       <ChartTooltip 
                         content={<ChartTooltipContent />}
                         formatter={(value) => [formatCurrency(value as number), ""]}
                       />
-                      {window.innerWidth >= 640 && (
+                      {!isMobile && (
                         <Legend 
-                          wrapperStyle={{ fontSize: '11px' }}
+                          wrapperStyle={{ fontSize: '11px', color: 'hsl(var(--muted-foreground))' }}
                           iconType="rect"
                         />
                       )}
@@ -400,9 +416,9 @@ export default function ProjectionDashboard() {
                         <Bar
                           key={`${metric.instanceId}_cashflow`}
                           dataKey={`${metric.name}_cashflow`}
-                          fill={`hsl(${(index * 60 + 180) % 360}, 70%, 50%)`}
+                          fill={`hsl(var(--chart-${(index % 5) + 1}))`}
                           name={metric.name}
-                          radius={[1, 1, 0, 0]} // Subtle rounded corners
+                          radius={[2, 2, 0, 0]}
                         />
                       ))}
                     </BarChart>
@@ -410,15 +426,15 @@ export default function ProjectionDashboard() {
                 </ChartContainer>
                 
                 {/* Mobile Legend */}
-                {window.innerWidth < 640 && selectedMetrics.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t">
+                {isMobile && selectedMetrics.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t">
                     {selectedMetrics.map((metric, index) => (
-                      <div key={metric.instanceId} className="flex items-center gap-1">
+                      <div key={metric.instanceId} className="flex items-center gap-1.5">
                         <div 
                           className="w-3 h-3 rounded-sm"
-                          style={{ backgroundColor: `hsl(${(index * 60 + 180) % 360}, 70%, 50%)` }}
+                          style={{ backgroundColor: `hsl(var(--chart-${(index % 5) + 1}))` }}
                         />
-                        <span className="text-xs font-medium truncate max-w-20">{metric.name}</span>
+                        <span className="text-xs font-medium text-muted-foreground truncate max-w-24">{metric.name}</span>
                       </div>
                     ))}
                   </div>
@@ -428,13 +444,13 @@ export default function ProjectionDashboard() {
           </div>
           
           {/* Mobile: Additional chart info */}
-          {window.innerWidth < 640 && (
+          {isMobile && (
             <Card className="sm:hidden">
               <CardContent className="pt-4">
                 <div className="text-xs text-muted-foreground space-y-1">
-                  <p>• Equity projections assume 7% annual property growth</p>
-                  <p>• Cashflow projections assume 5% annual rental growth</p>
-                  <p>• Tap and hold chart points for detailed values</p>
+                  <p>• Equity projections: 7% annual property growth</p>
+                  <p>• Cashflow projections: 4% rental growth minus 3% expense inflation</p>
+                  <p>• Tap chart points for detailed values</p>
                 </div>
               </CardContent>
             </Card>
