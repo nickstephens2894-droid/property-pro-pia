@@ -126,7 +126,7 @@ export const PropertyCalculationDetails = ({
   return (
     <Card className="w-full">
       <CardContent className="p-0">
-        <Accordion type={isMobile ? "single" : "multiple"} className="w-full" collapsible={isMobile}>
+        <Accordion type={isMobile ? "single" : "multiple"} className="w-full" collapsible>
           
           {/* Project Costs & Funding (for construction projects) */}
           {isConstructionProject && (

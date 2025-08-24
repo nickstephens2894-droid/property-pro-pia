@@ -29,6 +29,7 @@ import {
   validateTaxOptimization
 } from "@/utils/validationUtils";
 import { Users, Home, Receipt, Calculator, Building2, Hammer, CreditCard, Clock, DollarSign, TrendingUp, Percent, X, Plus, AlertTriangle, Info, Search, Check } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { formatFinancialValue } from "@/utils/calculationUtils";
 import { PROPERTY_METHODS, FUNDING_METHODS, type PropertyMethod, type FundingMethod, getFundingMethodData } from "@/types/presets";
@@ -171,7 +172,8 @@ export const PropertyInputForm = ({
   selectedModel,
   isEditMode = false 
 }: PropertyInputFormProps) => {
-  const [openSections, setOpenSections] = useState<string[]>(["personal-profile"]);
+  const isMobile = useIsMobile();
+  const [openSections, setOpenSections] = useState<string[]>([]);
   const { confirmations, updateConfirmation } = useFieldConfirmations();
   const { protectField, isFieldProtected } = useInputProtection();
   
@@ -486,7 +488,14 @@ export const PropertyInputForm = ({
           <Accordion 
             type="multiple" 
             value={openSections} 
-            onValueChange={setOpenSections}
+            onValueChange={(newOpenSections) => {
+              if (isMobile) {
+                // On mobile, only allow one section open at a time
+                setOpenSections(newOpenSections.slice(-1)); // Keep only the last opened section
+              } else {
+                setOpenSections(newOpenSections);
+              }
+            }}
             className="w-full"
           >
           {/* 1. Personal Financial Profile */}
