@@ -40,7 +40,7 @@ function AppLayout() {
       <main className={hideNav ? "" : "pt-4"}>
         <Routes>
           <Route path="/auth" element={<Auth />} />
-          <Route path="/" element={<RequireAuth><Index /></RequireAuth>} />
+          <Route path="/" element={<Index />} />
           {/* <Route path="/projections" element={<RequireAuth><Projections /></RequireAuth>} /> */}
           <Route path="/investors" element={<RequireAuth><Investors /></RequireAuth>} />
           <Route path="/investors/:id" element={<RequireAuth><InvestorDetail /></RequireAuth>} />
