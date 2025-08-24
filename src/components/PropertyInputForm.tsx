@@ -739,40 +739,42 @@ export const PropertyInputForm = ({
     </AccordionTrigger>
     <AccordionContent className="px-6 pb-6">
       <div className="space-y-6">
-        {/* Construction Value & Summary */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="constructionValue" className="text-sm font-medium">
+        {/* Total Property Value Summary */}
+        <div className="bg-primary/10 rounded-lg p-4 border-l-4 border-primary">
+          <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+            <Home className="h-4 w-4" />
+            Total Property Value
+          </h4>
+          <div className="text-2xl font-bold text-primary">
+            ${(propertyData.landValue + propertyData.constructionValue).toLocaleString()}
+          </div>
+          <div className="text-sm text-muted-foreground mt-1">
+            Land: ${propertyData.landValue.toLocaleString()} + Construction: ${propertyData.constructionValue.toLocaleString()}
+          </div>
+        </div>
+
+        {/* Total Construction Value */}
+        <div className="bg-accent/30 rounded-lg p-4 border border-accent/50">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-medium flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
               Total Construction Value
-              {totalConstructionValue !== propertyData.constructionValue && (
-                <span className="text-muted-foreground text-xs ml-2">
-                  (Calculated: ${totalConstructionValue.toLocaleString()})
-                </span>
-              )}
-            </Label>
-            <CurrencyInput
-              id="constructionValue"
-              value={propertyData.constructionValue}
-              onChange={(value) => {
-                protectField('constructionValue', 2000);
-                updateFieldWithCascade('constructionValue', value);
-              }}
-              className="mt-1"
-              placeholder="Enter total construction value"
-            />
-          </div>
-          <div className="bg-primary/10 rounded-lg p-4 border-l-4 border-primary">
-            <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
-              <Home className="h-4 w-4" />
-              Total Property Value
             </h4>
-            <div className="text-2xl font-bold text-primary">
-              ${(propertyData.landValue + propertyData.constructionValue).toLocaleString()}
-            </div>
-            <div className="text-sm text-muted-foreground mt-1">
-              Land: ${propertyData.landValue.toLocaleString()} + Construction: ${propertyData.constructionValue.toLocaleString()}
-            </div>
+            {totalConstructionValue !== propertyData.constructionValue && (
+              <span className="text-muted-foreground text-xs">
+                (Calculated: ${totalConstructionValue.toLocaleString()})
+              </span>
+            )}
           </div>
+          <CurrencyInput
+            id="constructionValue"
+            value={propertyData.constructionValue}
+            onChange={(value) => {
+              protectField('constructionValue', 2000);
+              updateFieldWithCascade('constructionValue', value);
+            }}
+            placeholder="Enter total construction value"
+          />
         </div>
 
         {/* Building Values */}
