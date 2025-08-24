@@ -972,14 +972,25 @@ const AddInstance = () => {
                     councilRates={propertyData.councilRates || 0}
                     insurance={propertyData.insurance || 0}
                     repairs={propertyData.repairs || 0}
-                    totalDeductibleExpenses={
-                      (propertyData.councilRates || 0) + 
-                      (propertyData.insurance || 0) + 
-                      (propertyData.repairs || 0) + 
-                      ((propertyData.weeklyRent || 0) * 52 * (propertyData.propertyManagement || 0.07) / 100) +
-                      depreciation.total +
-                      ((propertyData.loanAmount || 0) * (propertyData.interestRate || 0.06) / 100)
-                    }
+                    totalDeductibleExpenses={(() => {
+                      const annualInterest = ((propertyData.loanAmount || 0) * (propertyData.interestRate || 0.06) / 100);
+                      const cashDeductions = annualInterest + 
+                        (propertyData.councilRates || 0) + 
+                        (propertyData.insurance || 0) + 
+                        (propertyData.repairs || 0) + 
+                        ((propertyData.weeklyRent || 0) * 52 * (propertyData.propertyManagement || 0.07) / 100);
+                      const paperDeductions = depreciation.total;
+                      return cashDeductions + paperDeductions;
+                    })()}
+                    cashDeductionsSubtotal={(() => {
+                      const annualInterest = ((propertyData.loanAmount || 0) * (propertyData.interestRate || 0.06) / 100);
+                      return annualInterest + 
+                        (propertyData.councilRates || 0) + 
+                        (propertyData.insurance || 0) + 
+                        (propertyData.repairs || 0) + 
+                        ((propertyData.weeklyRent || 0) * 52 * (propertyData.propertyManagement || 0.07) / 100);
+                    })()}
+                    paperDeductionsSubtotal={depreciation.total}
                     depreciation={{
                       capitalWorks: depreciation.capitalWorks,
                       plantEquipment: depreciation.plantEquipment,

@@ -45,6 +45,8 @@ interface PropertyCalculationDetailsProps {
   insurance: number;
   repairs: number;
   totalDeductibleExpenses: number;
+  cashDeductionsSubtotal: number;
+  paperDeductionsSubtotal: number;
   depreciation: DepreciationDetails;
   investorTaxResults: InvestorTaxResult[];
   totalTaxWithProperty: number;
@@ -88,6 +90,8 @@ export const PropertyCalculationDetails = ({
   insurance,
   repairs,
   totalDeductibleExpenses,
+  cashDeductionsSubtotal,
+  paperDeductionsSubtotal,
   depreciation,
   investorTaxResults,
   totalTaxWithProperty,
@@ -358,7 +362,18 @@ export const PropertyCalculationDetails = ({
                       <span className="text-sm">Depreciation (Total)</span>
                       <span className="text-destructive">${depreciation.total.toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between items-center py-3 bg-destructive/5 px-3 rounded-lg border-t-2 border-destructive/20">
+                    
+                    {/* Subtotals */}
+                    <div className="flex justify-between items-center py-2 border-t border-border/50 bg-muted/20 px-3 rounded-lg mt-2">
+                      <span className="text-sm font-medium">Cash Deductions Subtotal</span>
+                      <span className="font-semibold text-destructive">${cashDeductionsSubtotal.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 bg-muted/20 px-3 rounded-lg">
+                      <span className="text-sm font-medium">Paper Deductions Subtotal</span>
+                      <span className="font-semibold text-destructive">${paperDeductionsSubtotal.toLocaleString()}</span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center py-3 bg-destructive/5 px-3 rounded-lg border-t-2 border-destructive/20 mt-2">
                       <span className="font-medium">Total Deductible Expenses</span>
                       <span className="font-bold text-destructive">${totalDeductibleExpenses.toLocaleString()}</span>
                     </div>

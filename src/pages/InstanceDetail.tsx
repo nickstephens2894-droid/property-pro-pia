@@ -941,19 +941,22 @@ const InstanceDetail = () => {
   // Calculate annual interest for display use
   const annualInterest = (projections[0]?.mainInterestYear || 0) + (projections[0]?.equityInterestYear || 0);
 
+  // Calculate cash and paper deductions separately
+  const cashDeductions = 
+    annualInterest + // Use calculated annual interest from projections
+    (propertyData.councilRates || 0) + 
+    (propertyData.insurance || 0) + 
+    (propertyData.repairs || 0) + 
+    ((propertyData.weeklyRent || 0) * 52 * (propertyData.propertyManagement || 0.07) / 100);
+  
+  const paperDeductions = depreciation.total;
+  const totalDeductibleExpenses = cashDeductions + paperDeductions;
+
   // Calculate tax results for investors
   const investorTaxResults = useMemo(() => {
     if (!propertyData.investors || propertyData.investors.length === 0) return [];
     
     const annualRent = (propertyData.weeklyRent || 0) * 52;
-    // Calculate total deductible expenses including all tax-deductible items
-    const totalDeductibleExpenses = 
-      (propertyData.councilRates || 0) + 
-      (propertyData.insurance || 0) + 
-      (propertyData.repairs || 0) + 
-      ((propertyData.weeklyRent || 0) * 52 * (propertyData.propertyManagement || 0.07) / 100) +
-      depreciation.total +
-      ((propertyData.loanAmount || 0) * (propertyData.interestRate || 0.06) / 100);
     
     console.log('📊 Total Deductible Expenses Breakdown:', {
       councilRates: propertyData.councilRates || 0,
@@ -962,6 +965,8 @@ const InstanceDetail = () => {
       propertyManagement: propertyData.propertyManagement || 0,
       depreciation: depreciation.total,
       annualInterest,
+      cashDeductions,
+      paperDeductions,
       total: totalDeductibleExpenses
     });
     
@@ -1261,14 +1266,9 @@ const InstanceDetail = () => {
                     councilRates={propertyData.councilRates || 0}
                     insurance={propertyData.insurance || 0}
                     repairs={propertyData.repairs || 0}
-                     totalDeductibleExpenses={
-                      (propertyData.councilRates || 0) + 
-                      (propertyData.insurance || 0) + 
-                      (propertyData.repairs || 0) + 
-                      ((propertyData.weeklyRent || 0) * 52 * (propertyData.propertyManagement || 0.07) / 100) +
-                      depreciation.total +
-                      ((propertyData.loanAmount || 0) * (propertyData.interestRate || 0.06) / 100)
-                    }
+                     totalDeductibleExpenses={totalDeductibleExpenses}
+                    cashDeductionsSubtotal={cashDeductions}
+                    paperDeductionsSubtotal={paperDeductions}
                     depreciation={{
                       capitalWorks: depreciation.capitalWorks,
                       plantEquipment: depreciation.plantEquipment,
@@ -1320,11 +1320,7 @@ const InstanceDetail = () => {
                       currentPayment: loanPaymentDetails.equityLoanDetails.isIO && loanPaymentDetails.equityLoanDetails.ioTermYears > 0 ? loanPaymentDetails.equityLoanDetails.ioPayment : loanPaymentDetails.equityLoanDetails.piPayment,
                       futurePayment: loanPaymentDetails.equityLoanDetails.isIO && loanPaymentDetails.equityLoanDetails.ioTermYears > 0 ? loanPaymentDetails.equityLoanDetails.piPayment : 0
                     } : null}
-                    totalAnnualInterest={
-                      ((propertyData.loanAmount || 0) * (propertyData.interestRate || 0.06) / 100) +
-                      (propertyData.useEquityFunding && equityLoanAmount ? 
-                        (equityLoanAmount * (propertyData.equityLoanInterestRate || 7.2) / 100) : 0)
-                    }
+                    totalAnnualInterest={annualInterest}
                   />
                 </div>
               </div>
