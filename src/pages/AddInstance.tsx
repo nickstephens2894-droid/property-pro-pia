@@ -362,7 +362,7 @@ const AddInstance = () => {
         propertyValue: 0,
         mainLoanBalance: 0,
         equityLoanBalance: 0,
-        totalInterest: Math.round(totalInterestAccrued),
+        totalInterest: Math.round(holdingCosts.total), // Use holding costs total, not loan interest payments
         mainLoanPayment: Math.round(constructionMainPaymentCash),
         equityLoanPayment: Math.round(constructionEquityPaymentCash),
         mainInterestYear: Math.round(mainInterestAccrued),
