@@ -725,14 +725,14 @@ export const PropertyInputForm = ({
             </AccordionContent>
           </AccordionItem>
 
-{/* 3. Construction */}
+{/* 3. Construction Costs */}
 {propertyData.isConstructionProject && (
   <AccordionItem value="construction" className="border-b">
     <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-2">
           <Hammer className="h-4 w-4 text-primary" />
-          <span className="font-medium">Construction</span>
+          <span className="font-medium">Construction Costs</span>
         </div>
         <AccordionCompletionIndicator status={constructionStatus} sectionKey="construction" />
       </div>
@@ -888,11 +888,66 @@ export const PropertyInputForm = ({
           </div>
         </div>
 
-        {/* Construction Timeline & Financing */}
+        {/* Development Costs */}
+        <div className="space-y-4">
+          <h4 className="font-medium text-sm">Development Costs</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="councilFees" className="text-sm font-medium">Council Fees & Approvals</Label>
+              <CurrencyInput
+                id="councilFees"
+                value={propertyData.councilFees}
+                onChange={(value) => updateFieldWithCascade('councilFees', value)}
+                className="mt-1"
+                placeholder="Enter council fees"
+              />
+            </div>
+            <div>
+              <Label htmlFor="architectFees" className="text-sm font-medium">Architect/Design Fees</Label>
+              <CurrencyInput
+                id="architectFees"
+                value={propertyData.architectFees}
+                onChange={(value) => updateFieldWithCascade('architectFees', value)}
+                className="mt-1"
+                placeholder="Enter architect fees"
+              />
+            </div>
+            <div>
+              <Label htmlFor="siteCosts" className="text-sm font-medium">Site Costs & Utilities</Label>
+              <CurrencyInput
+                id="siteCosts"
+                value={propertyData.siteCosts}
+                onChange={(value) => updateFieldWithCascade('siteCosts', value)}
+                className="mt-1"
+                placeholder="Enter site costs"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </AccordionContent>
+  </AccordionItem>
+)}
+
+{/* 4. Construction Timeline */}
+{propertyData.isConstructionProject && (
+  <AccordionItem value="construction-timeline" className="border-b">
+    <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
+      <div className="flex items-center justify-between w-full">
+        <div className="flex items-center gap-2">
+          <Clock className="h-4 w-4 text-primary" />
+          <span className="font-medium">Construction Timeline</span>
+        </div>
+        <AccordionCompletionIndicator status={constructionStatus} sectionKey="construction-timeline" />
+      </div>
+    </AccordionTrigger>
+    <AccordionContent className="px-6 pb-6">
+      <div className="space-y-6">
+        {/* Construction Timeline */}
         <div className="bg-accent/20 rounded-lg p-4">
           <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
             <Clock className="h-4 w-4" />
-            Construction Timeline & Financing
+            Construction Timeline
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div>
@@ -1016,43 +1071,6 @@ export const PropertyInputForm = ({
             )}
           </div>
         </div>
-
-        {/* Development Costs */}
-        <div className="space-y-4">
-          <h4 className="font-medium text-sm">Development Costs</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="councilFees" className="text-sm font-medium">Council Fees & Approvals</Label>
-              <CurrencyInput
-                id="councilFees"
-                value={propertyData.councilFees}
-                onChange={(value) => updateFieldWithCascade('councilFees', value)}
-                className="mt-1"
-                placeholder="Enter council fees"
-              />
-            </div>
-            <div>
-              <Label htmlFor="architectFees" className="text-sm font-medium">Architect/Design Fees</Label>
-              <CurrencyInput
-                id="architectFees"
-                value={propertyData.architectFees}
-                onChange={(value) => updateFieldWithCascade('architectFees', value)}
-                className="mt-1"
-                placeholder="Enter architect fees"
-              />
-            </div>
-            <div>
-              <Label htmlFor="siteCosts" className="text-sm font-medium">Site Costs & Utilities</Label>
-              <CurrencyInput
-                id="siteCosts"
-                value={propertyData.siteCosts}
-                onChange={(value) => updateFieldWithCascade('siteCosts', value)}
-                className="mt-1"
-                placeholder="Enter site costs"
-              />
-            </div>
-          </div>
-        </div>
       </div>
     </AccordionContent>
   </AccordionItem>
@@ -1157,7 +1175,7 @@ export const PropertyInputForm = ({
             </AccordionContent>
           </AccordionItem>
 
-          {/* 5. Funding & Finance Structure */}
+          {/* 6. Funding & Finance Structure */}
           <AccordionItem value="funding-finance" className="border-b">
             <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
               <div className="flex items-center gap-2 w-full">
@@ -1645,7 +1663,7 @@ export const PropertyInputForm = ({
             </AccordionContent>
           </AccordionItem>
 
-          {/* 6. Ongoing Income & Expenses */}
+          {/* 7. Ongoing Income & Expenses */}
           <AccordionItem value="ongoing-income-expenses" className="border-b">
             <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
               <div className="flex items-center gap-2 w-full">
@@ -1749,7 +1767,7 @@ export const PropertyInputForm = ({
             </AccordionContent>
           </AccordionItem>
 
-          {/* 7. Tax Optimization */}
+          {/* 8. Tax Optimization */}
           <AccordionItem value="tax-optimization" className="border-b">
             <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
               <div className="flex items-center gap-2 w-full">

@@ -14,6 +14,7 @@ export type SectionKey =
   | "personal-profile"
   | "property-basics"
   | "construction"
+  | "construction-timeline"
   | "funding-finance"
   | "transaction-costs"
   | "ongoing-income-expenses"
@@ -65,10 +66,23 @@ export const getSectionGuidance = (
         items.push("Enter total construction contract value");
       if (!propertyData.buildingValue || propertyData.buildingValue <= 0)
         items.push("Enter building value for depreciation");
-      if (!propertyData.constructionPeriod || propertyData.constructionPeriod <= 0)
-        items.push("Set construction period (months)");
       if (!propertyData.constructionYear || propertyData.constructionYear <= 0)
         items.push("Enter construction completion year");
+      break;
+    }
+    case "construction-timeline": {
+      status = validateConstruction(propertyData);
+      if (!propertyData.constructionPeriod || propertyData.constructionPeriod <= 0)
+        items.push("Set construction period (months)");
+      if (!propertyData.constructionInterestRate || propertyData.constructionInterestRate <= 0)
+        items.push("Enter construction interest rate");
+      if (!propertyData.constructionProgressPayments || propertyData.constructionProgressPayments.length === 0)
+        items.push("Add construction progress payments");
+      else {
+        const totalPercentage = propertyData.constructionProgressPayments.reduce((sum, p) => sum + p.percentage, 0);
+        if (Math.abs(totalPercentage - 100) > 0.1)
+          items.push("Progress payments should total 100%");
+      }
       break;
     }
     case "funding-finance": {
