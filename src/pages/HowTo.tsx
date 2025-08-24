@@ -129,50 +129,58 @@ export default function HowTo() {
   ];
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-6xl">
+    <div className="container mx-auto px-4 py-4 md:py-6 max-w-6xl">
       {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-foreground mb-4">
+      <div className="text-center mb-6 md:mb-8">
+        <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-3 md:mb-4">
           How to Use Property Pro
         </h1>
-        <p className="text-xl text-muted-foreground mb-6 max-w-3xl mx-auto">
+        <p className="text-base md:text-xl text-muted-foreground mb-4 md:mb-6 max-w-3xl mx-auto px-2">
           Your comprehensive guide to analyzing Australian investment properties with advanced tax calculations, 
           multi-investor support, and detailed financial projections.
         </p>
-        <div className="flex justify-center gap-4">
-          <Button onClick={() => navigate('/properties/create')} size="lg">
+        <div className="flex flex-col sm:flex-row justify-center gap-3 md:gap-4 px-4">
+          <Button onClick={() => navigate('/properties/create')} size="lg" className="w-full sm:w-auto">
             Start Your First Analysis
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
-          <Button variant="outline" onClick={() => navigate('/instances')} size="lg">
+          <Button variant="outline" onClick={() => navigate('/instances')} size="lg" className="w-full sm:w-auto">
             View Examples
           </Button>
         </div>
       </div>
 
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">Platform Overview</TabsTrigger>
-          <TabsTrigger value="getting-started">Getting Started</TabsTrigger>
-          <TabsTrigger value="examples">Real Examples</TabsTrigger>
-          <TabsTrigger value="tips">Tips & Best Practices</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto">
+          <TabsTrigger value="overview" className="text-xs sm:text-sm p-2 md:p-3">
+            Platform Overview
+          </TabsTrigger>
+          <TabsTrigger value="getting-started" className="text-xs sm:text-sm p-2 md:p-3">
+            Getting Started
+          </TabsTrigger>
+          <TabsTrigger value="examples" className="text-xs sm:text-sm p-2 md:p-3">
+            Real Examples
+          </TabsTrigger>
+          <TabsTrigger value="tips" className="text-xs sm:text-sm p-2 md:p-3">
+            Tips & Best Practices
+          </TabsTrigger>
         </TabsList>
 
         {/* Platform Overview */}
-        <TabsContent value="overview" className="space-y-6">
+        <TabsContent value="overview" className="space-y-4 md:space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Target className="h-5 w-5" />
                 What Property Pro Does
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm md:text-base">
                 Property Pro is an advanced Australian property investment analysis platform that helps investors 
                 make informed decisions through comprehensive financial modeling and tax optimization.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                 {features.map((feature, index) => (
                   <Card key={index} className="border-l-4 border-l-primary">
                     <CardContent className="p-4">
@@ -239,26 +247,26 @@ export default function HowTo() {
         </TabsContent>
 
         {/* Getting Started */}
-        <TabsContent value="getting-started" className="space-y-6">
+        <TabsContent value="getting-started" className="space-y-4 md:space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Step-by-Step Guide</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg md:text-xl">Step-by-Step Guide</CardTitle>
+              <CardDescription className="text-sm md:text-base">
                 Follow these steps to create your first property analysis
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-6">
+              <div className="space-y-4 md:space-y-6">
                 {steps.map((step, index) => (
-                  <div key={index} className="flex gap-4">
+                  <div key={index} className="flex gap-3 md:gap-4">
                     <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-semibold">
                       {step.step}
                     </div>
                     <div className="flex-1">
-                      <h4 className="font-semibold mb-2">{step.title}</h4>
-                      <p className="text-muted-foreground mb-2">{step.description}</p>
+                      <h4 className="font-semibold mb-2 text-sm md:text-base">{step.title}</h4>
+                      <p className="text-muted-foreground mb-2 text-xs md:text-sm">{step.description}</p>
                       <div className="bg-muted p-3 rounded-lg">
-                        <p className="text-sm"><strong>Example:</strong> {step.example}</p>
+                        <p className="text-xs md:text-sm"><strong>Example:</strong> {step.example}</p>
                       </div>
                     </div>
                   </div>
@@ -267,10 +275,10 @@ export default function HowTo() {
             </CardContent>
           </Card>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-lg">
                   <Building2 className="h-5 w-5" />
                   Property Setup
                 </CardTitle>
@@ -278,7 +286,7 @@ export default function HowTo() {
               <CardContent className="space-y-3">
                 <div className="text-sm">
                   <strong>Required Information:</strong>
-                  <ul className="mt-1 space-y-1 text-muted-foreground">
+                  <ul className="mt-1 space-y-1 text-muted-foreground text-xs md:text-sm">
                     <li>• Purchase price and settlement date</li>
                     <li>• Property type and location</li>
                     <li>• Expected rental yield</li>
@@ -291,7 +299,7 @@ export default function HowTo() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-lg">
                   <Users className="h-5 w-5" />
                   Investor Configuration
                 </CardTitle>
@@ -299,7 +307,7 @@ export default function HowTo() {
               <CardContent className="space-y-3">
                 <div className="text-sm">
                   <strong>For Each Investor:</strong>
-                  <ul className="mt-1 space-y-1 text-muted-foreground">
+                  <ul className="mt-1 space-y-1 text-muted-foreground text-xs md:text-sm">
                     <li>• Annual income level</li>
                     <li>• Marginal tax rate</li>
                     <li>• Ownership percentage</li>
@@ -313,30 +321,30 @@ export default function HowTo() {
         </TabsContent>
 
         {/* Examples */}
-        <TabsContent value="examples" className="space-y-6">
+        <TabsContent value="examples" className="space-y-4 md:space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Real-World Scenarios</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg md:text-xl">Real-World Scenarios</CardTitle>
+              <CardDescription className="text-sm md:text-base">
                 See how Property Pro analyzes different types of investment properties
               </CardDescription>
             </CardHeader>
           </Card>
 
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             {examples.map((example, index) => (
               <Card key={index}>
                 <CardHeader>
-                  <CardTitle className="text-lg">{example.title}</CardTitle>
-                  <CardDescription>{example.description}</CardDescription>
+                  <CardTitle className="text-base md:text-lg">{example.title}</CardTitle>
+                  <CardDescription className="text-sm">{example.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                     <div>
-                      <h5 className="font-semibold mb-3">Scenario Details</h5>
+                      <h5 className="font-semibold mb-3 text-sm md:text-base">Scenario Details</h5>
                       <ul className="space-y-2">
                         {example.details.map((detail, idx) => (
-                          <li key={idx} className="flex items-center gap-2 text-sm">
+                          <li key={idx} className="flex items-center gap-2 text-xs md:text-sm">
                             <div className="w-1.5 h-1.5 bg-primary rounded-full flex-shrink-0" />
                             {detail}
                           </li>
@@ -344,13 +352,13 @@ export default function HowTo() {
                       </ul>
                     </div>
                     <div>
-                      <h5 className="font-semibold mb-3">Analysis Result</h5>
-                      <div className="bg-success/10 border border-success/20 rounded-lg p-4">
+                      <h5 className="font-semibold mb-3 text-sm md:text-base">Analysis Result</h5>
+                      <div className="bg-success/10 border border-success/20 rounded-lg p-3 md:p-4">
                         <div className="flex items-center gap-2 mb-2">
                           <TrendingUp className="h-4 w-4 text-success" />
-                          <span className="font-medium text-success">Projected Outcome</span>
+                          <span className="font-medium text-success text-sm">Projected Outcome</span>
                         </div>
-                        <p className="text-sm text-muted-foreground">{example.result}</p>
+                        <p className="text-xs md:text-sm text-muted-foreground">{example.result}</p>
                       </div>
                     </div>
                   </div>
@@ -361,8 +369,8 @@ export default function HowTo() {
         </TabsContent>
 
         {/* Tips & Best Practices */}
-        <TabsContent value="tips" className="space-y-6">
-          <div className="grid md:grid-cols-2 gap-6">
+        <TabsContent value="tips" className="space-y-4 md:space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
