@@ -73,6 +73,7 @@ export type Database = {
           net_equity_at_year_to: number
           ownership_allocations: Json | null
           plant_equipment_value: number
+          post_construction_rate_reduction: number
           primary_property_value: number
           projections: Json | null
           property_management: number
@@ -156,6 +157,7 @@ export type Database = {
           net_equity_at_year_to?: number
           ownership_allocations?: Json | null
           plant_equipment_value?: number
+          post_construction_rate_reduction?: number
           primary_property_value?: number
           projections?: Json | null
           property_management?: number
@@ -239,6 +241,7 @@ export type Database = {
           net_equity_at_year_to?: number
           ownership_allocations?: Json | null
           plant_equipment_value?: number
+          post_construction_rate_reduction?: number
           primary_property_value?: number
           projections?: Json | null
           property_management?: number

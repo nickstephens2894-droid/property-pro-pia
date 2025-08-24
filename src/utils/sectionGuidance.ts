@@ -75,7 +75,9 @@ export const getSectionGuidance = (
       if (!propertyData.constructionPeriod || propertyData.constructionPeriod <= 0)
         items.push("Set construction period (months)");
       if (!propertyData.constructionInterestRate || propertyData.constructionInterestRate <= 0)
-        items.push("Enter construction interest rate");
+        items.push("Enter main loan rate during construction");
+      if (propertyData.postConstructionRateReduction < 0 || propertyData.postConstructionRateReduction > 5)
+        items.push("Enter realistic rate reduction (typically 0.5%)");
       if (!propertyData.constructionProgressPayments || propertyData.constructionProgressPayments.length === 0)
         items.push("Add construction progress payments");
       else {

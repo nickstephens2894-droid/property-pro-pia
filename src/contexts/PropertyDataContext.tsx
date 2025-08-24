@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 import { PropertyMethod, FundingMethod } from '@/types/presets';
 
 interface Investor {
@@ -261,6 +261,22 @@ const defaultPropertyData: PropertyData = {
 export const PropertyDataProvider = ({ children }: { children: ReactNode }) => {
   const [propertyData, setPropertyData] = useState<PropertyData>(defaultPropertyData);
 
+  // Auto-sync interest rate for construction projects
+  const updateField = useCallback((field: keyof PropertyData, value: any) => {
+    setPropertyData(prev => {
+      const updated = { ...prev, [field]: value };
+      
+      // Auto-sync interest rate for construction projects
+      if (updated.isConstructionProject) {
+        if (field === 'constructionInterestRate' || field === 'postConstructionRateReduction') {
+          updated.interestRate = updated.constructionInterestRate - updated.postConstructionRateReduction;
+        }
+      }
+      
+      return updated;
+    });
+  }, []);
+
   // Centralized calculations (existing code omitted for brevity)
   const calculateEquityLoanAmount = () => {
     if (!propertyData.useEquityFunding) return 0;
@@ -379,9 +395,6 @@ export const PropertyDataProvider = ({ children }: { children: ReactNode }) => {
     };
   };
 
-  const updateField = (field: keyof PropertyData, value: number | boolean | string) => {
-    setPropertyData(prev => ({ ...prev, [field]: value }));
-  };
 
   const updateFieldWithConfirmation = (
     field: keyof PropertyData, 

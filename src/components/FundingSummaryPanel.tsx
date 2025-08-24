@@ -227,10 +227,14 @@ export const FundingSummaryPanel = () => {
                         <span className="text-muted-foreground">Period</span>
                         <span className="font-medium">{propertyData.constructionPeriod} months</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Interest Rate</span>
-                        <span className="font-medium">{propertyData.constructionInterestRate}%</span>
-                      </div>
+                       <div className="flex justify-between">
+                         <span className="text-muted-foreground">Construction Rate</span>
+                         <span className="font-medium">{propertyData.constructionInterestRate}%</span>
+                       </div>
+                       <div className="flex justify-between">
+                         <span className="text-muted-foreground">Ongoing Rate</span>
+                         <span className="font-medium">{(propertyData.constructionInterestRate - propertyData.postConstructionRateReduction).toFixed(1)}%</span>
+                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Funding Method</span>
                         <span className="font-medium capitalize">{propertyData.holdingCostFunding}</span>
@@ -379,10 +383,27 @@ export const FundingSummaryPanel = () => {
                 </div>
               </CollapsibleTrigger>
               <CollapsibleContent className="pl-4 space-y-1">
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Interest Rate</span>
-                  <span>{propertyData.interestRate}%</span>
-                </div>
+                {propertyData.isConstructionProject ? (
+                  <>
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Construction Rate</span>
+                      <span>{propertyData.constructionInterestRate}%</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Ongoing Rate</span>
+                      <span>{(propertyData.constructionInterestRate - propertyData.postConstructionRateReduction).toFixed(1)}%</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Rate Reduction</span>
+                      <span>-{propertyData.postConstructionRateReduction}%</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Interest Rate</span>
+                    <span>{propertyData.interestRate}%</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Loan Term</span>
                   <span>{propertyData.loanTerm} years</span>
