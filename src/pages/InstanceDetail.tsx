@@ -133,13 +133,18 @@ const InstanceDetail = () => {
             buildingValue: instanceData.building_value,
             plantEquipmentValue: instanceData.plant_equipment_value,
             purchasePrice: instanceData.purchase_price,
+            investors: instanceData.investors,
+            ownershipAllocations: instanceData.ownership_allocations,
             isEditMode,
             isDataLoaded
           });
           
           // Only apply preset if not in edit mode and data hasn't been loaded yet
           if (!isEditMode && !hasUnsavedChanges) {
-            console.log('📋 Applying preset data from instance');
+            console.log('📋 Applying preset data from instance:', {
+              investors: instanceData.investors,
+              ownershipAllocations: instanceData.ownership_allocations
+            });
             applyPreset({
               investors: instanceData.investors as any,
               ownershipAllocations: instanceData.ownership_allocations as any,
