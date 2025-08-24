@@ -24,7 +24,6 @@ export function NavigationSidebar({ open, onOpenChange }: NavigationSidebarProps
     { to: "/projection-dashboard", label: "Projection Dashboard", icon: TrendingUp },
     { to: "/investors", label: "Investors", icon: Users },
     { to: "/properties", label: "Properties", icon: Building2 },
-    { to: "/projections", label: "Projections", icon: BarChart3 },
     { to: "/funds", label: "Funds", icon: PiggyBank },
     { to: "/scenarios", label: "Scenarios", icon: FileText },
     { to: "/how-to", label: "How To", icon: HelpCircle },
