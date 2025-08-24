@@ -316,7 +316,7 @@ export default function InvestorDetail() {
             <div>
               <Label className="text-sm font-medium text-muted-foreground">Weekly Cashflow</Label>
               <p className={`text-lg font-semibold ${totalCashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatCurrency(Math.abs(totalCashflow))} {totalCashflow >= 0 ? 'positive' : 'negative'}
+                {formatCurrency(totalCashflow)}
               </p>
             </div>
             <div>
@@ -326,7 +326,7 @@ export default function InvestorDetail() {
             <div>
               <Label className="text-sm font-medium text-muted-foreground">Net Annual Benefit</Label>
               <p className={`text-lg font-semibold ${(totalCashflow * 52 + totalTaxSavings) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatCurrency(Math.abs(totalCashflow * 52 + totalTaxSavings))}
+                {formatCurrency(totalCashflow * 52 + totalTaxSavings)}
               </p>
             </div>
           </div>
@@ -438,8 +438,9 @@ export default function InvestorDetail() {
                     <div className="text-right">
                       <div className="font-semibold">{instance.ownership_percentage}% ownership</div>
                       <div className="text-sm text-muted-foreground">
-                        Weekly: {formatCurrency(Math.abs(instance.weekly_cashflow_year1 * (instance.ownership_percentage || 0) / 100))} 
-                        {(instance.weekly_cashflow_year1 * (instance.ownership_percentage || 0) / 100) >= 0 ? ' positive' : ' negative'}
+                        Weekly: <span className={`${(instance.weekly_cashflow_year1 * (instance.ownership_percentage || 0) / 100) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {formatCurrency(instance.weekly_cashflow_year1 * (instance.ownership_percentage || 0) / 100)}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -447,8 +448,7 @@ export default function InvestorDetail() {
                     <div>
                       <span className="text-muted-foreground">Weekly Cashflow: </span>
                       <span className={instance.weekly_cashflow_year1 >= 0 ? 'text-green-600' : 'text-red-600'}>
-                        {formatCurrency(Math.abs(instance.weekly_cashflow_year1))} 
-                        {instance.weekly_cashflow_year1 >= 0 ? ' positive' : ' negative'}
+                        {formatCurrency(instance.weekly_cashflow_year1)}
                       </span>
                     </div>
                     <div>
