@@ -88,22 +88,30 @@ export default function ProjectionDashboard() {
     setSelectedInstanceIds([]);
   };
 
-  // Generate timeline data for charts (simplified projection)
+  // Generate timeline data for charts with improved projections
   const generateTimelineData = () => {
     if (selectedMetrics.length === 0) return [];
     
     const years = Array.from({ length: 10 }, (_, i) => i + 1);
     
     return years.map(year => {
-      const dataPoint: any = { year };
+      const dataPoint: any = { year: `Y${year}` }; // Better mobile display
       
       selectedMetrics.forEach(metric => {
-        // Simple projection calculation for demo purposes
-        const growthRate = 0.07; // 7% growth assumption
-        const cashflowGrowth = 0.05; // 5% rental growth
+        // More realistic projection calculations
+        const propertyGrowthRate = 0.07; // 7% annual property growth
+        const rentalGrowthRate = 0.05; // 5% annual rental growth
+        const inflationRate = 0.03; // 3% inflation for expenses
         
-        dataPoint[`${metric.name}_equity`] = metric.netEquityAtYearTo * Math.pow(1 + growthRate, year / metric.analysisYearTo);
-        dataPoint[`${metric.name}_cashflow`] = metric.weeklyCashflowYear1 * Math.pow(1 + cashflowGrowth, year - 1);
+        // Net equity projection: compound growth from final year value
+        const projectedEquity = metric.netEquityAtYearTo * Math.pow(1 + propertyGrowthRate, (year / metric.analysisYearTo));
+        
+        // Weekly cashflow projection: starting from year 1, compound annually
+        const projectedCashflow = metric.weeklyCashflowYear1 * Math.pow(1 + rentalGrowthRate, year - 1);
+        
+        // Ensure realistic minimums
+        dataPoint[`${metric.name}_equity`] = Math.max(0, projectedEquity);
+        dataPoint[`${metric.name}_cashflow`] = Math.max(0, projectedCashflow);
       });
       
       return dataPoint;
@@ -250,91 +258,187 @@ export default function ProjectionDashboard() {
 
       {/* Timeline Charts */}
       {selectedMetrics.length > 0 && timelineData.length > 0 && (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
-          {/* Net Equity Timeline */}
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg">Net Equity Projection</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer config={chartConfig} className="h-64 sm:h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={timelineData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-                    <XAxis 
-                      dataKey="year" 
-                      fontSize={12}
-                      tickLine={false}
-                    />
-                    <YAxis 
-                      tickFormatter={(value) => formatCurrency(value)}
-                      fontSize={12}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <ChartTooltip 
-                      content={<ChartTooltipContent />}
-                      formatter={(value) => [formatCurrency(value as number), ""]}
-                    />
-                    <Legend 
-                      wrapperStyle={{ fontSize: '12px' }}
-                    />
-                    {selectedMetrics.map((metric, index) => (
-                      <Line
-                        key={`${metric.instanceId}_equity`}
-                        type="monotone"
-                        dataKey={`${metric.name}_equity`}
-                        stroke={`hsl(${(index * 60) % 360}, 70%, 50%)`}
-                        strokeWidth={2}
-                        name={metric.name}
-                        dot={false}
+        <div className="space-y-4 sm:space-y-6">
+          {/* Mobile: Stack charts vertically, Desktop: Side by side */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
+            {/* Net Equity Timeline */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  Net Equity Projection
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer config={chartConfig} className="h-48 sm:h-64 lg:h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart 
+                      data={timelineData} 
+                      margin={{ 
+                        top: 10, 
+                        right: window.innerWidth < 640 ? 10 : 20, 
+                        left: window.innerWidth < 640 ? 10 : 20, 
+                        bottom: 10 
+                      }}
+                    >
+                      <XAxis 
+                        dataKey="year" 
+                        fontSize={window.innerWidth < 640 ? 10 : 12}
+                        tickLine={false}
+                        axisLine={false}
+                        interval={window.innerWidth < 640 ? 1 : 0} // Show every other tick on mobile
                       />
+                      <YAxis 
+                        tickFormatter={(value) => {
+                          // Shorter format for mobile
+                          if (window.innerWidth < 640) {
+                            return value >= 1000000 ? `$${(value / 1000000).toFixed(1)}M` : 
+                                   value >= 1000 ? `$${(value / 1000).toFixed(0)}K` : 
+                                   `$${value.toFixed(0)}`;
+                          }
+                          return formatCurrency(value);
+                        }}
+                        fontSize={window.innerWidth < 640 ? 10 : 12}
+                        tickLine={false}
+                        axisLine={false}
+                        width={window.innerWidth < 640 ? 45 : 60}
+                      />
+                      <ChartTooltip 
+                        content={<ChartTooltipContent />}
+                        formatter={(value) => [formatCurrency(value as number), ""]}
+                      />
+                      {window.innerWidth >= 640 && (
+                        <Legend 
+                          wrapperStyle={{ fontSize: '11px' }}
+                          iconType="line"
+                        />
+                      )}
+                      {selectedMetrics.map((metric, index) => (
+                        <Line
+                          key={`${metric.instanceId}_equity`}
+                          type="monotone"
+                          dataKey={`${metric.name}_equity`}
+                          stroke={`hsl(${(index * 60) % 360}, 70%, 50%)`}
+                          strokeWidth={window.innerWidth < 640 ? 1.5 : 2}
+                          name={metric.name}
+                          dot={false}
+                          activeDot={{ r: window.innerWidth < 640 ? 3 : 4 }}
+                        />
+                      ))}
+                    </LineChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
+                
+                {/* Mobile Legend */}
+                {window.innerWidth < 640 && selectedMetrics.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t">
+                    {selectedMetrics.map((metric, index) => (
+                      <div key={metric.instanceId} className="flex items-center gap-1">
+                        <div 
+                          className="w-3 h-0.5 rounded"
+                          style={{ backgroundColor: `hsl(${(index * 60) % 360}, 70%, 50%)` }}
+                        />
+                        <span className="text-xs font-medium truncate max-w-20">{metric.name}</span>
+                      </div>
                     ))}
-                  </LineChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            </CardContent>
-          </Card>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-          {/* Weekly Cashflow Timeline */}
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg">Weekly Cashflow Projection</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer config={chartConfig} className="h-64 sm:h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={timelineData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-                    <XAxis 
-                      dataKey="year" 
-                      fontSize={12}
-                      tickLine={false}
-                    />
-                    <YAxis 
-                      tickFormatter={(value) => formatCurrency(value)}
-                      fontSize={12}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <ChartTooltip 
-                      content={<ChartTooltipContent />}
-                      formatter={(value) => [formatCurrency(value as number), ""]}
-                    />
-                    <Legend 
-                      wrapperStyle={{ fontSize: '12px' }}
-                    />
-                    {selectedMetrics.map((metric, index) => (
-                      <Bar
-                        key={`${metric.instanceId}_cashflow`}
-                        dataKey={`${metric.name}_cashflow`}
-                        fill={`hsl(${(index * 60 + 180) % 360}, 70%, 50%)`}
-                        name={metric.name}
+            {/* Weekly Cashflow Timeline */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  Weekly Cashflow Projection
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer config={chartConfig} className="h-48 sm:h-64 lg:h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart 
+                      data={timelineData} 
+                      margin={{ 
+                        top: 10, 
+                        right: window.innerWidth < 640 ? 10 : 20, 
+                        left: window.innerWidth < 640 ? 10 : 20, 
+                        bottom: 10 
+                      }}
+                    >
+                      <XAxis 
+                        dataKey="year" 
+                        fontSize={window.innerWidth < 640 ? 10 : 12}
+                        tickLine={false}
+                        axisLine={false}
+                        interval={window.innerWidth < 640 ? 1 : 0}
                       />
+                      <YAxis 
+                        tickFormatter={(value) => {
+                          // Shorter format for mobile
+                          if (window.innerWidth < 640) {
+                            return value >= 1000 ? `$${(value / 1000).toFixed(1)}K` : `$${value.toFixed(0)}`;
+                          }
+                          return formatCurrency(value);
+                        }}
+                        fontSize={window.innerWidth < 640 ? 10 : 12}
+                        tickLine={false}
+                        axisLine={false}
+                        width={window.innerWidth < 640 ? 40 : 60}
+                      />
+                      <ChartTooltip 
+                        content={<ChartTooltipContent />}
+                        formatter={(value) => [formatCurrency(value as number), ""]}
+                      />
+                      {window.innerWidth >= 640 && (
+                        <Legend 
+                          wrapperStyle={{ fontSize: '11px' }}
+                          iconType="rect"
+                        />
+                      )}
+                      {selectedMetrics.map((metric, index) => (
+                        <Bar
+                          key={`${metric.instanceId}_cashflow`}
+                          dataKey={`${metric.name}_cashflow`}
+                          fill={`hsl(${(index * 60 + 180) % 360}, 70%, 50%)`}
+                          name={metric.name}
+                          radius={[1, 1, 0, 0]} // Subtle rounded corners
+                        />
+                      ))}
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
+                
+                {/* Mobile Legend */}
+                {window.innerWidth < 640 && selectedMetrics.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t">
+                    {selectedMetrics.map((metric, index) => (
+                      <div key={metric.instanceId} className="flex items-center gap-1">
+                        <div 
+                          className="w-3 h-3 rounded-sm"
+                          style={{ backgroundColor: `hsl(${(index * 60 + 180) % 360}, 70%, 50%)` }}
+                        />
+                        <span className="text-xs font-medium truncate max-w-20">{metric.name}</span>
+                      </div>
                     ))}
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            </CardContent>
-          </Card>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Mobile: Additional chart info */}
+          {window.innerWidth < 640 && (
+            <Card className="sm:hidden">
+              <CardContent className="pt-4">
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <p>• Equity projections assume 7% annual property growth</p>
+                  <p>• Cashflow projections assume 5% annual rental growth</p>
+                  <p>• Tap and hold chart points for detailed values</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
     </div>
