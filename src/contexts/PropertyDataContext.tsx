@@ -118,7 +118,7 @@ export interface PropertyData {
 interface PropertyDataContextType {
   propertyData: PropertyData;
   setPropertyData: React.Dispatch<React.SetStateAction<PropertyData>>;
-  updateField: (field: keyof PropertyData, value: number | boolean | string) => void;
+  updateField: (field: keyof PropertyData, value: any) => void;
   updateFieldWithConfirmation: (
     field: keyof PropertyData, 
     value: number | boolean | string,
