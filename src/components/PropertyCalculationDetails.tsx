@@ -122,11 +122,14 @@ export const PropertyCalculationDetails = ({
   const isMobile = useIsMobile();
   const currentYear = new Date().getFullYear();
   const propertyAge = currentYear - constructionYear;
-
   return (
     <Card className="w-full">
       <CardContent className="p-0">
-        <Accordion type={isMobile ? "single" : "multiple"} className="w-full" collapsible>
+        <Accordion 
+          type={isMobile ? "single" : "multiple"} 
+          className="w-full" 
+          collapsible
+        >
           
           {/* Project Costs & Funding (for construction projects) */}
           {isConstructionProject && (

@@ -13,6 +13,13 @@ export const FundingSummaryPanel = () => {
   const { propertyData, calculateTotalProjectCost, calculateEquityLoanAmount, calculateAvailableEquity, calculateHoldingCosts } = usePropertyData();
   const isMobile = useIsMobile();
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
+  
+  // Reset expanded sections on mobile change to ensure proper initial state
+  useEffect(() => {
+    if (isMobile) {
+      setExpandedSections([]);
+    }
+  }, [isMobile]);
 
   const toggleSection = (section: string) => {
     if (isMobile) {

@@ -174,6 +174,11 @@ export const PropertyInputForm = ({
 }: PropertyInputFormProps) => {
   const isMobile = useIsMobile();
   const [openSections, setOpenSections] = useState<string[]>([]);
+  
+  // Ensure sections are collapsed on initial load
+  useEffect(() => {
+    setOpenSections([]);
+  }, []);
   const { confirmations, updateConfirmation } = useFieldConfirmations();
   const { protectField, isFieldProtected } = useInputProtection();
   
