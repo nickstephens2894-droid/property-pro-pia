@@ -199,7 +199,7 @@ export default function ProjectionDashboard() {
       // Tax savings contribution (what tax deductions cover)
       totalTaxSavings += annualTaxSavings;
       
-      // Owner out-of-pocket: If cashflow is negative, that's what owner pays
+      // Owner out-of-pocket: If cashflow is negative, that's what owner pays annually
       if (annualCashflow < 0) {
         totalOwnerOutOfPocket += Math.abs(annualCashflow);
       }
@@ -207,7 +207,7 @@ export default function ProjectionDashboard() {
     
     console.log('💰 Expense breakdown totals:', {
       totalRentIncome,
-      totalTaxSavings, 
+      totalTaxSavings,
       totalOwnerOutOfPocket
     });
     
