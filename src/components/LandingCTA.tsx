@@ -17,22 +17,26 @@ const LandingCTA = () => {
               </h2>
               
               <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-                Join thousands of successful property investors and financial advisors who rely on 
-                Property Pro for accurate Australian property analysis.
+                Join 10,000+ successful property investors and financial advisors who rely on 
+                Property Pro for accurate Australian property analysis and scenario modeling.
               </p>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                <div className="flex items-center justify-center gap-3 p-4 rounded-lg bg-background/50">
-                  <Calculator className="h-6 w-6 text-primary" />
-                  <span className="font-medium">Free to start</span>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10 max-w-3xl mx-auto">
+                <div className="text-center p-4 rounded-lg bg-background/50">
+                  <div className="text-2xl font-bold text-primary mb-1">$2.8B+</div>
+                  <div className="text-sm text-muted-foreground">Properties Analyzed</div>
                 </div>
-                <div className="flex items-center justify-center gap-3 p-4 rounded-lg bg-background/50">
-                  <Zap className="h-6 w-6 text-success" />
-                  <span className="font-medium">Instant results</span>
+                <div className="text-center p-4 rounded-lg bg-background/50">
+                  <div className="text-2xl font-bold text-success mb-1">15M+</div>
+                  <div className="text-sm text-muted-foreground">Tax Benefits Found</div>
                 </div>
-                <div className="flex items-center justify-center gap-3 p-4 rounded-lg bg-background/50">
-                  <Users className="h-6 w-6 text-warning" />
-                  <span className="font-medium">Expert support</span>
+                <div className="text-center p-4 rounded-lg bg-background/50">
+                  <div className="text-2xl font-bold text-warning mb-1">98%</div>
+                  <div className="text-sm text-muted-foreground">User Satisfaction</div>
+                </div>
+                <div className="text-center p-4 rounded-lg bg-background/50">
+                  <div className="text-2xl font-bold text-primary mb-1">24/7</div>
+                  <div className="text-sm text-muted-foreground">Access & Support</div>
                 </div>
               </div>
               
