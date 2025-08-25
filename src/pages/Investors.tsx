@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2, Building2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
+import { Link } from "react-router-dom";
 import { useRepo, type Investor } from "@/services/repository";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { formatCurrency } from "@/utils/formatters";
@@ -316,7 +317,14 @@ export default function Investors() {
                         <div className="flex items-center gap-3">
                           <Building2 className="h-5 w-5 text-primary" />
                           <div>
-                            <h3 className="font-semibold">{investor.name}</h3>
+                            <h3 className="font-semibold">
+                              <Link 
+                                to={`/investors/${investor.id}`}
+                                className="hover:text-primary transition-colors"
+                              >
+                                {investor.name}
+                              </Link>
+                            </h3>
                             <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
                               <span>Income: ${formatCurrency(investor.annualIncome || 0)}</span>
                               <span>Other: ${formatCurrency(investor.otherIncome || 0)}</span>

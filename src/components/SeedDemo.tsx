@@ -16,6 +16,7 @@ export default function SeedDemo() {
   const { investors, properties, scenarios, addInvestor, addProperty, addScenario } = useRepo();
 
   useEffect(() => {
+    const initializeDemo = async () => {
     // Avoid duplicating demo data
     if (localStorage.getItem(DEMO_FLAG)) return;
 
@@ -139,40 +140,53 @@ export default function SeedDemo() {
     investorsToCreate.forEach(addInvestor);
     propertiesToCreate.forEach(addProperty);
 
-    // Create demo scenarios
+    // Map legacy scenario format to correct Scenario type
     const scenariosToCreate: Array<{
       id: string;
       name: string;
-      investorId: string;
-      propertyId: string;
-      createdAt: string;
+      owner_user_id: string;
+      is_core: boolean;
+      snapshot: any;
+      created_at: string;
+      updated_at: string;
     }> = [
       {
         id: genId("scn"),
         name: "Alex buys Riverside House",
-        investorId: investorsToCreate[0]?.id,
-        propertyId: propertiesToCreate[0]?.id,
-        createdAt: new Date().toISOString(),
+        owner_user_id: "",
+        is_core: false,
+        snapshot: {},
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
       {
         id: genId("scn"),
         name: "Patels invest in CityView Apartment",
-        investorId: investorsToCreate[1]?.id,
-        propertyId: propertiesToCreate[1]?.id,
-        createdAt: new Date().toISOString(),
+        owner_user_id: "",
+        is_core: false,
+        snapshot: {},
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
       {
         id: genId("scn"),
         name: "Nguyen group land banking",
-        investorId: investorsToCreate[3]?.id,
-        propertyId: propertiesToCreate[2]?.id,
-        createdAt: new Date().toISOString(),
+        owner_user_id: "",
+        is_core: true,
+        snapshot: {},
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
     ];
     
-    scenariosToCreate.forEach(addScenario);
+    // Use foreach with async callback
+    for (const scenario of scenariosToCreate) {
+      await addScenario(scenario as any);
+    }
 
-    localStorage.setItem(DEMO_FLAG, "1");
+    };
+    
+    initializeDemo();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

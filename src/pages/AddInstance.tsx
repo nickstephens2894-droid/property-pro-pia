@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +27,7 @@ import { downloadInputsCsv } from "@/utils/csvExport";
 import { formatCurrency, formatPercentage } from "@/utils/formatters";
 import { resolve, Triplet } from "@/utils/overrides";
 import { totalTaxAU, marginalRateAU } from "@/utils/tax";
+import { calculateLoanPayment, calculateCurrentLoanPayment } from "@/utils/calculationUtils";
 
 interface YearProjection {
   year: number;
@@ -43,6 +44,8 @@ interface YearProjection {
   equityLoanIOStatus: 'IO' | 'P&I';
   otherExpenses: number;
   depreciation: number;
+  buildingDepreciation: number;
+  fixturesDepreciation: number;
   taxableIncome: number;
   taxBenefit: number;
   afterTaxCashFlow: number;
@@ -91,6 +94,54 @@ const AddInstance = () => {
   // Calculate all the necessary values for the components
   const totalProjectCost = calculateTotalProjectCost();
   const equityLoanAmount = calculateEquityLoanAmount();
+
+  // Calculate monthly payments using useMemo for performance
+  const monthlyPayments = useMemo(() => {
+    // Use the new calculation functions to properly handle P&I vs IO
+    const mainCurrentPayment = calculateCurrentLoanPayment(
+      propertyData.loanAmount || 0, 
+      propertyData.interestRate || 6, 
+      propertyData.loanTerm || 30,
+      propertyData.ioTermYears || 0,
+      0, // Current year (initial calculation)
+      'monthly'
+    );
+    
+    const equityCurrentPayment = propertyData.useEquityFunding ? 
+      calculateCurrentLoanPayment(
+        equityLoanAmount || 0, 
+        propertyData.equityLoanInterestRate || 7.2, 
+        propertyData.equityLoanTerm || 30,
+        propertyData.equityLoanIoTermYears || 0,
+        0, // Current year (initial calculation)
+        'monthly'
+      ) : 0;
+      
+    return { 
+      mainMonthly: mainCurrentPayment, 
+      equityMonthly: equityCurrentPayment, 
+      total: mainCurrentPayment + equityCurrentPayment 
+    };
+  }, [propertyData.loanAmount, propertyData.interestRate, propertyData.loanTerm, propertyData.mainLoanType, propertyData.ioTermYears, propertyData.useEquityFunding, equityLoanAmount, propertyData.equityLoanInterestRate, propertyData.equityLoanTerm, propertyData.equityLoanType, propertyData.equityLoanIoTermYears]);
+
+  // Calculate loan payment details
+  const loanPaymentDetails = useMemo(() => {
+    const mainLoanDetails = {
+      isIO: propertyData.mainLoanType === 'io',
+      ioPayment: (propertyData.loanAmount || 0) * (propertyData.interestRate || 6) / 100 / 12,
+      piPayment: calculateLoanPayment(propertyData.loanAmount || 0, propertyData.interestRate || 6, propertyData.loanTerm || 30, 'monthly'),
+      ioTermYears: propertyData.ioTermYears || 0
+    };
+
+    const equityLoanDetails = propertyData.useEquityFunding ? {
+      isIO: propertyData.equityLoanType === 'io',
+      ioPayment: (equityLoanAmount || 0) * (propertyData.equityLoanInterestRate || 7.2) / 100 / 12,
+      piPayment: calculateLoanPayment(equityLoanAmount || 0, propertyData.equityLoanInterestRate || 7.2, propertyData.equityLoanTerm || 30, 'monthly'),
+      ioTermYears: propertyData.equityLoanIoTermYears || 0
+    } : null;
+
+    return { mainLoanDetails, equityLoanDetails };
+  }, [propertyData.loanAmount, propertyData.interestRate, propertyData.loanTerm, propertyData.mainLoanType, propertyData.ioTermYears, propertyData.useEquityFunding, equityLoanAmount, propertyData.equityLoanInterestRate, propertyData.equityLoanTerm, propertyData.equityLoanType, propertyData.equityLoanIoTermYears]);
   
   const funding = {
     mainLoanAmount: propertyData.loanAmount,
@@ -121,36 +172,89 @@ const AddInstance = () => {
     }
   }, [propertyData, selectedModel]);
 
-  // Calculate depreciation
-  const depreciation = useMemo(() => {
+  // Calculate depreciation with separate building and fixtures amounts per year
+  const calculateDepreciationForYear = useCallback((year: number) => {
     const buildingValue = propertyData.buildingValue || 0;
     const plantEquipmentValue = propertyData.plantEquipmentValue || 0;
     
-    const capitalWorksDepreciation = propertyData.constructionYear >= 1987 ? buildingValue * 0.025 : 0;
-    const plantEquipmentDepreciation = propertyData.isNewProperty ? plantEquipmentValue * 0.15 : 0;
+    // Building depreciation: 2.5% annually (prime cost method) - available if built after Sept 1987
+    const buildingDepreciationAvailable = propertyData.constructionYear >= 1987;
+    const buildingDepreciationAnnual = buildingDepreciationAvailable ? buildingValue * 0.025 : 0;
+    
+    // Fixtures depreciation: 15% using chosen method - available for new properties only
+    const fixturesDepreciationAvailable = propertyData.isNewProperty;
+    let fixturesDepreciationAnnual = 0;
+    
+    if (fixturesDepreciationAvailable && plantEquipmentValue > 0) {
+      if (propertyData.depreciationMethod === 'prime-cost') {
+        // Prime cost: 15% of original value each year
+        fixturesDepreciationAnnual = plantEquipmentValue * 0.15;
+      } else {
+        // Diminishing value: 15% of remaining value each year
+        const remainingValue = plantEquipmentValue * Math.pow(0.85, year - 1);
+        fixturesDepreciationAnnual = remainingValue > 0 ? remainingValue * 0.15 : 0;
+      }
+    }
     
     return {
-      capitalWorks: capitalWorksDepreciation,
-      plantEquipment: plantEquipmentDepreciation,
-      total: capitalWorksDepreciation + plantEquipmentDepreciation
+      building: Math.max(0, buildingDepreciationAnnual),
+      fixtures: Math.max(0, fixturesDepreciationAnnual),
+      total: Math.max(0, buildingDepreciationAnnual + fixturesDepreciationAnnual)
     };
-  }, [propertyData.buildingValue, propertyData.plantEquipmentValue, propertyData.constructionYear, propertyData.isNewProperty]);
+  }, [propertyData.buildingValue, propertyData.plantEquipmentValue, propertyData.constructionYear, propertyData.isNewProperty, propertyData.depreciationMethod]);
+
+  // Calculate total annual depreciation for display
+  const depreciation = useMemo(() => {
+    const year1 = calculateDepreciationForYear(1);
+    return {
+      capitalWorks: year1.building,
+      plantEquipment: year1.fixtures,
+      total: year1.total
+    };
+  }, [calculateDepreciationForYear]);
 
   // Calculate total household tax difference from property taxable income, indexing investor incomes by CPI
   const calculateTotalTaxDifference = (propertyTaxableIncome: number, year: number) => {
-    const cpiMultiplier = year >= 1 ? Math.pow(1 + (2.5 || 0) / 100, year - 1) : 1;
+    console.log('🔍 calculateTotalTaxDifference called:', { propertyTaxableIncome, year });
+    console.log('📊 Investors data:', propertyData.investors);
+    console.log('📊 Ownership allocations:', propertyData.ownershipAllocations);
+    
+    const cpiMultiplier = year >= 1 ? Math.pow(1 + 2.5 / 100, year - 1) : 1;
     let totalDifference = 0;
+    
+    if (!propertyData.investors || propertyData.investors.length === 0) {
+      console.log('⚠️ No investors found in propertyData');
+      return 0;
+    }
+    
     propertyData.investors.forEach(investor => {
       const ownership = propertyData.ownershipAllocations.find(o => o.investorId === investor.id);
       const ownershipPercentage = ownership ? ownership.ownershipPercentage / 100 : 0;
+      console.log(`👤 Processing investor ${investor.name}:`, { 
+        ownershipPercentage, 
+        annualIncome: investor.annualIncome,
+        otherIncome: investor.otherIncome 
+      });
+      
       if (ownershipPercentage > 0) {
         const baseIncome = (investor.annualIncome + investor.otherIncome) * cpiMultiplier;
         const allocatedPropertyIncome = propertyTaxableIncome * ownershipPercentage;
         const taxWithoutProperty = totalTaxAU(baseIncome, investor.hasMedicareLevy);
         const taxWithProperty = totalTaxAU(baseIncome + allocatedPropertyIncome, investor.hasMedicareLevy);
+        
+        console.log(`💰 Tax calculation for ${investor.name}:`, {
+          baseIncome,
+          allocatedPropertyIncome,
+          taxWithoutProperty,
+          taxWithProperty,
+          difference: taxWithProperty - taxWithoutProperty
+        });
+        
         totalDifference += taxWithProperty - taxWithoutProperty;
       }
     });
+    
+    console.log('💸 Total tax difference:', totalDifference);
     return totalDifference;
   };
 
@@ -258,7 +362,7 @@ const AddInstance = () => {
         propertyValue: 0,
         mainLoanBalance: 0,
         equityLoanBalance: 0,
-        totalInterest: Math.round(totalInterestAccrued),
+        totalInterest: Math.round(holdingCosts.total), // Use holding costs total, not loan interest payments
         mainLoanPayment: Math.round(constructionMainPaymentCash),
         equityLoanPayment: Math.round(constructionEquityPaymentCash),
         mainInterestYear: Math.round(mainInterestAccrued),
@@ -267,6 +371,8 @@ const AddInstance = () => {
         equityLoanIOStatus: propertyData.constructionEquityRepaymentType === 'pi' ? 'P&I' : 'IO',
         otherExpenses: 0,
         depreciation: 0,
+        buildingDepreciation: 0,
+        fixturesDepreciation: 0,
         taxableIncome: Math.round(constructionTaxableIncome),
         taxBenefit: Math.round(constructionTaxBenefit),
         afterTaxCashFlow: Math.round(constructionAfterTaxCashFlow),
@@ -354,8 +460,9 @@ const AddInstance = () => {
       const repairs = (propertyData.repairs || 0) * inflationMultiplier;
       const otherExpenses = propertyManagement + councilRates + insurance + repairs;
 
-      // Depreciation (diminishing over time)
-      const depreciationAmount = Math.max(0, (depreciation.total || 15000) * Math.pow(0.95, year - 1));
+      // Depreciation using proper calculation for each year
+      const yearDepreciation = calculateDepreciationForYear(year);
+      const depreciationAmount = yearDepreciation.total;
 
       // Tax calculations using progressive tax method
       const taxableIncome = rentalIncome - totalInterest - otherExpenses - depreciationAmount;
@@ -387,6 +494,8 @@ const AddInstance = () => {
         equityLoanIOStatus,
         otherExpenses,
         depreciation: depreciationAmount,
+        buildingDepreciation: yearDepreciation.building,
+        fixturesDepreciation: yearDepreciation.fixtures,
         taxableIncome,
         taxBenefit,
         afterTaxCashFlow,
@@ -403,37 +512,63 @@ const AddInstance = () => {
     return years;
   }, [propertyData, funding, holdingCosts, depreciation.total, calculateTotalTaxDifference, totalProjectCost]);
 
-  // Calculate assumptions for projections
-  const assumptions = useMemo(() => ({
-    initialPropertyValue: propertyData.purchasePrice || totalProjectCost,
-    initialWeeklyRent: { mode: 'auto', auto: propertyData.weeklyRent, manual: null },
-    capitalGrowthRate: { mode: 'auto', auto: 7.0, manual: null },
-    rentalGrowthRate: { mode: 'auto', auto: 5.0, manual: null },
-    vacancyRate: { mode: 'auto', auto: propertyData.vacancyRate, manual: null },
-    initialMainLoanBalance: funding.mainLoanAmount,
-    initialEquityLoanBalance: funding.equityLoanAmount,
-    mainInterestRate: propertyData.interestRate || 6.0,
-    equityInterestRate: propertyData.equityLoanInterestRate || 7.2,
-    mainLoanTerm: propertyData.loanTerm || 30,
-    equityLoanTerm: propertyData.equityLoanTerm || 30,
-    mainLoanType: propertyData.mainLoanType || 'pi',
-    equityLoanType: propertyData.equityLoanType || 'io',
-    mainIOTermYears: propertyData.ioTermYears || 5,
-    equityIOTermYears: propertyData.equityLoanIoTermYears || 5,
-    propertyManagementRate: { mode: 'auto', auto: propertyData.propertyManagement, manual: null },
-    councilRates: propertyData.councilRates || 0,
-    insurance: propertyData.insurance || 0,
-    repairs: propertyData.repairs || 0,
-    expenseInflationRate: 2.5,
-    depreciationYear1: depreciation.total || 15000
-  }), [propertyData, totalProjectCost, funding, depreciation.total]);
+  // Calculate assumptions for projections  
+  const assumptions = useMemo(() => {
+    const tripletify = (value: any) => ({ mode: 'auto', auto: value, manual: null });
+    
+    return {
+      initialPropertyValue: propertyData.purchasePrice || totalProjectCost,
+      initialWeeklyRent: tripletify(propertyData.weeklyRent),
+      capitalGrowthRate: tripletify(7.0),
+      rentalGrowthRate: tripletify(5.0),
+      vacancyRate: tripletify(propertyData.vacancyRate),
+      initialMainLoanBalance: funding.mainLoanAmount,
+      initialEquityLoanBalance: funding.equityLoanAmount,
+      mainInterestRate: propertyData.interestRate || 6.0,
+      equityInterestRate: propertyData.equityLoanInterestRate || 7.2,
+      mainLoanTerm: propertyData.loanTerm || 30,
+      equityLoanTerm: propertyData.equityLoanTerm || 30,
+      mainLoanType: propertyData.mainLoanType || 'pi',
+      equityLoanType: propertyData.equityLoanType || 'io',
+      mainIOTermYears: propertyData.ioTermYears || 5,
+      equityIOTermYears: propertyData.equityLoanIoTermYears || 5,
+      propertyManagementRate: tripletify(propertyData.propertyManagement),
+      councilRates: propertyData.councilRates || 0,
+      insurance: propertyData.insurance || 0,
+      repairs: propertyData.repairs || 0,
+      expenseInflationRate: 2.5,
+      depreciationYear1: depreciation.total || 15000,
+      isConstructionProject: propertyData.isConstructionProject || false,
+      constructionPeriod: propertyData.constructionPeriod || 0
+    };
+  }, [propertyData, totalProjectCost, funding, depreciation.total]);
+
+  // Calculate annual interest for display use
+  const annualInterest = (projections[0]?.mainInterestYear || 0) + (projections[0]?.equityInterestYear || 0);
 
   // Calculate tax results for investors
   const investorTaxResults = useMemo(() => {
     if (!propertyData.investors || propertyData.investors.length === 0) return [];
     
     const annualRent = (propertyData.weeklyRent || 0) * 52;
-    const totalDeductibleExpenses = (propertyData.councilRates || 0) + (propertyData.insurance || 0) + (propertyData.repairs || 0) + depreciation.total;
+    // Calculate total deductible expenses including all tax-deductible items
+    const totalDeductibleExpenses = 
+      (propertyData.councilRates || 0) + 
+      (propertyData.insurance || 0) + 
+      (propertyData.repairs || 0) + 
+      ((propertyData.weeklyRent || 0) * 52 * (propertyData.propertyManagement || 0.07) / 100) +
+      depreciation.total +
+      ((propertyData.loanAmount || 0) * (propertyData.interestRate || 0.06) / 100);
+    
+    console.log('📊 Total Deductible Expenses Breakdown:', {
+      councilRates: propertyData.councilRates || 0,
+      insurance: propertyData.insurance || 0,
+      repairs: propertyData.repairs || 0,
+      propertyManagement: propertyData.propertyManagement || 0,
+      depreciation: depreciation.total,
+      annualInterest,
+      total: totalDeductibleExpenses
+    });
     
     return propertyData.investors.map(investor => {
       const ownership = propertyData.ownershipAllocations?.find(o => o.investorId === investor.id);
@@ -450,7 +585,14 @@ const AddInstance = () => {
       const taxWithProperty = totalTaxAU(totalIncomeWithProperty, investor.hasMedicareLevy);
       
       return {
-        investor,
+        investor: {
+          id: investor.id,
+          name: investor.name,
+          annualIncome: investor.annualIncome,
+          otherIncome: investor.otherIncome || 0,
+          nonTaxableIncome: 0,
+          hasMedicareLevy: investor.hasMedicareLevy
+        },
         ownershipPercentage,
         taxWithoutProperty,
         taxWithProperty,
@@ -495,6 +637,26 @@ const AddInstance = () => {
       marginalTaxRateSummary
     };
   }, [projections, yearRange, propertyData.investors]);
+
+  // Calculate total tax refund or liability from all investors
+  const totalTaxRefundOrLiability = useMemo(() => {
+    return investorTaxResults.reduce((total, result) => total + result.taxDifference, 0);
+  }, [investorTaxResults]);
+
+  // Calculate net of tax cost/income: rental income +/- tax impact - cash expenses
+  const netOfTaxCostIncome = useMemo(() => {
+    const annualRent = (propertyData.weeklyRent || 0) * 52;
+    const annualInterest = ((propertyData.loanAmount || 0) * (propertyData.interestRate || 0.06) / 100) +
+      (propertyData.useEquityFunding && equityLoanAmount ? 
+        (equityLoanAmount * (propertyData.equityLoanInterestRate || 7.2) / 100) : 0);
+    const cashDeductions = annualInterest + 
+      (propertyData.councilRates || 0) + 
+      (propertyData.insurance || 0) + 
+      (propertyData.repairs || 0) + 
+      ((propertyData.weeklyRent || 0) * 52 * (propertyData.propertyManagement || 0.07) / 100);
+    const taxImpact = -totalTaxRefundOrLiability; // Negative for refund (income), positive for liability (expense)
+    return annualRent + taxImpact - cashDeductions;
+  }, [propertyData.weeklyRent, propertyData.loanAmount, propertyData.interestRate, propertyData.useEquityFunding, equityLoanAmount, propertyData.equityLoanInterestRate, propertyData.councilRates, propertyData.insurance, propertyData.repairs, propertyData.propertyManagement, totalTaxRefundOrLiability]);
 
   const handleSave = async () => {
     if (!instanceName.trim()) {
@@ -823,14 +985,32 @@ const AddInstance = () => {
                 <div className="space-y-6">
                   <FundingSummaryPanel />
                   <PropertyCalculationDetails
-                    monthlyRepayment={12000} // Will be calculated
-                    annualRepayment={144000} // Will be calculated
+                    monthlyRepayment={monthlyPayments.total}
+                    annualRepayment={monthlyPayments.total * 12}
                     annualRent={(propertyData.weeklyRent || 0) * 52}
                     propertyManagementCost={(propertyData.weeklyRent || 0) * 52 * (propertyData.propertyManagement || 0.07) / 100}
                     councilRates={propertyData.councilRates || 0}
                     insurance={propertyData.insurance || 0}
                     repairs={propertyData.repairs || 0}
-                    totalDeductibleExpenses={(propertyData.councilRates || 0) + (propertyData.insurance || 0) + (propertyData.repairs || 0)}
+                    totalDeductibleExpenses={(() => {
+                      const annualInterest = ((propertyData.loanAmount || 0) * (propertyData.interestRate || 0.06) / 100);
+                      const cashDeductions = annualInterest + 
+                        (propertyData.councilRates || 0) + 
+                        (propertyData.insurance || 0) + 
+                        (propertyData.repairs || 0) + 
+                        ((propertyData.weeklyRent || 0) * 52 * (propertyData.propertyManagement || 0.07) / 100);
+                      const paperDeductions = depreciation.total;
+                      return cashDeductions + paperDeductions;
+                    })()}
+                    cashDeductionsSubtotal={(() => {
+                      const annualInterest = ((propertyData.loanAmount || 0) * (propertyData.interestRate || 0.06) / 100);
+                      return annualInterest + 
+                        (propertyData.councilRates || 0) + 
+                        (propertyData.insurance || 0) + 
+                        (propertyData.repairs || 0) + 
+                        ((propertyData.weeklyRent || 0) * 52 * (propertyData.propertyManagement || 0.07) / 100);
+                    })()}
+                    paperDeductionsSubtotal={depreciation.total}
                     depreciation={{
                       capitalWorks: depreciation.capitalWorks,
                       plantEquipment: depreciation.plantEquipment,
@@ -839,8 +1019,8 @@ const AddInstance = () => {
                       plantEquipmentRestricted: !propertyData.isNewProperty
                     }}
                     investorTaxResults={investorTaxResults}
-                    totalTaxWithProperty={0} // Will be calculated
-                    totalTaxWithoutProperty={0} // Will be calculated
+                    totalTaxWithProperty={investorTaxResults.reduce((sum, result) => sum + (result.taxWithProperty || 0), 0)}
+                    totalTaxWithoutProperty={investorTaxResults.reduce((sum, result) => sum + (result.taxWithoutProperty || 0), 0)}
                     marginalTaxRate={0.3} // Will be calculated
                     purchasePrice={propertyData.purchasePrice || 0}
                     constructionYear={propertyData.constructionYear || 2020}
@@ -865,15 +1045,31 @@ const AddInstance = () => {
                     constructionPeriod={propertyData.constructionPeriod || 0}
                     holdingCostFunding={propertyData.holdingCostFunding || 'cash'}
                     mainLoanPayments={{
-                      currentPayment: 12000, // Will be calculated
-                      futurePayment: 12000 // Will be calculated
+                      ioPayment: loanPaymentDetails.mainLoanDetails.ioPayment,
+                      piPayment: loanPaymentDetails.mainLoanDetails.piPayment,
+                      ioTermYears: loanPaymentDetails.mainLoanDetails.ioTermYears,
+                      remainingTerm: (propertyData.loanTerm || 30) - loanPaymentDetails.mainLoanDetails.ioTermYears,
+                      totalInterest: (propertyData.loanAmount || 0) * (propertyData.interestRate || 6) / 100,
+                      currentPayment: loanPaymentDetails.mainLoanDetails.isIO && loanPaymentDetails.mainLoanDetails.ioTermYears > 0 ? loanPaymentDetails.mainLoanDetails.ioPayment : loanPaymentDetails.mainLoanDetails.piPayment,
+                      futurePayment: loanPaymentDetails.mainLoanDetails.isIO && loanPaymentDetails.mainLoanDetails.ioTermYears > 0 ? loanPaymentDetails.mainLoanDetails.piPayment : 0
                     }}
-                    equityLoanPayments={{
-                      currentPayment: 6000, // Will be calculated
-                      futurePayment: 6000 // Will be calculated
-                    }}
-                    totalAnnualInterest={(propertyData.loanAmount || 0) * (propertyData.interestRate || 0.06) / 100}
-                  />
+                    equityLoanPayments={loanPaymentDetails.equityLoanDetails ? {
+                      ioPayment: loanPaymentDetails.equityLoanDetails.ioPayment,
+                      piPayment: loanPaymentDetails.equityLoanDetails.piPayment,
+                      ioTermYears: loanPaymentDetails.equityLoanDetails.ioTermYears,
+                      remainingTerm: (propertyData.equityLoanTerm || 30) - loanPaymentDetails.equityLoanDetails.ioTermYears,
+                      totalInterest: (equityLoanAmount || 0) * (propertyData.equityLoanInterestRate || 7.2) / 100,
+                      currentPayment: loanPaymentDetails.equityLoanDetails.isIO && loanPaymentDetails.equityLoanDetails.ioTermYears > 0 ? loanPaymentDetails.equityLoanDetails.ioPayment : loanPaymentDetails.equityLoanDetails.piPayment,
+                      futurePayment: loanPaymentDetails.equityLoanDetails.isIO && loanPaymentDetails.equityLoanDetails.ioTermYears > 0 ? loanPaymentDetails.equityLoanDetails.piPayment : 0
+                    } : null}
+                     totalAnnualInterest={
+                       ((propertyData.loanAmount || 0) * (propertyData.interestRate || 0.06) / 100) +
+                       (propertyData.useEquityFunding && equityLoanAmount ? 
+                         (equityLoanAmount * (propertyData.equityLoanInterestRate || 7.2) / 100) : 0)
+                     }
+                     taxRefundOrLiability={totalTaxRefundOrLiability}
+                     netOfTaxCostIncome={netOfTaxCostIncome}
+                   />
                 </div>
               </div>
             </div>
@@ -908,7 +1104,7 @@ const AddInstance = () => {
               <CardContent>
                 <ProjectionsTable 
                   projections={projections}
-                  assumptions={assumptions}
+                  assumptions={{} as any}
                   validatedYearRange={yearRange}
                   formatCurrency={formatCurrency}
                   formatPercentage={formatPercentage}

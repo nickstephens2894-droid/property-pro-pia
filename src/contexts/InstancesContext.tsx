@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Instance, UpdateInstanceRequest } from '@/integrations/supabase/types';
+import { Database } from '@/integrations/supabase/types';
+
+type Instance = Database['public']['Tables']['instances']['Row'];
+type UpdateInstanceRequest = Database['public']['Tables']['instances']['Update'];
 import { InstancesService, CreateInstanceRequestFrontend } from '@/services/instancesService';
 import { useAuth } from './AuthContext';
 

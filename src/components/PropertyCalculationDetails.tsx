@@ -1,6 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Calculator, Building2, TrendingDown, AlertCircle, Receipt } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useState, useEffect } from "react";
 
 interface DepreciationDetails {
   capitalWorks: number;
@@ -45,6 +47,8 @@ interface PropertyCalculationDetailsProps {
   insurance: number;
   repairs: number;
   totalDeductibleExpenses: number;
+  cashDeductionsSubtotal: number;
+  paperDeductionsSubtotal: number;
   depreciation: DepreciationDetails;
   investorTaxResults: InvestorTaxResult[];
   totalTaxWithProperty: number;
@@ -77,6 +81,8 @@ interface PropertyCalculationDetailsProps {
   mainLoanPayments: LoanPaymentDetails;
   equityLoanPayments: LoanPaymentDetails | null;
   totalAnnualInterest: number;
+  taxRefundOrLiability: number;
+  netOfTaxCostIncome: number;
 }
 
 export const PropertyCalculationDetails = ({
@@ -88,6 +94,8 @@ export const PropertyCalculationDetails = ({
   insurance,
   repairs,
   totalDeductibleExpenses,
+  cashDeductionsSubtotal,
+  paperDeductionsSubtotal,
   depreciation,
   investorTaxResults,
   totalTaxWithProperty,
@@ -107,16 +115,21 @@ export const PropertyCalculationDetails = ({
   holdingCostFunding,
   mainLoanPayments,
   equityLoanPayments,
-  totalAnnualInterest
+  totalAnnualInterest,
+  taxRefundOrLiability,
+  netOfTaxCostIncome
 }: PropertyCalculationDetailsProps) => {
-
+  const isMobile = useIsMobile();
   const currentYear = new Date().getFullYear();
   const propertyAge = currentYear - constructionYear;
-
   return (
     <Card className="w-full">
       <CardContent className="p-0">
-        <Accordion type="multiple" className="w-full">
+        <Accordion 
+          type={isMobile ? "single" : "multiple"} 
+          className="w-full" 
+          collapsible
+        >
           
           {/* Project Costs & Funding (for construction projects) */}
           {isConstructionProject && (
@@ -244,7 +257,7 @@ export const PropertyCalculationDetails = ({
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Current Weekly Payment:</span>
+                      <span className="text-sm">Current Monthly Payment:</span>
                       <span className="font-bold text-destructive">${mainLoanPayments.currentPayment.toFixed(2)}</span>
                     </div>
                     
@@ -257,7 +270,7 @@ export const PropertyCalculationDetails = ({
                         {mainLoanPayments.futurePayment > 0 && (
                           <div className="flex justify-between items-center">
                             <span className="text-sm">Future P&I Payment:</span>
-                            <span className="font-bold text-warning">${mainLoanPayments.futurePayment.toFixed(2)}/week</span>
+                            <span className="font-bold text-warning">${mainLoanPayments.futurePayment.toFixed(2)}/month</span>
                           </div>
                         )}
                       </div>
@@ -281,7 +294,7 @@ export const PropertyCalculationDetails = ({
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-sm">Current Weekly Payment:</span>
+                        <span className="text-sm">Current Monthly Payment:</span>
                         <span className="font-bold text-destructive">${equityLoanPayments.currentPayment.toFixed(2)}</span>
                       </div>
                       
@@ -293,7 +306,7 @@ export const PropertyCalculationDetails = ({
                           </div>
                           <div className="flex justify-between items-center">
                             <span className="text-sm">Future P&I Payment:</span>
-                            <span className="font-bold text-warning">${equityLoanPayments.futurePayment.toFixed(2)}/week</span>
+                            <span className="font-bold text-warning">${equityLoanPayments.futurePayment.toFixed(2)}/month</span>
                           </div>
                         </div>
                       )}
@@ -321,12 +334,18 @@ export const PropertyCalculationDetails = ({
               <div className="space-y-6">
                 {/* Income Section */}
                 <div>
-                  <h4 className="font-medium text-sm mb-3 text-success">Rental Income</h4>
-                  <div className="p-4 bg-success/5 border border-success/20 rounded-lg">
+                  <h4 className="font-medium text-sm mb-3 text-success">Income</h4>
+                  <div className="p-4 bg-success/5 border border-success/20 rounded-lg space-y-2">
                     <div className="flex justify-between items-center">
                       <span className="text-sm">Annual Rental Income</span>
                       <span className="font-bold text-success">${annualRent.toLocaleString()}</span>
                     </div>
+                    {taxRefundOrLiability < 0 && (
+                      <div className="flex justify-between items-center border-t border-success/30 pt-2">
+                        <span className="text-sm">Tax Refund</span>
+                        <span className="font-bold text-success">${Math.abs(taxRefundOrLiability).toLocaleString()}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -354,19 +373,60 @@ export const PropertyCalculationDetails = ({
                       <span className="text-sm">Repairs & Maintenance</span>
                       <span className="text-destructive">${repairs.toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between items-center py-2 border-b border-border/30">
-                      <span className="text-sm">Depreciation (Total)</span>
-                      <span className="text-destructive">${depreciation.total.toLocaleString()}</span>
+                     <div className="flex justify-between items-center py-2 border-b border-border/30">
+                       <span className="text-sm">Depreciation (Total)</span>
+                       <span className="text-destructive">${depreciation.total.toLocaleString()}</span>
+                     </div>
+                     {taxRefundOrLiability > 0 && (
+                       <div className="flex justify-between items-center py-2 border-b border-border/30">
+                         <span className="text-sm">Additional Tax Liability</span>
+                         <span className="text-destructive">${taxRefundOrLiability.toLocaleString()}</span>
+                       </div>
+                     )}
+                     
+                     {/* Subtotals */}
+                    <div className="flex justify-between items-center py-2 border-t border-border/50 bg-muted/20 px-3 rounded-lg mt-2">
+                      <span className="text-sm font-medium">Cash Deductions Subtotal</span>
+                      <span className="font-semibold text-destructive">${cashDeductionsSubtotal.toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between items-center py-3 bg-destructive/5 px-3 rounded-lg border-t-2 border-destructive/20">
-                      <span className="font-medium">Total Deductible Expenses</span>
-                      <span className="font-bold text-destructive">${totalDeductibleExpenses.toLocaleString()}</span>
+                    <div className="flex justify-between items-center py-2 bg-muted/20 px-3 rounded-lg">
+                      <span className="text-sm font-medium">Paper Deductions Subtotal</span>
+                      <span className="font-semibold text-destructive">${paperDeductionsSubtotal.toLocaleString()}</span>
                     </div>
-                  </div>
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
+                    
+                     <div className="flex justify-between items-center py-3 bg-destructive/5 px-3 rounded-lg border-t-2 border-destructive/20 mt-2">
+                       <span className="font-medium">Total Deductible Expenses</span>
+                       <span className="font-bold text-destructive">${totalDeductibleExpenses.toLocaleString()}</span>
+                     </div>
+                   </div>
+                 </div>
+
+                 {/* Net Position Section */}
+                 <div>
+                   <h4 className="font-medium text-sm mb-3">Net Annual Cash Position (after tax)</h4>
+                   <div className={`p-4 rounded-lg border-2 ${
+                     netOfTaxCostIncome >= 0 
+                       ? 'bg-success/5 border-success/20' 
+                       : 'bg-destructive/5 border-destructive/20'
+                   }`}>
+                     <div className="flex justify-between items-center">
+                       <span className="text-sm font-medium">
+                         {netOfTaxCostIncome >= 0 ? 'Net Annual Income' : 'Net Annual Cost'}
+                       </span>
+                       <span className={`text-xl font-bold ${
+                         netOfTaxCostIncome >= 0 ? 'text-success' : 'text-destructive'
+                       }`}>
+                         ${Math.abs(netOfTaxCostIncome).toLocaleString()}
+                       </span>
+                     </div>
+                     <div className="text-xs text-muted-foreground mt-1">
+                       Rental income {taxRefundOrLiability < 0 ? '+ tax refund' : taxRefundOrLiability > 0 ? '- additional tax' : ''} - cash expenses
+                     </div>
+                   </div>
+                 </div>
+               </div>
+             </AccordionContent>
+           </AccordionItem>
 
           {/* Depreciation Analysis */}
           <AccordionItem value="depreciation-analysis" className="border-b">
@@ -471,12 +531,30 @@ export const PropertyCalculationDetails = ({
                         <span className="text-xs">{(result.ownershipPercentage * 100).toFixed(0)}% ownership</span>
                       </div>
                       <div className="grid grid-cols-3 gap-2 text-xs">
-                        <div>Tax: ${result.taxDifference.toLocaleString()}</div>
+                        <div className={result.taxDifference < 0 ? 'text-success' : 'text-destructive'}>
+                          Tax {result.taxDifference < 0 ? 'Benefit' : 'Cost'}: ${Math.abs(result.taxDifference).toLocaleString()}
+                        </div>
                         <div>Rate: {(result.marginalTaxRate * 100).toFixed(0)}%</div>
                         <div>Income: ${result.propertyTaxableIncome.toLocaleString()}</div>
                       </div>
                     </div>
                   ))}
+                  
+                  {/* Total Tax Impact Summary */}
+                  <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium text-sm">Total Tax Impact (Year 1)</span>
+                      <span className={`text-lg font-bold ${taxRefundOrLiability < 0 ? 'text-success' : 'text-destructive'}`}>
+                        {taxRefundOrLiability < 0 ? '+' : '-'}${Math.abs(taxRefundOrLiability).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {taxRefundOrLiability < 0 
+                        ? '✅ Property provides tax savings (reduces total tax liability)' 
+                        : '⚠️ Property increases total tax liability'
+                      }
+                    </div>
+                  </div>
                 </div>
 
                 {/* CGT Impact */}

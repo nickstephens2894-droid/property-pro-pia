@@ -1,5 +1,9 @@
 import { supabase } from '@/integrations/supabase/client';
-import { Instance, CreateInstanceRequest, UpdateInstanceRequest } from '@/integrations/supabase/types';
+import { Database } from '@/integrations/supabase/types';
+
+type Instance = Database['public']['Tables']['instances']['Row'];
+type CreateInstanceRequest = Database['public']['Tables']['instances']['Insert'];
+type UpdateInstanceRequest = Database['public']['Tables']['instances']['Update'];
 
 // Custom type for frontend that makes user_id optional since service injects it
 export type CreateInstanceRequestFrontend = Omit<CreateInstanceRequest, 'user_id'>;

@@ -3,7 +3,8 @@ export { useProperties } from './useProperties';
 export { useScenarios } from './useScenarios';
 export { useLoanFunds } from './useLoanFunds';
 export { useFieldConfirmations } from './useFieldConfirmations';
-export { useMobile } from './use-mobile';
+export { useIsMobile } from './use-mobile';
+export { useInputProtection } from './useInputProtection';
 
 // Export types from repository instead
-export type { Investor, Property, Scenario } from '@/services/repository'; 
+export type { Investor, Property, Scenario } from '@/services/repository';

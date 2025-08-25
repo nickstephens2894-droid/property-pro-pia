@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 import { PropertyMethod, FundingMethod } from '@/types/presets';
 
 interface Investor {
@@ -35,7 +35,8 @@ export interface PropertyData {
   landValue: number;
   constructionValue: number;
   constructionPeriod: number; // months
-  constructionInterestRate: number;
+  constructionInterestRate: number; // Main loan rate during construction
+  postConstructionRateReduction: number; // Rate reduction after construction (e.g., 0.5%)
   
   // Construction Progress Payments
   constructionProgressPayments: Array<{
@@ -105,6 +106,10 @@ export interface PropertyData {
   // Property State for stamp duty calculations
   propertyState: 'ACT' | 'NSW' | 'NT' | 'QLD' | 'SA' | 'TAS' | 'VIC' | 'WA';
 
+  // Additional property metadata
+  propertyType: string;
+  location: string;
+
   // Preset tracking
   currentPropertyMethod?: PropertyMethod;
   currentFundingMethod?: FundingMethod;
@@ -113,7 +118,7 @@ export interface PropertyData {
 interface PropertyDataContextType {
   propertyData: PropertyData;
   setPropertyData: React.Dispatch<React.SetStateAction<PropertyData>>;
-  updateField: (field: keyof PropertyData, value: number | boolean | string) => void;
+  updateField: (field: keyof PropertyData, value: any) => void;
   updateFieldWithConfirmation: (
     field: keyof PropertyData, 
     value: number | boolean | string,
@@ -132,7 +137,22 @@ interface PropertyDataContextType {
     developmentCostsInterest: number;
     transactionCostsInterest: number;
     total: number;
-    monthlyBreakdown: any[];
+    totalDeductible: number;
+    totalNonDeductible: number;
+    averageMonthlyInterest: number;
+    monthlyBreakdown: Array<{
+      month: number;
+      drawdown: number;
+      interestAccrued: number;
+      cumulativeInterest: number;
+    }>;
+    costBreakdown: {
+      land: { amount: number; timing: string; deductible: boolean };
+      stampDuty: { amount: number; timing: string; deductible: boolean };
+      construction: { amount: number; timing: string; deductible: boolean };
+      developmentCosts: { amount: number; timing: string; deductible: boolean };
+      transactionCosts: { amount: number; timing: string; deductible: boolean };
+    };
   };
   calculateMinimumDeposit: () => number;
   calculateFundingAnalysis: () => {
@@ -174,6 +194,7 @@ const defaultPropertyData: PropertyData = {
   constructionValue: 0,
   constructionPeriod: 0,
   constructionInterestRate: 0,
+  postConstructionRateReduction: 0.5, // Default 0.5% reduction after construction
   
   // Construction Progress Payments
   constructionProgressPayments: [
@@ -243,6 +264,10 @@ const defaultPropertyData: PropertyData = {
   // Property State for stamp duty calculations
   propertyState: 'VIC',
 
+  // Additional property metadata
+  propertyType: 'Apartment',
+  location: 'NSW',
+
   // Preset tracking
   currentPropertyMethod: undefined,
   currentFundingMethod: undefined,
@@ -250,6 +275,22 @@ const defaultPropertyData: PropertyData = {
 
 export const PropertyDataProvider = ({ children }: { children: ReactNode }) => {
   const [propertyData, setPropertyData] = useState<PropertyData>(defaultPropertyData);
+
+  // Auto-sync interest rate for construction projects
+  const updateField = useCallback((field: keyof PropertyData, value: any) => {
+    setPropertyData(prev => {
+      const updated = { ...prev, [field]: value };
+      
+      // Auto-sync interest rate for construction projects
+      if (updated.isConstructionProject) {
+        if (field === 'constructionInterestRate' || field === 'postConstructionRateReduction') {
+          updated.interestRate = updated.constructionInterestRate - updated.postConstructionRateReduction;
+        }
+      }
+      
+      return updated;
+    });
+  }, []);
 
   // Centralized calculations (existing code omitted for brevity)
   const calculateEquityLoanAmount = () => {
@@ -286,40 +327,87 @@ export const PropertyDataProvider = ({ children }: { children: ReactNode }) => {
         developmentCostsInterest: 0,
         transactionCostsInterest: 0,
         total: 0,
-        monthlyBreakdown: []
+        totalDeductible: 0,
+        totalNonDeductible: 0,
+        averageMonthlyInterest: 0,
+        monthlyBreakdown: [],
+        costBreakdown: {
+          land: { amount: 0, timing: 'From settlement', deductible: false },
+          stampDuty: { amount: 0, timing: 'From settlement', deductible: false },
+          construction: { amount: 0, timing: 'From each drawdown', deductible: true },
+          developmentCosts: { amount: 0, timing: 'From payment date', deductible: true },
+          transactionCosts: { amount: 0, timing: 'From settlement', deductible: true }
+        }
       };
     }
 
-    const periodYears = propertyData.constructionPeriod / 12;
-    const interestMultiplier = Math.pow(1 + propertyData.constructionInterestRate / 100, periodYears) - 1;
+    // Validation
+    if (propertyData.constructionPeriod < 1 || propertyData.constructionPeriod > 60) {
+      console.warn('Construction period should be between 1-60 months');
+    }
+    if (propertyData.constructionInterestRate < 0.01 || propertyData.constructionInterestRate > 20) {
+      console.warn('Interest rate should be between 0.01% and 20%');
+    }
 
-    // Land Interest (Non-deductible): Interest on land value over construction period
-    const landInterest = propertyData.landValue * interestMultiplier;
+    const monthlyRate = propertyData.constructionInterestRate / 100 / 12;
+    const constructionPeriodMonths = Math.max(1, propertyData.constructionPeriod);
 
-    // Stamp Duty Interest: Interest on stamp duty over construction period
-    const stampDutyInterest = propertyData.stampDuty * interestMultiplier;
+    // Land Interest (Non-deductible): Monthly compound from settlement
+    const landInterest = propertyData.landValue > 0 
+      ? propertyData.landValue * ((Math.pow(1 + monthlyRate, constructionPeriodMonths) - 1))
+      : 0;
 
-    // Construction Interest (Deductible): Interest on construction progress payments
+    // Stamp Duty Interest (Non-deductible): Monthly compound from settlement
+    const stampDutyInterest = propertyData.stampDuty > 0
+      ? propertyData.stampDuty * ((Math.pow(1 + monthlyRate, constructionPeriodMonths) - 1))
+      : 0;
+
+    // Construction Interest (Deductible): Progressive drawdown calculation
     let constructionInterest = 0;
-    for (const payment of propertyData.constructionProgressPayments) {
+    let monthlyBreakdown: Array<{
+      month: number;
+      drawdown: number;
+      interestAccrued: number;
+      cumulativeInterest: number;
+    }> = [];
+
+    // Sort payments by month to ensure proper progressive calculation
+    const sortedPayments = [...propertyData.constructionProgressPayments].sort((a, b) => a.month - b.month);
+    
+    for (const payment of sortedPayments) {
       const paymentAmount = (payment.percentage / 100) * propertyData.constructionValue;
-      const monthsRemaining = propertyData.constructionPeriod - payment.month;
-      if (monthsRemaining > 0) {
-        const paymentPeriodYears = monthsRemaining / 12;
-        const paymentInterestMultiplier = Math.pow(1 + propertyData.constructionInterestRate / 100, paymentPeriodYears) - 1;
-        constructionInterest += paymentAmount * paymentInterestMultiplier;
+      const monthsRemaining = Math.max(0, constructionPeriodMonths - payment.month);
+      
+      if (monthsRemaining > 0 && paymentAmount > 0) {
+        // Calculate interest from drawdown month to end of construction
+        const paymentInterest = paymentAmount * ((Math.pow(1 + monthlyRate, monthsRemaining) - 1));
+        constructionInterest += paymentInterest;
+        
+        monthlyBreakdown.push({
+          month: payment.month,
+          drawdown: paymentAmount,
+          interestAccrued: paymentInterest,
+          cumulativeInterest: constructionInterest
+        });
       }
     }
 
-    // Development Costs Interest: Interest on upfront development costs
+    // Development Costs Interest (Deductible): Typically paid upfront, full period compound
     const developmentCosts = propertyData.councilFees + propertyData.architectFees + propertyData.siteCosts;
-    const developmentCostsInterest = developmentCosts * interestMultiplier;
+    const developmentCostsInterest = developmentCosts > 0
+      ? developmentCosts * ((Math.pow(1 + monthlyRate, constructionPeriodMonths) - 1))
+      : 0;
 
-    // Transaction Costs Interest: Interest on legal and inspection fees
+    // Transaction Costs Interest (Deductible): Paid at settlement, full period compound
     const transactionCosts = propertyData.legalFees + propertyData.inspectionFees;
-    const transactionCostsInterest = transactionCosts * interestMultiplier;
+    const transactionCostsInterest = transactionCosts > 0
+      ? transactionCosts * ((Math.pow(1 + monthlyRate, constructionPeriodMonths) - 1))
+      : 0;
 
-    const total = landInterest + stampDutyInterest + constructionInterest + developmentCostsInterest + transactionCostsInterest;
+    const totalDeductible = constructionInterest + developmentCostsInterest + transactionCostsInterest;
+    const totalNonDeductible = landInterest + stampDutyInterest;
+    const total = totalDeductible + totalNonDeductible;
+    const averageMonthlyInterest = constructionPeriodMonths > 0 ? total / constructionPeriodMonths : 0;
 
     return {
       landInterest: Math.round(landInterest),
@@ -328,7 +416,37 @@ export const PropertyDataProvider = ({ children }: { children: ReactNode }) => {
       developmentCostsInterest: Math.round(developmentCostsInterest),
       transactionCostsInterest: Math.round(transactionCostsInterest),
       total: Math.round(total),
-      monthlyBreakdown: []
+      totalDeductible: Math.round(totalDeductible),
+      totalNonDeductible: Math.round(totalNonDeductible),
+      averageMonthlyInterest: Math.round(averageMonthlyInterest),
+      monthlyBreakdown,
+      costBreakdown: {
+        land: { 
+          amount: Math.round(landInterest), 
+          timing: 'From settlement', 
+          deductible: false 
+        },
+        stampDuty: { 
+          amount: Math.round(stampDutyInterest), 
+          timing: 'From settlement', 
+          deductible: false 
+        },
+        construction: { 
+          amount: Math.round(constructionInterest), 
+          timing: 'From each drawdown', 
+          deductible: true 
+        },
+        developmentCosts: { 
+          amount: Math.round(developmentCostsInterest), 
+          timing: 'From payment date (typically upfront)', 
+          deductible: true 
+        },
+        transactionCosts: { 
+          amount: Math.round(transactionCostsInterest), 
+          timing: 'From settlement', 
+          deductible: true 
+        }
+      }
     };
   };
 
@@ -369,9 +487,6 @@ export const PropertyDataProvider = ({ children }: { children: ReactNode }) => {
     };
   };
 
-  const updateField = (field: keyof PropertyData, value: number | boolean | string) => {
-    setPropertyData(prev => ({ ...prev, [field]: value }));
-  };
 
   const updateFieldWithConfirmation = (
     field: keyof PropertyData, 

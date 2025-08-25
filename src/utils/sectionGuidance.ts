@@ -5,6 +5,7 @@ import {
   validateFinancing,
   validatePurchaseCosts,
   validateAnnualExpenses,
+  validateConstruction,
   validateTaxOptimization,
   type CompletionStatus,
 } from "@/utils/validationUtils";
@@ -12,6 +13,8 @@ import {
 export type SectionKey =
   | "personal-profile"
   | "property-basics"
+  | "construction"
+  | "construction-timeline"
   | "funding-finance"
   | "transaction-costs"
   | "ongoing-income-expenses"
@@ -54,6 +57,33 @@ export const getSectionGuidance = (
           items.push("Enter building value");
         if (!propertyData.weeklyRent || propertyData.weeklyRent <= 0)
           items.push("Enter expected weekly rent");
+      }
+      break;
+    }
+    case "construction": {
+      status = validateConstruction(propertyData);
+      if (!propertyData.constructionValue || propertyData.constructionValue <= 0)
+        items.push("Enter total construction contract value");
+      if (!propertyData.buildingValue || propertyData.buildingValue <= 0)
+        items.push("Enter building value for depreciation");
+      if (!propertyData.constructionYear || propertyData.constructionYear <= 0)
+        items.push("Enter construction completion year");
+      break;
+    }
+    case "construction-timeline": {
+      status = validateConstruction(propertyData);
+      if (!propertyData.constructionPeriod || propertyData.constructionPeriod <= 0)
+        items.push("Set construction period (months)");
+      if (!propertyData.constructionInterestRate || propertyData.constructionInterestRate <= 0)
+        items.push("Enter main loan rate during construction");
+      if (propertyData.postConstructionRateReduction < 0 || propertyData.postConstructionRateReduction > 5)
+        items.push("Enter realistic rate reduction (typically 0.5%)");
+      if (!propertyData.constructionProgressPayments || propertyData.constructionProgressPayments.length === 0)
+        items.push("Add construction progress payments");
+      else {
+        const totalPercentage = propertyData.constructionProgressPayments.reduce((sum, p) => sum + p.percentage, 0);
+        if (Math.abs(totalPercentage - 100) > 0.1)
+          items.push("Progress payments should total 100%");
       }
       break;
     }
@@ -101,7 +131,8 @@ export const getSectionGuidance = (
       if (!propertyData.stampDuty || propertyData.stampDuty <= 0)
         items.push("Enter stamp duty (or use calculator)");
       if (!propertyData.legalFees || propertyData.legalFees <= 0) items.push("Enter legal fees");
-      if (!propertyData.inspectionFees || propertyData.inspectionFees <= 0) items.push("Enter inspection fees");
+      if (!propertyData.inspectionFees || propertyData.inspectionFees < 300) 
+        items.push("Enter realistic inspection fees (typically $300-$800)");
       if (
         propertyData.isConstructionProject &&
         !propertyData.councilFees &&

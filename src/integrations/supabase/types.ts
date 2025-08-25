@@ -1,4 +1,3 @@
-
 export type Json =
   | string
   | number
@@ -7,339 +6,275 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export interface Database {
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "13.0.4"
+  }
   public: {
     Tables: {
       instances: {
         Row: {
-          id: string
-          user_id: string
-          source_model_id: string | null
-          name: string
-          status: 'draft' | 'active' | 'archived'
-          created_at: string
-          updated_at: string
-          property_method: 'house-land-construction' | 'built-first-owner' | 'built-second-owner' | null
-          funding_method: 'loan-cash' | 'loan-equity' | 'full-equity' | null
-          investors: Json
-          ownership_allocations: Json
-          is_construction_project: boolean
-          purchase_price: number
-          weekly_rent: number
-          rental_growth_rate: number
-          vacancy_rate: number
-          construction_year: number
-          building_value: number
-          plant_equipment_value: number
-          land_value: number
-          construction_value: number
-          construction_period: number
-          construction_interest_rate: number
-          construction_progress_payments: Json
-          deposit: number
-          loan_amount: number
-          interest_rate: number
-          loan_term: number
-          lvr: number
-          main_loan_type: 'io' | 'pi'
-          io_term_years: number
-          use_equity_funding: boolean
-          primary_property_value: number
-          existing_debt: number
-          max_lvr: number
-          equity_loan_type: 'io' | 'pi'
-          equity_loan_io_term_years: number
-          equity_loan_interest_rate: number
-          equity_loan_term: number
-          deposit_amount: number
-          minimum_deposit_required: number
-          holding_cost_funding: 'cash' | 'debt' | 'hybrid'
-          holding_cost_cash_percentage: number
-          capitalize_construction_costs: boolean
-          construction_equity_repayment_type: 'io' | 'pi'
-          land_holding_interest: number
-          construction_holding_interest: number
-          total_holding_costs: number
-          stamp_duty: number
-          legal_fees: number
-          inspection_fees: number
-          council_fees: number
+          actual_cash_deposit: number
+          analysis_year_to: number
           architect_fees: number
-          site_costs: number
-          property_management: number
-          council_rates: number
-          insurance: number
-          repairs: number
-          depreciation_method: 'prime-cost' | 'diminishing-value'
-          is_new_property: boolean
-          property_state: 'ACT' | 'NSW' | 'NT' | 'QLD' | 'SA' | 'TAS' | 'VIC' | 'WA' | null
-          total_project_cost: number
-          equity_loan_amount: number
+          assumptions: Json | null
           available_equity: number
+          building_value: number
+          capital_growth_rate: number
+          capitalize_construction_costs: boolean
+          construction_equity_repayment_type: string
+          construction_holding_interest: number
+          construction_interest_rate: number
+          construction_period: number
+          construction_progress_payments: Json | null
+          construction_value: number
+          construction_year: number
+          council_fees: number
+          council_rates: number
+          created_at: string
+          deposit: number
+          deposit_amount: number
+          depreciation_method: string
+          description: string | null
+          equity_loan_amount: number
+          equity_loan_interest_rate: number
+          equity_loan_io_term_years: number
+          equity_loan_term: number
+          equity_loan_type: string
+          existing_debt: number
+          funding_method: string | null
+          funding_shortfall: number
+          funding_surplus: number
+          holding_cost_cash_percentage: number
+          holding_cost_funding: string
+          id: string
+          inspection_fees: number
+          insurance: number
+          interest_rate: number
+          investors: Json | null
+          io_term_years: number
+          is_construction_project: boolean
+          is_from_template: boolean
+          is_new_property: boolean
+          land_holding_interest: number
+          land_value: number
+          legal_fees: number
+          loan_amount: number
+          loan_term: number
+          location: string
+          lvr: number
+          main_loan_type: string
+          max_lvr: number
+          minimum_cash_required: number
+          minimum_deposit_required: number
+          name: string
+          net_equity_at_year_to: number
+          ownership_allocations: Json | null
+          plant_equipment_value: number
+          post_construction_rate_reduction: number
+          primary_property_value: number
+          projections: Json | null
+          property_management: number
+          property_method: string
+          property_state: string | null
+          property_type: string
+          purchase_price: number
+          rental_growth_rate: number
+          repairs: number
+          roi_at_year_to: number
+          site_costs: number
+          source_model_id: string | null
+          stamp_duty: number
+          status: string
+          tax_savings_total: number
+          tax_savings_year1: number
+          total_holding_costs: number
+          total_project_cost: number
+          updated_at: string
+          use_equity_funding: boolean
+          user_id: string
+          vacancy_rate: number
+          weekly_cashflow_year1: number
+          weekly_rent: number
         }
         Insert: {
-          id?: string
-          user_id: string
-          source_model_id?: string | null
-          name: string
-          status?: 'draft' | 'active' | 'archived'
-          created_at?: string
-          updated_at?: string
-          property_method?: 'house-land-construction' | 'built-first-owner' | 'built-second-owner' | null
-          funding_method?: 'loan-cash' | 'loan-equity' | 'full-equity' | null
-          investors?: Json
-          ownership_allocations?: Json
-          is_construction_project?: boolean
-          purchase_price?: number
-          weekly_rent?: number
-          rental_growth_rate?: number
-          vacancy_rate?: number
-          construction_year?: number
-          building_value?: number
-          plant_equipment_value?: number
-          land_value?: number
-          construction_value?: number
-          construction_period?: number
-          construction_interest_rate?: number
-          construction_progress_payments?: Json
-          deposit?: number
-          loan_amount?: number
-          interest_rate?: number
-          loan_term?: number
-          lvr?: number
-          main_loan_type?: 'io' | 'pi'
-          io_term_years?: number
-          use_equity_funding?: boolean
-          primary_property_value?: number
-          existing_debt?: number
-          max_lvr?: number
-          equity_loan_type?: 'io' | 'pi'
-          equity_loan_io_term_years?: number
-          equity_loan_interest_rate?: number
-          equity_loan_term?: number
-          deposit_amount?: number
-          minimum_deposit_required?: number
-          holding_cost_funding?: 'cash' | 'debt' | 'hybrid'
-          holding_cost_cash_percentage?: number
-          capitalize_construction_costs?: boolean
-          construction_equity_repayment_type?: 'io' | 'pi'
-          land_holding_interest?: number
-          construction_holding_interest?: number
-          total_holding_costs?: number
-          stamp_duty?: number
-          legal_fees?: number
-          inspection_fees?: number
-          council_fees?: number
+          actual_cash_deposit?: number
+          analysis_year_to?: number
           architect_fees?: number
-          site_costs?: number
-          property_management?: number
-          council_rates?: number
-          insurance?: number
-          repairs?: number
-          depreciation_method?: 'prime-cost' | 'diminishing-value'
-          is_new_property?: boolean
-          property_state?: 'ACT' | 'NSW' | 'NT' | 'QLD' | 'SA' | 'TAS' | 'VIC' | 'WA' | null
-          total_project_cost?: number
-          equity_loan_amount?: number
+          assumptions?: Json | null
           available_equity?: number
+          building_value?: number
+          capital_growth_rate?: number
+          capitalize_construction_costs?: boolean
+          construction_equity_repayment_type?: string
+          construction_holding_interest?: number
+          construction_interest_rate?: number
+          construction_period?: number
+          construction_progress_payments?: Json | null
+          construction_value?: number
+          construction_year?: number
+          council_fees?: number
+          council_rates?: number
+          created_at?: string
+          deposit?: number
+          deposit_amount?: number
+          depreciation_method?: string
+          description?: string | null
+          equity_loan_amount?: number
+          equity_loan_interest_rate?: number
+          equity_loan_io_term_years?: number
+          equity_loan_term?: number
+          equity_loan_type?: string
+          existing_debt?: number
+          funding_method?: string | null
+          funding_shortfall?: number
+          funding_surplus?: number
+          holding_cost_cash_percentage?: number
+          holding_cost_funding?: string
+          id?: string
+          inspection_fees?: number
+          insurance?: number
+          interest_rate?: number
+          investors?: Json | null
+          io_term_years?: number
+          is_construction_project?: boolean
+          is_from_template?: boolean
+          is_new_property?: boolean
+          land_holding_interest?: number
+          land_value?: number
+          legal_fees?: number
+          loan_amount?: number
+          loan_term?: number
+          location?: string
+          lvr?: number
+          main_loan_type?: string
+          max_lvr?: number
+          minimum_cash_required?: number
+          minimum_deposit_required?: number
+          name: string
+          net_equity_at_year_to?: number
+          ownership_allocations?: Json | null
+          plant_equipment_value?: number
+          post_construction_rate_reduction?: number
+          primary_property_value?: number
+          projections?: Json | null
+          property_management?: number
+          property_method?: string
+          property_state?: string | null
+          property_type?: string
+          purchase_price?: number
+          rental_growth_rate?: number
+          repairs?: number
+          roi_at_year_to?: number
+          site_costs?: number
+          source_model_id?: string | null
+          stamp_duty?: number
+          status?: string
+          tax_savings_total?: number
+          tax_savings_year1?: number
+          total_holding_costs?: number
+          total_project_cost?: number
+          updated_at?: string
+          use_equity_funding?: boolean
+          user_id: string
+          vacancy_rate?: number
+          weekly_cashflow_year1?: number
+          weekly_rent?: number
         }
         Update: {
-          id?: string
-          user_id?: string
-          source_model_id?: string | null
-          name?: string
-          status?: 'draft' | 'active' | 'archived'
-          created_at?: string
-          updated_at?: string
-          property_method?: 'house-land-construction' | 'built-first-owner' | 'built-second-owner' | null
-          funding_method?: 'loan-cash' | 'loan-equity' | 'full-equity' | null
-          investors?: Json
-          ownership_allocations?: Json
-          is_construction_project?: boolean
-          purchase_price?: number
-          weekly_rent?: number
-          rental_growth_rate?: number
-          vacancy_rate?: number
-          construction_year?: number
-          building_value?: number
-          plant_equipment_value?: number
-          land_value?: number
-          construction_value?: number
-          construction_period?: number
-          construction_interest_rate?: number
-          construction_progress_payments?: Json
-          deposit?: number
-          loan_amount?: number
-          interest_rate?: number
-          loan_term?: number
-          lvr?: number
-          main_loan_type?: 'io' | 'pi'
-          io_term_years?: number
-          use_equity_funding?: boolean
-          primary_property_value?: number
-          existing_debt?: number
-          max_lvr?: number
-          equity_loan_type?: 'io' | 'pi'
-          equity_loan_io_term_years?: number
-          equity_loan_interest_rate?: number
-          equity_loan_term?: number
-          deposit_amount?: number
-          minimum_deposit_required?: number
-          holding_cost_funding?: 'cash' | 'debt' | 'hybrid'
-          holding_cost_cash_percentage?: number
-          capitalize_construction_costs?: boolean
-          construction_equity_repayment_type?: 'io' | 'pi'
-          land_holding_interest?: number
-          construction_holding_interest?: number
-          total_holding_costs?: number
-          stamp_duty?: number
-          legal_fees?: number
-          inspection_fees?: number
-          council_fees?: number
+          actual_cash_deposit?: number
+          analysis_year_to?: number
           architect_fees?: number
-          site_costs?: number
-          property_management?: number
-          council_rates?: number
-          insurance?: number
-          repairs?: number
-          depreciation_method?: 'prime-cost' | 'diminishing-value'
-          is_new_property?: boolean
-          property_state?: 'ACT' | 'NSW' | 'NT' | 'QLD' | 'SA' | 'TAS' | 'VIC' | 'WA' | null
-          total_project_cost?: number
-          equity_loan_amount?: number
+          assumptions?: Json | null
           available_equity?: number
+          building_value?: number
+          capital_growth_rate?: number
+          capitalize_construction_costs?: boolean
+          construction_equity_repayment_type?: string
+          construction_holding_interest?: number
+          construction_interest_rate?: number
+          construction_period?: number
+          construction_progress_payments?: Json | null
+          construction_value?: number
+          construction_year?: number
+          council_fees?: number
+          council_rates?: number
+          created_at?: string
+          deposit?: number
+          deposit_amount?: number
+          depreciation_method?: string
+          description?: string | null
+          equity_loan_amount?: number
+          equity_loan_interest_rate?: number
+          equity_loan_io_term_years?: number
+          equity_loan_term?: number
+          equity_loan_type?: string
+          existing_debt?: number
+          funding_method?: string | null
+          funding_shortfall?: number
+          funding_surplus?: number
+          holding_cost_cash_percentage?: number
+          holding_cost_funding?: string
+          id?: string
+          inspection_fees?: number
+          insurance?: number
+          interest_rate?: number
+          investors?: Json | null
+          io_term_years?: number
+          is_construction_project?: boolean
+          is_from_template?: boolean
+          is_new_property?: boolean
+          land_holding_interest?: number
+          land_value?: number
+          legal_fees?: number
+          loan_amount?: number
+          loan_term?: number
+          location?: string
+          lvr?: number
+          main_loan_type?: string
+          max_lvr?: number
+          minimum_cash_required?: number
+          minimum_deposit_required?: number
+          name?: string
+          net_equity_at_year_to?: number
+          ownership_allocations?: Json | null
+          plant_equipment_value?: number
+          post_construction_rate_reduction?: number
+          primary_property_value?: number
+          projections?: Json | null
+          property_management?: number
+          property_method?: string
+          property_state?: string | null
+          property_type?: string
+          purchase_price?: number
+          rental_growth_rate?: number
+          repairs?: number
+          roi_at_year_to?: number
+          site_costs?: number
+          source_model_id?: string | null
+          stamp_duty?: number
+          status?: string
+          tax_savings_total?: number
+          tax_savings_year1?: number
+          total_holding_costs?: number
+          total_project_cost?: number
+          updated_at?: string
+          use_equity_funding?: boolean
+          user_id?: string
+          vacancy_rate?: number
+          weekly_cashflow_year1?: number
+          weekly_rent?: number
         }
         Relationships: [
-          {
-            foreignKeyName: "instances_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "instances_source_model_id_fkey"
             columns: ["source_model_id"]
             isOneToOne: false
             referencedRelation: "property_models"
             referencedColumns: ["id"]
-          }
-        ]
-      }
-      property_models: {
-        Row: {
-          id: string
-          owner_user_id: string
-          name: string
-          description: string | null
-          property_type: 'Apartment' | 'House' | 'Townhouse' | 'Unit' | 'Land' | 'Commercial'
-          property_method: 'house-land-construction' | 'built-first-owner' | 'built-second-owner'
-          purchase_price: number
-          weekly_rent: number
-          rental_growth_rate: number
-          vacancy_rate: number
-          location: string
-          construction_year: number
-          is_construction_project: boolean
-          land_value: number
-          construction_value: number
-          construction_period: number
-          construction_interest_rate: number
-          building_value: number
-          plant_equipment_value: number
-          stamp_duty: number
-          legal_fees: number
-          inspection_fees: number
-          council_fees: number
-          architect_fees: number
-          site_costs: number
-          property_management: number
-          council_rates: number
-          insurance: number
-          repairs: number
-          depreciation_method: 'prime-cost' | 'diminishing-value'
-          is_new_property: boolean
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          owner_user_id: string
-          name: string
-          description?: string | null
-          property_type: 'Apartment' | 'House' | 'Townhouse' | 'Unit' | 'Land' | 'Commercial'
-          property_method: 'house-land-construction' | 'built-first-owner' | 'built-second-owner'
-          purchase_price: number
-          weekly_rent: number
-          rental_growth_rate: number
-          vacancy_rate: number
-          location: string
-          construction_year: number
-          is_construction_project: boolean
-          land_value: number
-          construction_value: number
-          construction_period: number
-          construction_interest_rate: number
-          building_value: number
-          plant_equipment_value: number
-          stamp_duty: number
-          legal_fees: number
-          inspection_fees: number
-          council_fees: number
-          architect_fees: number
-          site_costs: number
-          property_management: number
-          council_rates: number
-          insurance: number
-          repairs: number
-          depreciation_method: 'prime-cost' | 'diminishing-value'
-          is_new_property: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          owner_user_id?: string
-          name?: string
-          description?: string | null
-          property_type?: 'Apartment' | 'House' | 'Townhouse' | 'Unit' | 'Land' | 'Commercial'
-          property_method?: 'house-land-construction' | 'built-first-owner' | 'built-second-owner'
-          purchase_price?: number
-          weekly_rent?: number
-          rental_growth_rate?: number
-          vacancy_rate?: number
-          location?: string
-          construction_year?: number
-          is_construction_project?: boolean
-          land_value?: number
-          construction_value?: number
-          construction_period?: number
-          construction_interest_rate?: number
-          building_value?: number
-          plant_equipment_value?: number
-          stamp_duty?: number
-          legal_fees?: number
-          inspection_fees?: number
-          council_fees?: number
-          architect_fees?: number
-          site_costs?: number
-          property_management?: number
-          council_rates?: number
-          insurance?: number
-          repairs?: number
-          depreciation_method?: 'prime-cost' | 'diminishing-value'
-          is_new_property?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "property_models_owner_user_id_fkey"
-            columns: ["owner_user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
+          },
         ]
       }
       investors: {
@@ -487,6 +422,7 @@ export interface Database {
           insurance: number
           investment_status: string
           is_construction_project: boolean
+          is_from_template: boolean
           is_new_property: boolean
           land_value: number
           legal_fees: number
@@ -503,6 +439,7 @@ export interface Database {
           rental_growth_rate: number
           site_costs: number
           smoke_alarm_inspection: number
+          source_model_id: string | null
           stamp_duty: number
           status: string
           type: string
@@ -525,6 +462,7 @@ export interface Database {
           insurance?: number
           investment_status?: string
           is_construction_project?: boolean
+          is_from_template?: boolean
           is_new_property?: boolean
           land_value?: number
           legal_fees?: number
@@ -541,6 +479,7 @@ export interface Database {
           rental_growth_rate?: number
           site_costs?: number
           smoke_alarm_inspection?: number
+          source_model_id?: string | null
           stamp_duty?: number
           status?: string
           type?: string
@@ -563,6 +502,7 @@ export interface Database {
           insurance?: number
           investment_status?: string
           is_construction_project?: boolean
+          is_from_template?: boolean
           is_new_property?: boolean
           land_value?: number
           legal_fees?: number
@@ -579,6 +519,7 @@ export interface Database {
           rental_growth_rate?: number
           site_costs?: number
           smoke_alarm_inspection?: number
+          source_model_id?: string | null
           stamp_duty?: number
           status?: string
           type?: string
@@ -586,34 +527,45 @@ export interface Database {
           vacancy_rate?: number
           weekly_rent?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "properties_source_model_id_fkey"
+            columns: ["source_model_id"]
+            isOneToOne: false
+            referencedRelation: "property_models"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       property_investors: {
         Row: {
-          cash_contribution: number
+          cash_contribution: number | null
           created_at: string
           id: string
           investor_id: string
+          loan_share_percentage: number | null
           notes: string | null
           ownership_percentage: number
           property_id: string
           updated_at: string
         }
         Insert: {
-          cash_contribution?: number
+          cash_contribution?: number | null
           created_at?: string
           id?: string
           investor_id: string
+          loan_share_percentage?: number | null
           notes?: string | null
           ownership_percentage?: number
           property_id: string
           updated_at?: string
         }
         Update: {
-          cash_contribution?: number
+          cash_contribution?: number | null
           created_at?: string
           id?: string
           investor_id?: string
+          loan_share_percentage?: number | null
           notes?: string | null
           ownership_percentage?: number
           property_id?: string
@@ -635,6 +587,114 @@ export interface Database {
             referencedColumns: ["id"]
           },
         ]
+      }
+      property_models: {
+        Row: {
+          architect_fees: number
+          building_value: number
+          construction_interest_rate: number
+          construction_period: number
+          construction_value: number
+          construction_year: number
+          council_fees: number
+          council_rates: number
+          created_at: string
+          depreciation_method: string
+          description: string | null
+          id: string
+          inspection_fees: number
+          insurance: number
+          is_construction_project: boolean
+          is_new_property: boolean
+          land_value: number
+          legal_fees: number
+          location: string
+          name: string
+          owner_user_id: string
+          plant_equipment_value: number
+          property_management: number
+          property_method: string
+          property_type: string
+          purchase_price: number
+          rental_growth_rate: number
+          repairs: number
+          site_costs: number
+          stamp_duty: number
+          updated_at: string
+          vacancy_rate: number
+          weekly_rent: number
+        }
+        Insert: {
+          architect_fees?: number
+          building_value?: number
+          construction_interest_rate?: number
+          construction_period?: number
+          construction_value?: number
+          construction_year?: number
+          council_fees?: number
+          council_rates?: number
+          created_at?: string
+          depreciation_method?: string
+          description?: string | null
+          id?: string
+          inspection_fees?: number
+          insurance?: number
+          is_construction_project?: boolean
+          is_new_property?: boolean
+          land_value?: number
+          legal_fees?: number
+          location?: string
+          name: string
+          owner_user_id: string
+          plant_equipment_value?: number
+          property_management?: number
+          property_method?: string
+          property_type?: string
+          purchase_price?: number
+          rental_growth_rate?: number
+          repairs?: number
+          site_costs?: number
+          stamp_duty?: number
+          updated_at?: string
+          vacancy_rate?: number
+          weekly_rent?: number
+        }
+        Update: {
+          architect_fees?: number
+          building_value?: number
+          construction_interest_rate?: number
+          construction_period?: number
+          construction_value?: number
+          construction_year?: number
+          council_fees?: number
+          council_rates?: number
+          created_at?: string
+          depreciation_method?: string
+          description?: string | null
+          id?: string
+          inspection_fees?: number
+          insurance?: number
+          is_construction_project?: boolean
+          is_new_property?: boolean
+          land_value?: number
+          legal_fees?: number
+          location?: string
+          name?: string
+          owner_user_id?: string
+          plant_equipment_value?: number
+          property_management?: number
+          property_method?: string
+          property_type?: string
+          purchase_price?: number
+          rental_growth_rate?: number
+          repairs?: number
+          site_costs?: number
+          stamp_duty?: number
+          updated_at?: string
+          vacancy_rate?: number
+          weekly_rent?: number
+        }
+        Relationships: []
       }
       scenarios: {
         Row: {
@@ -800,15 +860,7 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },
 } as const
-
-// Export the Instance type for use in components
-export type Instance = Database['public']['Tables']['instances']['Row']
-export type CreateInstanceRequest = Database['public']['Tables']['instances']['Insert']
-export type UpdateInstanceRequest = Database['public']['Tables']['instances']['Update']

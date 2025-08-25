@@ -1,26 +1,41 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { DollarSign, AlertTriangle, CheckCircle, TrendingUp, ChevronDown, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { 
+  DollarSign, 
+  AlertTriangle, 
+  CheckCircle, 
+  Building2, 
+  Coins, 
+  TrendingUp,
+  Eye,
+  EyeOff,
+  ChevronRight
+} from "lucide-react";
 import { usePropertyData } from "@/contexts/PropertyDataContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
 import { PROPERTY_METHODS, FUNDING_METHODS } from "@/types/presets";
+import { formatCurrency } from "@/utils/formatters";
 
 export const FundingSummaryPanel = () => {
   const { propertyData, calculateTotalProjectCost, calculateEquityLoanAmount, calculateAvailableEquity, calculateHoldingCosts } = usePropertyData();
-  const [expandedSections, setExpandedSections] = useState<string[]>([]);
-
-  const toggleSection = (section: string) => {
-    setExpandedSections(prev => 
-      prev.includes(section) 
-        ? prev.filter(s => s !== section)
-        : [...prev, section]
-    );
-  };
-
-  // Calculate breakdown for display
+  const isMobile = useIsMobile();
+  const [showDetails, setShowDetails] = useState(false);
+  
+  // Calculate essential values
+  const totalPurchaseCost = calculateTotalProjectCost();
+  const mainLoanAmount = propertyData.loanAmount;
+  const equityLoanAmount = calculateEquityLoanAmount();
+  const cashDeposit = propertyData.depositAmount;
+  const totalFunding = mainLoanAmount + equityLoanAmount + cashDeposit;
+  const fundingCoverage = totalPurchaseCost > 0 ? (totalFunding / totalPurchaseCost) * 100 : 0;
+  const fundingShortfall = Math.max(0, totalPurchaseCost - totalFunding);
+  const holdingCosts = calculateHoldingCosts();
+  
+  // Calculate component costs
   const purchaseCosts = propertyData.isConstructionProject
     ? propertyData.landValue + propertyData.constructionValue
     : propertyData.purchasePrice;
@@ -34,464 +49,400 @@ export const FundingSummaryPanel = () => {
     ? propertyData.councilFees + propertyData.architectFees + propertyData.siteCosts
     : 0;
 
-  // Calculate total purchase costs using centralized function
-  const totalPurchaseCost = calculateTotalProjectCost();
-  
-  // Calculate funding sources using centralized function
-  const mainLoanAmount = propertyData.loanAmount;
-  const equityLoanAmount = calculateEquityLoanAmount();
-  const availableEquity = calculateAvailableEquity();
-  // Pre-calculate commonly used values
-  const holdingCosts = calculateHoldingCosts();
-  
-  // Use the actual deposit amount entered by the user
-  const cashDeposit = propertyData.depositAmount;
-  const totalFunding = mainLoanAmount + equityLoanAmount + cashDeposit;
-  const fundingCoverage = totalPurchaseCost > 0 ? (totalFunding / totalPurchaseCost) * 100 : 0;
-  const fundingShortfall = Math.max(0, totalPurchaseCost - totalFunding);
-
   const getFundingStatus = () => {
     if (fundingShortfall === 0) return 'complete';
-    if (fundingShortfall <= totalPurchaseCost * 0.05) return 'warning'; // 5% threshold
+    if (fundingShortfall <= totalPurchaseCost * 0.05) return 'warning';
     return 'error';
   };
 
   const status = getFundingStatus();
 
   return (
-    <Card className="w-full">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <DollarSign className="h-5 w-5 text-primary" />
-          Funding Summary
-          {status === 'complete' && <CheckCircle className="h-4 w-4 text-success" />}
-          {status === 'warning' && <AlertTriangle className="h-4 w-4 text-warning" />}
-          {status === 'error' && <AlertTriangle className="h-4 w-4 text-destructive" />}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Selected Presets */}
-        {(propertyData.currentPropertyMethod || propertyData.currentFundingMethod) && (
-          <div className="flex flex-wrap items-center gap-2 p-2 bg-muted/30 border border-border rounded">
-            <span className="text-xs text-muted-foreground">Selected:</span>
-            {propertyData.currentPropertyMethod && (
-              <Badge variant="secondary">
-                {PROPERTY_METHODS[propertyData.currentPropertyMethod].name}
-              </Badge>
-            )}
-            {propertyData.currentFundingMethod && (
-              <Badge variant="outline">
-                {FUNDING_METHODS[propertyData.currentFundingMethod].name}
-              </Badge>
-            )}
-          </div>
-        )}
-        {/* Purchase Cost Breakdown */}
-        <div className="space-y-3">
-          <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
-            Purchase Costs
-          </h4>
-          <div className="space-y-2">
-            
-            {/* Main Purchase Cost */}
-            <Collapsible open={expandedSections.includes('purchase-base')} onOpenChange={() => toggleSection('purchase-base')}>
-              <CollapsibleTrigger className="flex items-center justify-between w-full text-sm hover:bg-muted/50 p-2 rounded">
-                <span>
-                  {propertyData.isConstructionProject ? 'Land + Construction' : 'Purchase Price'}
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">${purchaseCosts.toLocaleString()}</span>
-                  {expandedSections.includes('purchase-base') ? 
-                    <ChevronDown className="h-4 w-4" /> : 
-                    <ChevronRight className="h-4 w-4" />
-                  }
-                </div>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="pl-4 space-y-1">
-                {propertyData.isConstructionProject ? (
-                  <>
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Land Value</span>
-                      <span>${propertyData.landValue.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Construction Value</span>
-                      <span>${propertyData.constructionValue.toLocaleString()}</span>
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Property Purchase Price</span>
-                    <span>${propertyData.purchasePrice.toLocaleString()}</span>
+    <div className="space-y-4">
+      {/* Main Header */}
+      <Card className="w-full border-l-4 border-l-primary">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <DollarSign className="h-6 w-6 text-primary" />
+              <div>
+                <CardTitle className="text-xl font-semibold">
+                  Funding & Finance Structure
+                </CardTitle>
+                {(propertyData.currentPropertyMethod || propertyData.currentFundingMethod) && (
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    {propertyData.currentPropertyMethod && (
+                      <Badge variant="secondary" className="text-xs">
+                        {PROPERTY_METHODS[propertyData.currentPropertyMethod].name}
+                      </Badge>
+                    )}
+                    {propertyData.currentFundingMethod && (
+                      <Badge variant="outline" className="text-xs">
+                        {FUNDING_METHODS[propertyData.currentFundingMethod].name}
+                      </Badge>
+                    )}
                   </div>
                 )}
-              </CollapsibleContent>
-            </Collapsible>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowDetails(!showDetails)}
+              className="min-h-[44px] px-4"
+            >
+              {showDetails ? (
+                <>
+                  <EyeOff className="h-4 w-4 mr-2" />
+                  {!isMobile && "Hide Details"}
+                </>
+              ) : (
+                <>
+                  <Eye className="h-4 w-4 mr-2" />
+                  {!isMobile && "Show Details"}
+                </>
+              )}
+            </Button>
+          </div>
+        </CardHeader>
+      </Card>
 
-            {/* Transaction Costs */}
-            <Collapsible open={expandedSections.includes('transaction-costs')} onOpenChange={() => toggleSection('transaction-costs')}>
-              <CollapsibleTrigger className="flex items-center justify-between w-full text-sm hover:bg-muted/50 p-2 rounded">
-                <span>Transaction Costs</span>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">${totalTransactionCosts.toLocaleString()}</span>
-                  {expandedSections.includes('transaction-costs') ? 
-                    <ChevronDown className="h-4 w-4" /> : 
-                    <ChevronRight className="h-4 w-4" />
-                  }
+      {/* Three Main Summary Cards */}
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+        
+        {/* Purchase Costs Summary */}
+        <Card className="border-l-4 border-l-blue-500 bg-gradient-to-br from-blue-50/50 to-blue-100/30 hover:from-blue-50/70 hover:to-blue-100/50 transition-all duration-200">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-blue-700">
+              <Building2 className="h-5 w-5" />
+              <span className="text-base font-semibold">Total Costs</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="text-center mb-4">
+              <div className="text-2xl font-bold text-blue-700 mb-1">
+                {formatCurrency(totalPurchaseCost)}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {propertyData.isConstructionProject ? 'Land + Construction + Costs' : 'Purchase + Transaction Costs'}
+              </div>
+            </div>
+            
+            {/* Key Cost Breakdown */}
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground">
+                  {propertyData.isConstructionProject ? 'Land + Construction' : 'Purchase Price'}
+                </span>
+                <span className="font-medium">{formatCurrency(purchaseCosts)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground">Transaction Costs</span>
+                <span className="font-medium">{formatCurrency(totalTransactionCosts)}</span>
+              </div>
+              {propertyData.isConstructionProject && totalConstructionCosts > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Development Costs</span>
+                  <span className="font-medium">{formatCurrency(totalConstructionCosts)}</span>
                 </div>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="pl-4 space-y-1">
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Stamp Duty</span>
-                  <span>${propertyData.stampDuty.toLocaleString()}</span>
+              )}
+              {propertyData.isConstructionProject && holdingCosts.total > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Interest During Construction</span>
+                  <span className="font-medium">{formatCurrency(holdingCosts.total)}</span>
                 </div>
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Legal Fees</span>
-                  <span>${propertyData.legalFees.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Inspection Fees</span>
-                  <span>${propertyData.inspectionFees.toLocaleString()}</span>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
+              )}
+            </div>
 
-            {/* Development Costs (Construction only) */}
-            {propertyData.isConstructionProject && (
-              <Collapsible open={expandedSections.includes('development-costs')} onOpenChange={() => toggleSection('development-costs')}>
-                <CollapsibleTrigger className="flex items-center justify-between w-full text-sm hover:bg-muted/50 p-2 rounded">
-                  <span>Development Costs</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">${totalConstructionCosts.toLocaleString()}</span>
-                    {expandedSections.includes('development-costs') ? 
-                      <ChevronDown className="h-4 w-4" /> : 
-                      <ChevronRight className="h-4 w-4" />
-                    }
-                  </div>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="pl-4 space-y-1">
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Council Fees</span>
-                    <span>${propertyData.councilFees.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Architect Fees</span>
-                    <span>${propertyData.architectFees.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Site Costs</span>
-                    <span>${propertyData.siteCosts.toLocaleString()}</span>
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            )}
-
-            {/* Detailed Interest During Construction */}
-            {propertyData.isConstructionProject && (propertyData.constructionPeriod > 0 && propertyData.constructionInterestRate > 0) && (
-              <Collapsible open={expandedSections.includes('holding-interest')} onOpenChange={() => toggleSection('holding-interest')}>
-                <CollapsibleTrigger className="flex items-center justify-between w-full text-sm hover:bg-muted/50 p-2 rounded">
-                  <span>Interest During Construction</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">${holdingCosts.total > 0 ? holdingCosts.total.toLocaleString() : '0'}</span>
-                    {expandedSections.includes('holding-interest') ? 
-                      <ChevronDown className="h-4 w-4" /> : 
-                      <ChevronRight className="h-4 w-4" />
-                    }
-                  </div>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="pl-4 space-y-3">
-                  {/* Construction Parameters */}
-                  <div className="bg-muted/30 p-3 rounded space-y-2">
-                    <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Construction Parameters</div>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Period</span>
-                        <span className="font-medium">{propertyData.constructionPeriod} months</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Interest Rate</span>
-                        <span className="font-medium">{propertyData.constructionInterestRate}%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Funding Method</span>
-                        <span className="font-medium capitalize">{propertyData.holdingCostFunding}</span>
-                      </div>
-                      {propertyData.holdingCostFunding === 'hybrid' && (
+            {/* Detailed Breakdown (Expandable) */}
+            {showDetails && (
+              <div className="mt-4 pt-4 border-t border-blue-200">
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="cost-breakdown" className="border-none">
+                    <AccordionTrigger className="text-sm py-2 text-blue-700 hover:no-underline min-h-[44px]">
+                      <span className="flex items-center gap-2">
+                        <ChevronRight className="h-4 w-4" />
+                        Detailed Breakdown
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-2 text-xs pt-2">
+                      {propertyData.isConstructionProject ? (
+                        <>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Land Value</span>
+                            <span>{formatCurrency(propertyData.landValue)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Construction Value</span>
+                            <span>{formatCurrency(propertyData.constructionValue)}</span>
+                          </div>
+                        </>
+                      ) : (
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Cash %</span>
-                          <span className="font-medium">{propertyData.holdingCostCashPercentage}%</span>
+                          <span className="text-muted-foreground">Purchase Price</span>
+                          <span>{formatCurrency(propertyData.purchasePrice)}</span>
                         </div>
                       )}
-                    </div>
-                  </div>
-
-                  {/* Interest Breakdown by Category */}
-                  <div className="space-y-2">
-                    <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Interest by Cost Category</div>
-                    
-                    {/* Land & Acquisition Costs */}
-                    <div className="border rounded p-2 space-y-1">
-                      <div className="flex justify-between text-xs font-medium">
-                        <span>Land & Acquisition Costs</span>
-                        <span>${(holdingCosts.landInterest + holdingCosts.stampDutyInterest).toLocaleString()}</span>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Stamp Duty</span>
+                        <span>{formatCurrency(propertyData.stampDuty)}</span>
                       </div>
-                      <div className="pl-2 space-y-1 text-xs text-muted-foreground">
-                        <div className="flex justify-between">
-                          <span>• Land value interest (${propertyData.landValue.toLocaleString()})</span>
-                          <span>${holdingCosts.landInterest.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>• Stamp duty interest (${propertyData.stampDuty.toLocaleString()})</span>
-                          <span>${holdingCosts.stampDutyInterest.toLocaleString()}</span>
-                        </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Legal Fees</span>
+                        <span>{formatCurrency(propertyData.legalFees)}</span>
                       </div>
-                      <div className="text-xs text-orange-600 italic pl-2">Full amount from day 1</div>
-                    </div>
-
-                    {/* Construction Costs */}
-                    <div className="border rounded p-2 space-y-1">
-                      <div className="flex justify-between text-xs font-medium">
-                        <span>Construction Costs</span>
-                        <span>${holdingCosts.constructionInterest.toLocaleString()}</span>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Inspection Fees</span>
+                        <span>{formatCurrency(propertyData.inspectionFees)}</span>
                       </div>
-                      <div className="pl-2 space-y-1 text-xs text-muted-foreground">
-                        <div className="flex justify-between">
-                          <span>• Construction value (${propertyData.constructionValue.toLocaleString()})</span>
-                          <span>${holdingCosts.constructionInterest.toLocaleString()}</span>
-                        </div>
-                      </div>
-                      <div className="text-xs text-blue-600 italic pl-2">Progressive drawdown (50% average)</div>
-                    </div>
-
-                    {/* Development & Professional Fees */}
-                    {holdingCosts.developmentCostsInterest > 0 && (
-                      <div className="border rounded p-2 space-y-1">
-                        <div className="flex justify-between text-xs font-medium">
-                          <span>Development & Professional Fees</span>
-                          <span>${holdingCosts.developmentCostsInterest.toLocaleString()}</span>
-                        </div>
-                        <div className="pl-2 space-y-1 text-xs text-muted-foreground">
+                      {propertyData.isConstructionProject && (
+                        <>
                           {propertyData.councilFees > 0 && (
                             <div className="flex justify-between">
-                              <span>• Council fees (${propertyData.councilFees.toLocaleString()})</span>
-                              <span>${Math.round(propertyData.councilFees * ((Math.pow(1 + propertyData.constructionInterestRate/100, propertyData.constructionPeriod/12) - 1))).toLocaleString()}</span>
+                              <span className="text-muted-foreground">Council Fees</span>
+                              <span>{formatCurrency(propertyData.councilFees)}</span>
                             </div>
                           )}
                           {propertyData.architectFees > 0 && (
                             <div className="flex justify-between">
-                              <span>• Architect fees (${propertyData.architectFees.toLocaleString()})</span>
-                              <span>${Math.round(propertyData.architectFees * ((Math.pow(1 + propertyData.constructionInterestRate/100, propertyData.constructionPeriod/12) - 1))).toLocaleString()}</span>
+                              <span className="text-muted-foreground">Architect Fees</span>
+                              <span>{formatCurrency(propertyData.architectFees)}</span>
                             </div>
                           )}
                           {propertyData.siteCosts > 0 && (
                             <div className="flex justify-between">
-                              <span>• Site costs (${propertyData.siteCosts.toLocaleString()})</span>
-                              <span>${Math.round(propertyData.siteCosts * ((Math.pow(1 + propertyData.constructionInterestRate/100, propertyData.constructionPeriod/12) - 1))).toLocaleString()}</span>
+                              <span className="text-muted-foreground">Site Costs</span>
+                              <span>{formatCurrency(propertyData.siteCosts)}</span>
                             </div>
                           )}
-                        </div>
-                        <div className="text-xs text-green-600 italic pl-2">Paid upfront or early construction</div>
-                      </div>
-                    )}
+                        </>
+                      )}
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-                    {/* Transaction Costs */}
-                    {holdingCosts.transactionCostsInterest > 0 && (
-                      <div className="border rounded p-2 space-y-1">
-                        <div className="flex justify-between text-xs font-medium">
-                          <span>Transaction Costs</span>
-                          <span>${holdingCosts.transactionCostsInterest.toLocaleString()}</span>
-                        </div>
-                        <div className="pl-2 space-y-1 text-xs text-muted-foreground">
-                          <div className="flex justify-between">
-                            <span>• Legal fees (${propertyData.legalFees.toLocaleString()})</span>
-                            <span>${holdingCosts.transactionCostsInterest.toLocaleString()}</span>
+        {/* Funding Sources Summary */}
+        <Card className="border-l-4 border-l-green-500 bg-gradient-to-br from-green-50/50 to-green-100/30 hover:from-green-50/70 hover:to-green-100/50 transition-all duration-200">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-green-700">
+              <Coins className="h-5 w-5" />
+              <span className="text-base font-semibold">Total Funding</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="text-center mb-4">
+              <div className="text-2xl font-bold text-green-700 mb-1">
+                {formatCurrency(totalFunding)}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Available Funding Sources
+              </div>
+            </div>
+            
+            {/* Key Funding Sources */}
+            <div className="space-y-2 text-sm">
+              {mainLoanAmount > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Main Loan</span>
+                  <span className="font-medium">{formatCurrency(mainLoanAmount)}</span>
+                </div>
+              )}
+              {propertyData.useEquityFunding && equityLoanAmount > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Equity Loan</span>
+                  <span className="font-medium">{formatCurrency(equityLoanAmount)}</span>
+                </div>
+              )}
+              {cashDeposit > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Cash Deposit</span>
+                  <span className="font-medium">{formatCurrency(cashDeposit)}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Detailed Funding Info (Expandable) */}
+            {showDetails && (
+              <div className="mt-4 pt-4 border-t border-green-200">
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="funding-details" className="border-none">
+                    <AccordionTrigger className="text-sm py-2 text-green-700 hover:no-underline min-h-[44px]">
+                      <span className="flex items-center gap-2">
+                        <ChevronRight className="h-4 w-4" />
+                        Loan Details
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-3 text-xs pt-2">
+                      {mainLoanAmount > 0 && (
+                        <div className="space-y-1 p-3 bg-white/50 rounded-lg">
+                          <div className="font-medium text-green-700">Main Loan ({(propertyData.mainLoanType || 'pi').toUpperCase()})</div>
+                          <div className="space-y-1">
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Interest Rate</span>
+                              <span>{propertyData.isConstructionProject ? propertyData.constructionInterestRate : propertyData.interestRate}%</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Term</span>
+                              <span>{propertyData.loanTerm} years</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">LVR</span>
+                              <span>{purchaseCosts > 0 ? ((mainLoanAmount / purchaseCosts) * 100).toFixed(1) : 0}%</span>
+                            </div>
                           </div>
                         </div>
-                        <div className="text-xs text-purple-600 italic pl-2">Upfront costs only</div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Summary */}
-                  <div className="bg-primary/5 border border-primary/20 p-3 rounded">
-                    <div className="flex justify-between text-sm font-medium">
-                      <span>Total Interest During Construction</span>
-                      <span>${holdingCosts.total.toLocaleString()}</span>
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      <div className="flex justify-between">
-                        <span>Monthly average</span>
-                        <span>${Math.round(holdingCosts.total / propertyData.constructionPeriod).toLocaleString()}</span>
-                      </div>
-                    </div>
-                    <div className="text-xs text-green-600 mt-2 italic">
-                      ✓ Tax-deductible construction interest
-                    </div>
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
+                      )}
+                      
+                      {propertyData.useEquityFunding && equityLoanAmount > 0 && (
+                        <div className="space-y-1 p-3 bg-white/50 rounded-lg">
+                          <div className="font-medium text-green-700">Equity Loan ({(propertyData.equityLoanType || 'pi').toUpperCase()})</div>
+                          <div className="space-y-1">
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Interest Rate</span>
+                              <span>{propertyData.equityLoanInterestRate}%</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Term</span>
+                              <span>{propertyData.equityLoanTerm} years</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Available Equity</span>
+                              <span>{formatCurrency(calculateAvailableEquity())}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </div>
             )}
-            
-            <Separator className="my-2" />
-            <div className="flex justify-between font-medium">
-              <span>Total Purchase Cost</span>
-              <span className="text-primary">${totalPurchaseCost.toLocaleString()}</span>
+          </CardContent>
+        </Card>
+
+        {/* Funding Coverage Status */}
+        <Card className={`border-l-4 transition-all duration-200 ${
+          status === 'complete' 
+            ? 'border-l-green-500 bg-gradient-to-br from-green-50/50 to-green-100/30 hover:from-green-50/70 hover:to-green-100/50' 
+            : status === 'warning'
+            ? 'border-l-amber-500 bg-gradient-to-br from-amber-50/50 to-amber-100/30 hover:from-amber-50/70 hover:to-amber-100/50'
+            : 'border-l-red-500 bg-gradient-to-br from-red-50/50 to-red-100/30 hover:from-red-50/70 hover:to-red-100/50'
+        }`}>
+          <CardHeader className="pb-3">
+            <CardTitle className={`flex items-center gap-2 text-base font-semibold ${
+              status === 'complete' 
+                ? 'text-green-700'
+                : status === 'warning'
+                ? 'text-amber-700'
+                : 'text-red-700'
+            }`}>
+              {status === 'complete' ? (
+                <CheckCircle className="h-5 w-5" />
+              ) : (
+                <AlertTriangle className="h-5 w-5" />
+              )}
+              Coverage Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="text-center mb-4">
+              <div className={`text-3xl font-bold mb-2 ${
+                status === 'complete' 
+                  ? 'text-green-700'
+                  : status === 'warning'
+                  ? 'text-amber-700'
+                  : 'text-red-700'
+              }`}>
+                {fundingCoverage.toFixed(0)}%
+              </div>
+              <div className="text-sm text-muted-foreground mb-3">
+                Funding Coverage
+              </div>
+              
+              <Progress 
+                value={Math.min(100, fundingCoverage)} 
+                className={`h-3 mb-3 ${
+                  status === 'complete' 
+                    ? '[&>div]:bg-green-600'
+                    : status === 'warning'
+                    ? '[&>div]:bg-amber-600'
+                    : '[&>div]:bg-red-600'
+                }`}
+              />
             </div>
-          </div>
-        </div>
-
-        {/* Funding Sources */}
-        <div className="space-y-3">
-          <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
-            Funding Sources
-          </h4>
-          <div className="space-y-2">
             
-            {/* Main Loan */}
-            <Collapsible open={expandedSections.includes('main-loan')} onOpenChange={() => toggleSection('main-loan')}>
-              <CollapsibleTrigger className="flex items-center justify-between w-full text-sm hover:bg-muted/50 p-2 rounded">
-                <span>Main Loan ({propertyData.mainLoanType.toUpperCase()})</span>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">${mainLoanAmount.toLocaleString()}</span>
-                  {expandedSections.includes('main-loan') ? 
-                    <ChevronDown className="h-4 w-4" /> : 
-                    <ChevronRight className="h-4 w-4" />
-                  }
-                </div>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="pl-4 space-y-1">
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Interest Rate</span>
-                  <span>{propertyData.interestRate}%</span>
-                </div>
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Loan Term</span>
-                  <span>{propertyData.loanTerm} years</span>
-                </div>
-                {propertyData.mainLoanType === 'io' && (
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>IO Period</span>
-                    <span>{propertyData.ioTermYears} years</span>
+            {/* Status Message */}
+            <div className="text-center">
+              {fundingShortfall > 0 ? (
+                <div className="space-y-2">
+                  <div className="text-lg font-bold text-red-700">
+                    {formatCurrency(fundingShortfall)}
                   </div>
-                )}
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>LVR</span>
-                  <span>{purchaseCosts > 0 ? ((mainLoanAmount / purchaseCosts) * 100).toFixed(1) : 0}%</span>
+                  <div className="text-sm text-red-600">
+                    Funding Shortfall
+                  </div>
                 </div>
-              </CollapsibleContent>
-            </Collapsible>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-center gap-2 text-green-700">
+                    <CheckCircle className="h-5 w-5" />
+                    <span className="font-semibold">Fully Funded</span>
+                  </div>
+                  <div className="text-sm text-green-600">
+                    All costs are covered
+                  </div>
+                </div>
+              )}
+            </div>
 
-            {/* Equity Loan */}
-            {propertyData.useEquityFunding && (
-              <Collapsible open={expandedSections.includes('equity-loan')} onOpenChange={() => toggleSection('equity-loan')}>
-                <CollapsibleTrigger className="flex items-center justify-between w-full text-sm hover:bg-muted/50 p-2 rounded">
-                  <span>Equity Loan ({propertyData.equityLoanType.toUpperCase()})</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">${equityLoanAmount.toLocaleString()}</span>
-                    {expandedSections.includes('equity-loan') ? 
-                      <ChevronDown className="h-4 w-4" /> : 
-                      <ChevronRight className="h-4 w-4" />
-                    }
-                  </div>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="pl-4 space-y-1">
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Interest Rate</span>
-                    <span>{propertyData.equityLoanInterestRate}%</span>
-                  </div>
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Loan Term</span>
-                    <span>{propertyData.equityLoanTerm} years</span>
-                  </div>
-                  {propertyData.equityLoanType === 'io' && (
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>IO Period</span>
-                      <span>{propertyData.equityLoanIoTermYears} years</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Primary Property Value</span>
-                    <span>${propertyData.primaryPropertyValue.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Available Equity</span>
-                    <span>${availableEquity.toLocaleString()}</span>
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
+            {/* Status Badge */}
+            <div className="mt-4 pt-4 border-t">
+              <Badge 
+                variant={status === 'complete' ? 'default' : status === 'warning' ? 'secondary' : 'destructive'}
+                className="w-full justify-center py-2 text-sm font-medium min-h-[40px] items-center"
+              >
+                {status === 'complete' ? '✓ Ready to Proceed' 
+                  : status === 'warning' ? '⚠ Review Required'
+                  : '⚠ Action Needed'}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Mobile Summary Footer */}
+      {isMobile && (
+        <Card className="bg-muted/20 border-dashed">
+          <CardContent className="pt-4">
+            <div className="grid grid-cols-2 gap-4 text-center">
+              <div className="space-y-1">
+                <div className="text-sm font-medium text-muted-foreground">Total Cost</div>
+                <div className="text-lg font-bold text-blue-700">
+                  {formatCurrency(totalPurchaseCost)}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-sm font-medium text-muted-foreground">Total Funding</div>
+                <div className="text-lg font-bold text-green-700">
+                  {formatCurrency(totalFunding)}
+                </div>
+              </div>
+            </div>
+            {fundingShortfall > 0 && (
+              <div className="mt-3 pt-3 border-t text-center">
+                <div className="text-sm font-medium text-muted-foreground">Shortfall</div>
+                <div className="text-lg font-bold text-red-700">
+                  {formatCurrency(fundingShortfall)}
+                </div>
+              </div>
             )}
-
-            {/* Cash Deposit */}
-            <Collapsible open={expandedSections.includes('cash-deposit')} onOpenChange={() => toggleSection('cash-deposit')}>
-              <CollapsibleTrigger className="flex items-center justify-between w-full text-sm hover:bg-muted/50 p-2 rounded">
-                <span>Cash Deposit</span>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">${cashDeposit.toLocaleString()}</span>
-                  {expandedSections.includes('cash-deposit') ? 
-                    <ChevronDown className="h-4 w-4" /> : 
-                    <ChevronRight className="h-4 w-4" />
-                  }
-                </div>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="pl-4 space-y-1">
-                {propertyData.useEquityFunding ? (
-                  <div className="text-xs text-muted-foreground">
-                    Using equity funding - no cash deposit required
-                  </div>
-                ) : (
-                  <div className="text-xs text-muted-foreground">
-                    Cash contribution towards purchase
-                  </div>
-                )}
-              </CollapsibleContent>
-            </Collapsible>
-            
-            <Separator className="my-2" />
-            <div className="flex justify-between font-medium">
-              <span>Total Funding</span>
-              <span className="text-primary">${totalFunding.toLocaleString()}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Funding Coverage */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
-              Funding Coverage
-            </h4>
-            <Badge variant={status === 'complete' ? 'default' : status === 'warning' ? 'secondary' : 'destructive'}>
-              {fundingCoverage.toFixed(0)}%
-            </Badge>
-          </div>
-          <Progress value={Math.min(100, fundingCoverage)} className="h-2" />
-          
-          {fundingShortfall > 0 && (
-            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
-              <div className="flex items-center gap-2 text-destructive text-sm font-medium">
-                <AlertTriangle className="h-4 w-4" />
-                Funding Shortfall
-              </div>
-              <div className="text-sm text-destructive/80 mt-1">
-                ${fundingShortfall.toLocaleString()} additional funding required
-              </div>
-            </div>
-          )}
-          
-          {fundingShortfall === 0 && (
-            <div className="bg-success/10 border border-success/20 rounded-lg p-3">
-              <div className="flex items-center gap-2 text-success text-sm font-medium">
-                <CheckCircle className="h-4 w-4" />
-                Fully Funded
-              </div>
-              <div className="text-sm text-success/80 mt-1">
-                All purchase costs are covered by loans and cash
-              </div>
-            </div>
-          )}
-        </div>
-
-      </CardContent>
-    </Card>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 };

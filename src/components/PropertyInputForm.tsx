@@ -16,6 +16,7 @@ import { FundingSummaryPanel } from "@/components/FundingSummaryPanel";
 import { ValidationWarnings } from "@/components/ValidationWarnings";
 import StampDutyCalculator from "@/components/StampDutyCalculator";
 import { useFieldConfirmations } from "@/hooks/useFieldConfirmations";
+import { useInputProtection } from "@/hooks/useInputProtection";
 import { usePropertyData, PropertyData } from "@/contexts/PropertyDataContext";
 import { useRepo, type Investor } from "@/services/repository";
 import { 
@@ -24,9 +25,11 @@ import {
   validateFinancing, 
   validatePurchaseCosts, 
   validateAnnualExpenses,
+  validateConstruction,
   validateTaxOptimization
 } from "@/utils/validationUtils";
 import { Users, Home, Receipt, Calculator, Building2, Hammer, CreditCard, Clock, DollarSign, TrendingUp, Percent, X, Plus, AlertTriangle, Info, Search, Check } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { formatFinancialValue } from "@/utils/calculationUtils";
 import { PROPERTY_METHODS, FUNDING_METHODS, type PropertyMethod, type FundingMethod, getFundingMethodData } from "@/types/presets";
@@ -67,6 +70,7 @@ interface PropertyInputFormProps {
   totalTaxableIncome: number;
   marginalTaxRate: number;
   selectedModel?: any; // Optional prop for selected model
+  isEditMode?: boolean; // Add edit mode prop
 }
 
 
@@ -87,13 +91,15 @@ const PercentageInput = ({
 }) => {
   const [displayValue, setDisplayValue] = useState<string>(value?.toFixed(1) || '');
   const [isFocused, setIsFocused] = useState(false);
+  const [lastExternalValue, setLastExternalValue] = useState(value);
 
   // Keep display value in sync with external prop updates when not actively editing
   useEffect(() => {
-    if (!isFocused) {
+    if (!isFocused && Math.abs(value - lastExternalValue) > 0.01) {
       setDisplayValue(value === 0 ? "" : value.toFixed(1));
+      setLastExternalValue(value);
     }
-  }, [value, isFocused]);
+  }, [value, isFocused, lastExternalValue]);
 
   const handleFocus = () => {
     setIsFocused(true);
@@ -109,6 +115,15 @@ const PercentageInput = ({
     const inputValue = e.target.value;
     // Allow any input while typing - we'll validate and format on blur
     setDisplayValue(inputValue);
+    
+    // Protect this field from external updates while editing
+    if (typeof onChange === 'function') {
+      // Get field protection if available through context
+      const protectField = (window as any).__protectField;
+      if (protectField) {
+        protectField(id, 2000);
+      }
+    }
   };
 
   const handleBlur = () => {
@@ -125,6 +140,7 @@ const PercentageInput = ({
     // Convert to number, defaulting to 0 if invalid
     const numericValue = validInput === "" || validInput === "." ? 0 : parseFloat(validInput);
     
+    setLastExternalValue(numericValue);
     onChange(numericValue);
     // Re-apply formatting after editing (keep empty if user cleared)
     setDisplayValue(raw === "" ? "" : numericValue.toFixed(1));
@@ -153,10 +169,26 @@ export const PropertyInputForm = ({
   investorTaxResults,
   totalTaxableIncome, 
   marginalTaxRate,
-  selectedModel 
+  selectedModel,
+  isEditMode = false 
 }: PropertyInputFormProps) => {
-  const [openSections, setOpenSections] = useState<string[]>(["personal-profile"]);
+  const isMobile = useIsMobile();
+  const [openSections, setOpenSections] = useState<string[]>([]);
+  
+  // Ensure sections are collapsed on initial load
+  useEffect(() => {
+    setOpenSections([]);
+  }, []);
   const { confirmations, updateConfirmation } = useFieldConfirmations();
+  const { protectField, isFieldProtected } = useInputProtection();
+  
+  // Make protectField available globally for input components
+  useEffect(() => {
+    (window as any).__protectField = protectField;
+    return () => {
+      delete (window as any).__protectField;
+    };
+  }, [protectField]);
   const { applyPreset, calculateEquityLoanAmount, calculateAvailableEquity, calculateHoldingCosts: ctxCalculateHoldingCosts, calculateFundingAnalysis } = usePropertyData();
   const [pendingUpdate, setPendingUpdate] = useState<{
     field: keyof PropertyData;
@@ -189,8 +221,22 @@ export const PropertyInputForm = ({
     totalHoldingCosts: 0
   };
 
+  // State to prevent cascade loops
+  const [isUpdatingCascade, setIsUpdatingCascade] = useState(false);
+
   // Enhanced updateField with cascading updates and confirmations
   const updateFieldWithCascade = useCallback((field: keyof PropertyData, value: any) => {
+    console.log('🔄 updateFieldWithCascade:', field, value, 'isUpdatingCascade:', isUpdatingCascade);
+    
+    // Protect the field being updated
+    protectField(field as string, 2000);
+    
+    // Prevent cascading updates during cascade execution
+    if (isUpdatingCascade) {
+      updateField(field, value);
+      return;
+    }
+
     // Handle construction contract value with confirmation
     if (field === 'constructionValue' && !confirmations.hasShownConstructionWarning) {
       setPendingUpdate({ field, value, confirmationType: 'construction' });
@@ -205,34 +251,67 @@ export const PropertyInputForm = ({
     
     // Execute the update
     executeFieldUpdate(field, value);
-  }, [propertyData, updateField, confirmations]);
+  }, [propertyData, updateField, confirmations, isUpdatingCascade, protectField]);
 
   const executeFieldUpdate = useCallback((field: keyof PropertyData, value: any) => {
+    console.log('⚡ executeFieldUpdate:', field, value, 'current:', propertyData[field]);
+    
+    // Update the field first
     updateField(field, value);
     
-    // Handle cascading updates
-    if (field === 'constructionValue') {
-      // Split construction value: 90% building, 10% plant & equipment
-      const buildingValue = Math.round(value * 0.9);
-      const plantEquipmentValue = Math.round(value * 0.1);
-      updateField('buildingValue', buildingValue);
-      updateField('plantEquipmentValue', plantEquipmentValue);
-    } else if (field === 'buildingValue' || field === 'plantEquipmentValue') {
-      // Update construction contract value when building/equipment changes
-      const newBuildingValue = field === 'buildingValue' ? value : propertyData.buildingValue;
-      const newPlantEquipmentValue = field === 'plantEquipmentValue' ? value : propertyData.plantEquipmentValue;
-      const newTotal = newBuildingValue + newPlantEquipmentValue;
-      updateField('constructionValue', newTotal);
-    }
+    // Prevent infinite loops during cascade updates
+    if (isUpdatingCascade) return;
     
-    // Update holding costs when construction parameters change
-    if (['landValue', 'constructionValue', 'constructionPeriod', 'constructionInterestRate'].includes(field)) {
-      const costs = calculateHoldingCosts();
-      updateField('landHoldingInterest', costs.landHoldingInterest);
-      updateField('constructionHoldingInterest', costs.constructionHoldingInterest);
-      updateField('totalHoldingCosts', costs.totalHoldingCosts);
-    }
-  }, [propertyData, updateField]);
+    setIsUpdatingCascade(true);
+    
+    // Handle cascading updates with debouncing - aligned with protection timeout
+    setTimeout(() => {
+      console.log('🔄 Cascade timeout executing for field:', field);
+      
+      if (field === 'constructionValue' && !isFieldProtected('buildingValue') && !isFieldProtected('plantEquipmentValue')) {
+        // Only split if the value actually changed and target fields aren't protected
+        const currentTotal = propertyData.buildingValue + propertyData.plantEquipmentValue;
+        console.log('🏗️ Construction value split check:', { value, currentTotal, diff: Math.abs(currentTotal - value) });
+        
+        if (Math.abs(currentTotal - value) > 100) {
+          const buildingValue = Math.round(value * 0.9);
+          const plantEquipmentValue = Math.round(value * 0.1);
+          console.log('🏗️ Splitting construction value:', { buildingValue, plantEquipmentValue });
+          updateField('buildingValue', buildingValue);
+          updateField('plantEquipmentValue', plantEquipmentValue);
+        }
+      } else if ((field === 'buildingValue' || field === 'plantEquipmentValue') && !isFieldProtected('constructionValue')) {
+        // Update construction contract value when building/equipment changes, if not protected
+        const newBuildingValue = field === 'buildingValue' ? value : propertyData.buildingValue;
+        const newPlantEquipmentValue = field === 'plantEquipmentValue' ? value : propertyData.plantEquipmentValue;
+        const newTotal = newBuildingValue + newPlantEquipmentValue;
+        
+        console.log('🏗️ Building/equipment update:', { 
+          field, 
+          value, 
+          newTotal, 
+          currentConstructionValue: propertyData.constructionValue,
+          diff: Math.abs(propertyData.constructionValue - newTotal)
+        });
+        
+        // Only update if the total actually differs
+        if (Math.abs(propertyData.constructionValue - newTotal) > 10) {
+          console.log('🏗️ Updating construction value to:', newTotal);
+          updateField('constructionValue', newTotal);
+        }
+      }
+      
+      // Update holding costs when construction parameters change
+      if (['landValue', 'constructionValue', 'constructionPeriod', 'constructionInterestRate'].includes(field)) {
+        const costs = calculateHoldingCosts();
+        updateField('landHoldingInterest', costs.landHoldingInterest);
+        updateField('constructionHoldingInterest', costs.constructionHoldingInterest);
+        updateField('totalHoldingCosts', costs.totalHoldingCosts);
+      }
+      
+      setIsUpdatingCascade(false);
+    }, 500); // Increased timeout to allow protection to fully establish
+  }, [propertyData, updateField, isUpdatingCascade, isFieldProtected]);
 
   const handleConfirmUpdate = useCallback((dontShowAgain: boolean) => {
     if (!pendingUpdate) return;
@@ -263,6 +342,7 @@ export const PropertyInputForm = ({
   // Get completion status for each section
   const personalProfileStatus = validatePersonalProfile(propertyData);
   const propertyBasicsStatus = validatePropertyBasics(propertyData);
+  const constructionStatus = validateConstruction(propertyData);
   const financingStatus = validateFinancing(propertyData);
   const purchaseCostsStatus = validatePurchaseCosts(propertyData);
   const annualExpensesStatus = validateAnnualExpenses(propertyData);
@@ -340,8 +420,32 @@ export const PropertyInputForm = ({
   };
 
   const updateOwnershipAllocation = (investorId: string, percentage: number) => {
+    // Ensure percentage is within valid range
+    const validPercentage = Math.max(0, Math.min(100, percentage));
+    
+    // Auto-balance for two investors
+    if (propertyData.investors.length === 2) {
+      const otherInvestor = propertyData.investors.find(inv => inv.id !== investorId);
+      if (otherInvestor) {
+        const remainingPercentage = 100 - validPercentage;
+        
+        const updatedAllocations = propertyData.ownershipAllocations.map(allocation => {
+          if (allocation.investorId === investorId) {
+            return { ...allocation, ownershipPercentage: validPercentage };
+          } else if (allocation.investorId === otherInvestor.id) {
+            return { ...allocation, ownershipPercentage: remainingPercentage };
+          }
+          return allocation;
+        });
+        
+        updateField('ownershipAllocations', updatedAllocations);
+        return;
+      }
+    }
+    
+    // Default behavior for non-two-investor scenarios
     const updatedAllocations = propertyData.ownershipAllocations.map(allocation =>
-      allocation.investorId === investorId ? { ...allocation, ownershipPercentage: percentage } : allocation
+      allocation.investorId === investorId ? { ...allocation, ownershipPercentage: validPercentage } : allocation
     );
     updateField('ownershipAllocations', updatedAllocations);
   };
@@ -357,6 +461,19 @@ export const PropertyInputForm = ({
 
   return (
     <div className="space-y-6">
+      {/* Edit Mode Banner */}
+      {isEditMode && (
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+            <h3 className="font-medium text-orange-800">Edit Mode Active</h3>
+          </div>
+          <p className="text-sm text-orange-700 mt-1">
+            You can now modify the investment parameters. Changes will be saved to this instance only.
+          </p>
+        </div>
+      )}
+      
       {/* Validation Warnings */}
       <ValidationWarnings />
       
@@ -376,7 +493,14 @@ export const PropertyInputForm = ({
           <Accordion 
             type="multiple" 
             value={openSections} 
-            onValueChange={setOpenSections}
+            onValueChange={(newOpenSections) => {
+              if (isMobile) {
+                // On mobile, only allow one section open at a time
+                setOpenSections(newOpenSections.slice(-1)); // Keep only the last opened section
+              } else {
+                setOpenSections(newOpenSections);
+              }
+            }}
             className="w-full"
           >
           {/* 1. Personal Financial Profile */}
@@ -533,10 +657,10 @@ export const PropertyInputForm = ({
   <div className="space-y-2">
     <Label className="text-sm font-medium">State</Label>
     <Select
-      value={(propertyData as any).PropertyState ?? 'VIC'}
+      value={propertyData.propertyState ?? 'VIC'}
       onValueChange={(value) => {
         const v = value as Jurisdiction;
-        updateField('PropertyState' as any, v);
+        updateField('propertyState', v);
         const dutiableValue = propertyData.isConstructionProject ? propertyData.landValue : propertyData.purchasePrice;
         const duty = calculateStampDuty(dutiableValue, v);
         updateFieldWithCascade('stampDuty', duty);
@@ -601,48 +725,56 @@ export const PropertyInputForm = ({
             </AccordionContent>
           </AccordionItem>
 
-{/* 3. Construction */}
+{/* 3. Construction Costs */}
 {propertyData.isConstructionProject && (
   <AccordionItem value="construction" className="border-b">
     <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
-      <div className="flex items-center gap-2 w-full">
-        <Hammer className="h-4 w-4 text-primary" />
-        <span className="font-medium">Construction</span>
+      <div className="flex items-center justify-between w-full">
+        <div className="flex items-center gap-2">
+          <Hammer className="h-4 w-4 text-primary" />
+          <span className="font-medium">Construction Costs</span>
+        </div>
+        <AccordionCompletionIndicator status={constructionStatus} sectionKey="construction" />
       </div>
     </AccordionTrigger>
     <AccordionContent className="px-6 pb-6">
       <div className="space-y-6">
-        {/* Construction Value & Summary */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="constructionValue" className="text-sm font-medium">
+        {/* Total Property Value Summary */}
+        <div className="bg-primary/10 rounded-lg p-4 border-l-4 border-primary">
+          <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+            <Home className="h-4 w-4" />
+            Total Property Value
+          </h4>
+          <div className="text-2xl font-bold text-primary">
+            ${(propertyData.landValue + propertyData.constructionValue).toLocaleString()}
+          </div>
+          <div className="text-sm text-muted-foreground mt-1">
+            Land: ${propertyData.landValue.toLocaleString()} + Construction: ${propertyData.constructionValue.toLocaleString()}
+          </div>
+        </div>
+
+        {/* Total Construction Value */}
+        <div className="bg-accent/30 rounded-lg p-4 border border-accent/50">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-medium flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
               Total Construction Value
-              {totalConstructionValue !== propertyData.constructionValue && (
-                <span className="text-muted-foreground text-xs ml-2">
-                  (Calculated: ${totalConstructionValue.toLocaleString()})
-                </span>
-              )}
-            </Label>
-            <CurrencyInput
-              id="constructionValue"
-              value={propertyData.constructionValue}
-              onChange={(value) => updateFieldWithCascade('constructionValue', value)}
-              className="mt-1"
-              placeholder="Enter total construction value"
-            />
-          </div>
-          <div className="bg-primary/10 rounded-lg p-4 border-l-4 border-primary">
-            <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
-              <Home className="h-4 w-4" />
-              Total Property Value
             </h4>
-            <div className="text-2xl font-bold text-primary">
-              ${(propertyData.landValue + propertyData.constructionValue).toLocaleString()}
-            </div>
-            <div className="text-sm text-muted-foreground mt-1">
-              Land: ${propertyData.landValue.toLocaleString()} + Construction: ${propertyData.constructionValue.toLocaleString()}
-            </div>
+            {totalConstructionValue !== propertyData.constructionValue && (
+              <span className="text-muted-foreground text-xs">
+                (Calculated: ${totalConstructionValue.toLocaleString()})
+              </span>
+            )}
           </div>
+          <CurrencyInput
+            id="constructionValue"
+            value={propertyData.constructionValue}
+            onChange={(value) => {
+              protectField('constructionValue', 2000);
+              updateFieldWithCascade('constructionValue', value);
+            }}
+            placeholder="Enter total construction value"
+          />
         </div>
 
         {/* Building Values */}
@@ -657,7 +789,10 @@ export const PropertyInputForm = ({
               <CurrencyInput
                 id="buildingValue"
                 value={propertyData.buildingValue}
-                onChange={(value) => updateFieldWithCascade('buildingValue', value)}
+                onChange={(value) => {
+                  protectField('buildingValue', 2000);
+                  updateFieldWithCascade('buildingValue', value);
+                }}
                 className="mt-1"
                 placeholder="Enter building value"
               />
@@ -667,7 +802,10 @@ export const PropertyInputForm = ({
               <CurrencyInput
                 id="plantEquipmentValue"
                 value={propertyData.plantEquipmentValue}
-                onChange={(value) => updateFieldWithCascade('plantEquipmentValue', value)}
+                onChange={(value) => {
+                  protectField('plantEquipmentValue', 2000);
+                  updateFieldWithCascade('plantEquipmentValue', value);
+                }}
                 className="mt-1"
                 placeholder="Enter equipment value"
               />
@@ -697,68 +835,70 @@ export const PropertyInputForm = ({
             </div>
           </div>
 
-          {/* Holding Cost Estimates */}
-          <div className="bg-orange-50/50 dark:bg-orange-950/20 rounded-lg p-4 border border-orange-200 dark:border-orange-800 mt-4">
-            <h5 className="text-sm font-medium mb-3 flex items-center gap-2 text-orange-700 dark:text-orange-300">
-              <DollarSign className="h-4 w-4" />
-              Holding Cost Estimates ({propertyData.constructionPeriod || 12} months)
-            </h5>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-              <div className="bg-red-50 dark:bg-red-950/30 rounded-lg p-3 border border-red-200 dark:border-red-800">
-                <div className="text-xs text-red-600 dark:text-red-400 font-medium mb-1">
-                  Land Interest (Non-deductible)
-                </div>
-                <div className="text-lg font-bold text-red-700 dark:text-red-300">
-                  ${holdingCosts.landHoldingInterest.toLocaleString()}
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  On ${propertyData.landValue.toLocaleString()}
-                </div>
-              </div>
-              <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3 border border-green-200 dark:border-green-800">
-                <div className="text-xs text-green-600 dark:text-green-400 font-medium mb-1">
-                  Construction Interest (Deductible)
-                </div>
-                <div className="text-lg font-bold text-green-700 dark:text-green-300">
-                  ${holdingCosts.constructionHoldingInterest.toLocaleString()}
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  On construction progress
-                </div>
-              </div>
-              <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
-                <div className="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">
-                  Total Holding Costs
-                </div>
-                <div className="text-lg font-bold text-blue-700 dark:text-blue-300">
-                  ${holdingCosts.totalHoldingCosts.toLocaleString()}
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  During construction
-                </div>
-              </div>
+        </div>
+
+        {/* Development Costs */}
+        <div className="space-y-4">
+          <h4 className="font-medium text-sm">Development Costs</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="councilFees" className="text-sm font-medium">Council Fees & Approvals</Label>
+              <CurrencyInput
+                id="councilFees"
+                value={propertyData.councilFees}
+                onChange={(value) => updateFieldWithCascade('councilFees', value)}
+                className="mt-1"
+                placeholder="Enter council fees"
+              />
             </div>
-            <div className="bg-muted/30 rounded-lg p-3">
-              <div className="text-xs text-muted-foreground mb-2">
-                <AlertTriangle className="h-3 w-3 inline mr-1" />
-                Tax Implications:
-              </div>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <div>• <strong>Land Interest:</strong> Non-deductible as it relates to land acquisition</div>
-                <div>• <strong>Construction Interest:</strong> Can be claimed as immediate deduction or capitalized to building cost</div>
-                <div>• <strong>Total deductible amount:</strong> ${holdingCosts.constructionHoldingInterest.toLocaleString()}</div>
-              </div>
+            <div>
+              <Label htmlFor="architectFees" className="text-sm font-medium">Architect/Design Fees</Label>
+              <CurrencyInput
+                id="architectFees"
+                value={propertyData.architectFees}
+                onChange={(value) => updateFieldWithCascade('architectFees', value)}
+                className="mt-1"
+                placeholder="Enter architect fees"
+              />
+            </div>
+            <div>
+              <Label htmlFor="siteCosts" className="text-sm font-medium">Site Costs & Utilities</Label>
+              <CurrencyInput
+                id="siteCosts"
+                value={propertyData.siteCosts}
+                onChange={(value) => updateFieldWithCascade('siteCosts', value)}
+                className="mt-1"
+                placeholder="Enter site costs"
+              />
             </div>
           </div>
         </div>
+      </div>
+    </AccordionContent>
+  </AccordionItem>
+)}
 
+{/* 4. Construction Timeline */}
+{propertyData.isConstructionProject && (
+  <AccordionItem value="construction-timeline" className="border-b">
+    <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
+      <div className="flex items-center justify-between w-full">
+        <div className="flex items-center gap-2">
+          <Clock className="h-4 w-4 text-primary" />
+          <span className="font-medium">Construction Timeline</span>
+        </div>
+        <AccordionCompletionIndicator status={constructionStatus} sectionKey="construction-timeline" />
+      </div>
+    </AccordionTrigger>
+    <AccordionContent className="px-6 pb-6">
+      <div className="space-y-6">
         {/* Construction Timeline & Financing */}
         <div className="bg-accent/20 rounded-lg p-4">
           <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
             <Clock className="h-4 w-4" />
-            Construction Timeline & Financing
+            Construction Timeline & Loan Structure
           </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
             <div>
               <Label htmlFor="constructionPeriod" className="text-sm font-medium">Construction Period (months)</Label>
               <NumberInput
@@ -772,7 +912,7 @@ export const PropertyInputForm = ({
               />
             </div>
             <div>
-              <Label htmlFor="constructionInterestRate" className="text-sm font-medium">Construction Interest Rate</Label>
+              <Label htmlFor="constructionInterestRate" className="text-sm font-medium">Main Loan Rate (Construction Period)</Label>
               <PercentageInput
                 id="constructionInterestRate"
                 value={propertyData.constructionInterestRate}
@@ -780,8 +920,25 @@ export const PropertyInputForm = ({
                 className="mt-1"
                 placeholder="Enter rate"
               />
+              <div className="text-xs text-muted-foreground mt-1">
+                Interest rate during construction
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="postConstructionRateReduction" className="text-sm font-medium">Rate Reduction After Construction</Label>
+              <PercentageInput
+                id="postConstructionRateReduction"
+                value={propertyData.postConstructionRateReduction}
+                onChange={(value) => updateField('postConstructionRateReduction', value)}
+                className="mt-1"
+                placeholder="0.5"
+              />
+              <div className="text-xs text-muted-foreground mt-1">
+                Ongoing rate: {(propertyData.constructionInterestRate - propertyData.postConstructionRateReduction).toFixed(2)}%
+              </div>
             </div>
           </div>
+
           {/* Construction Progress Payments */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -879,43 +1036,62 @@ export const PropertyInputForm = ({
               </div>
             )}
           </div>
-        </div>
 
-        {/* Development Costs */}
-        <div className="space-y-4">
-          <h4 className="font-medium text-sm">Development Costs</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="councilFees" className="text-sm font-medium">Council Fees & Approvals</Label>
-              <CurrencyInput
-                id="councilFees"
-                value={propertyData.councilFees}
-                onChange={(value) => updateFieldWithCascade('councilFees', value)}
-                className="mt-1"
-                placeholder="Enter council fees"
-              />
+          {/* Holding Cost Estimates */}
+          <div className="bg-orange-50/50 dark:bg-orange-950/20 rounded-lg p-4 border border-orange-200 dark:border-orange-800 mt-4">
+            <h5 className="text-sm font-medium mb-3 flex items-center gap-2 text-orange-700 dark:text-orange-300">
+              <DollarSign className="h-4 w-4" />
+              Enhanced Holding Cost Estimates ({propertyData.constructionPeriod || 12} months) - Monthly Compounding
+            </h5>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+              <div className="bg-red-50 dark:bg-red-950/30 rounded-lg p-3 border border-red-200 dark:border-red-800">
+                <div className="text-xs text-red-600 dark:text-red-400 font-medium mb-1">
+                  Land Interest (Non-deductible, from settlement)
+                </div>
+                <div className="text-lg font-bold text-red-700 dark:text-red-300">
+                  ${holdingCosts.landHoldingInterest.toLocaleString()}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  On ${propertyData.landValue.toLocaleString()} + stamp duty
+                </div>
+              </div>
+              <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3 border border-green-200 dark:border-green-800">
+                <div className="text-xs text-green-600 dark:text-green-400 font-medium mb-1">
+                  Construction Interest (Deductible, progressive drawdown)
+                </div>
+                <div className="text-lg font-bold text-green-700 dark:text-green-300">
+                  ${holdingCosts.constructionHoldingInterest.toLocaleString()}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Based on payment schedule timing
+                </div>
+              </div>
+              <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
+                <div className="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">
+                  Total Holding Costs
+                </div>
+                <div className="text-lg font-bold text-blue-700 dark:text-blue-300">
+                  ${holdingCosts.totalHoldingCosts.toLocaleString()}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Avg: ${Math.round(holdingCosts.totalHoldingCosts / (propertyData.constructionPeriod || 12)).toLocaleString()}/month
+                </div>
+              </div>
             </div>
-            <div>
-              <Label htmlFor="architectFees" className="text-sm font-medium">Architect/Design Fees</Label>
-              <CurrencyInput
-                id="architectFees"
-                value={propertyData.architectFees}
-                onChange={(value) => updateFieldWithCascade('architectFees', value)}
-                className="mt-1"
-                placeholder="Enter architect fees"
-              />
-            </div>
-            <div>
-              <Label htmlFor="siteCosts" className="text-sm font-medium">Site Costs & Utilities</Label>
-              <CurrencyInput
-                id="siteCosts"
-                value={propertyData.siteCosts}
-                onChange={(value) => updateFieldWithCascade('siteCosts', value)}
-                className="mt-1"
-                placeholder="Enter site costs"
-              />
+            <div className="bg-muted/30 rounded-lg p-3">
+              <div className="text-xs text-muted-foreground mb-2">
+                <AlertTriangle className="h-3 w-3 inline mr-1" />
+                Tax Implications:
+              </div>
+              <div className="text-xs text-muted-foreground space-y-1">
+                <div>• <strong>Land Interest:</strong> Non-deductible, calculated from settlement date using monthly compounding</div>
+                <div>• <strong>Construction Interest:</strong> Deductible, calculated from each drawdown date based on payment schedule</div>
+                <div>• <strong>Enhanced calculation:</strong> Uses monthly compound interest for accuracy vs simplified annual calculations</div>
+                <div>• <strong>Total deductible amount:</strong> ${holdingCosts.constructionHoldingInterest.toLocaleString()}</div>
+              </div>
             </div>
           </div>
+          
         </div>
       </div>
     </AccordionContent>
@@ -1021,7 +1197,7 @@ export const PropertyInputForm = ({
             </AccordionContent>
           </AccordionItem>
 
-          {/* 5. Funding & Finance Structure */}
+          {/* 6. Funding & Finance Structure */}
           <AccordionItem value="funding-finance" className="border-b">
             <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
               <div className="flex items-center gap-2 w-full">
@@ -1191,16 +1367,46 @@ export const PropertyInputForm = ({
                 {/* Main Loan Structure */}
                 <div className="space-y-4">
                   <h4 className="font-medium text-sm">Main Loan Structure</h4>
+                  {propertyData.isConstructionProject && (
+                    <Alert variant="info" className="mb-4">
+                      <Info className="h-4 w-4" />
+                      <AlertTitle>Construction Loan Structure</AlertTitle>
+                      <AlertDescription>
+                        The main loan acts as your construction loan during building. Rate is set in Construction Timeline section.
+                        <br />
+                        <strong>Construction Rate:</strong> {propertyData.constructionInterestRate}% →  
+                        <strong>Ongoing Rate:</strong> {(propertyData.constructionInterestRate - propertyData.postConstructionRateReduction).toFixed(2)}% 
+                        (after {propertyData.postConstructionRateReduction}% reduction)
+                      </AlertDescription>
+                    </Alert>
+                  )}
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div>
-                        <Label htmlFor="interestRate" className="text-sm font-medium">Interest Rate</Label>
+                        <Label htmlFor="interestRate" className="text-sm font-medium">
+                          {propertyData.isConstructionProject ? 'Ongoing Interest Rate (Post-Construction)' : 'Interest Rate'}
+                        </Label>
                         <PercentageInput
                           id="interestRate"
-                          value={propertyData.interestRate}
-                          onChange={(value) => updateField('interestRate', value)}
+                          value={propertyData.isConstructionProject ? 
+                            (propertyData.constructionInterestRate - propertyData.postConstructionRateReduction) : 
+                            propertyData.interestRate
+                          }
+                          onChange={(value) => {
+                            if (propertyData.isConstructionProject) {
+                              // Update construction rate to maintain the reduction amount
+                              updateField('constructionInterestRate', value + propertyData.postConstructionRateReduction);
+                            } else {
+                              updateField('interestRate', value);
+                            }
+                          }}
                           className="mt-1"
                         />
+                        {propertyData.isConstructionProject && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Calculated from construction rate minus reduction
+                          </div>
+                        )}
                       </div>
                       <div>
                         <Label htmlFor="loanTerm" className="text-sm font-medium">Loan Term (years)</Label>
@@ -1509,7 +1715,7 @@ export const PropertyInputForm = ({
             </AccordionContent>
           </AccordionItem>
 
-          {/* 6. Ongoing Income & Expenses */}
+          {/* 7. Ongoing Income & Expenses */}
           <AccordionItem value="ongoing-income-expenses" className="border-b">
             <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
               <div className="flex items-center gap-2 w-full">
@@ -1613,7 +1819,7 @@ export const PropertyInputForm = ({
             </AccordionContent>
           </AccordionItem>
 
-          {/* 7. Tax Optimization */}
+          {/* 8. Tax Optimization */}
           <AccordionItem value="tax-optimization" className="border-b">
             <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
               <div className="flex items-center gap-2 w-full">
@@ -1762,8 +1968,8 @@ export const PropertyInputForm = ({
                           </div>
                           <div>
                             <span className="text-muted-foreground">Tax Difference:</span>
-                            <div className={`font-medium ${result.taxDifference < 0 ? 'text-success' : 'text-destructive'}`}>
-                              ${result.taxDifference.toLocaleString()}
+                            <div className={`font-medium ${result.taxDifference > 0 ? 'text-success' : 'text-destructive'}`}>
+                              ${Math.abs(result.taxDifference).toLocaleString()}
                             </div>
                           </div>
                         </div>
@@ -1773,8 +1979,8 @@ export const PropertyInputForm = ({
                     {/* Total Tax Impact row */}
                     <div className="flex items-center justify-between bg-primary/5 rounded-lg p-3 text-sm">
                       <span className="font-medium">Total Tax Impact</span>
-                      <span className={`font-semibold ${investorTaxResults.reduce((s, r) => s + r.taxDifference, 0) < 0 ? 'text-success' : 'text-destructive'}`}>
-                        ${investorTaxResults.reduce((s, r) => s + r.taxDifference, 0).toLocaleString()}
+                      <span className={`font-semibold ${investorTaxResults.reduce((s, r) => s + r.taxDifference, 0) > 0 ? 'text-success' : 'text-destructive'}`}>
+                        ${Math.abs(investorTaxResults.reduce((s, r) => s + r.taxDifference, 0)).toLocaleString()}
                       </span>
                     </div>
                   </div>

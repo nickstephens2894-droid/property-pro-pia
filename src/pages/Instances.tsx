@@ -6,7 +6,9 @@ import { useNavigate } from "react-router-dom";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useInstances } from "@/contexts/InstancesContext";
-import { Instance } from "@/integrations/supabase/types";
+import { Database } from "@/integrations/supabase/types";
+
+type Instance = Database['public']['Tables']['instances']['Row'];
 
 const Instances = () => {
   const navigate = useNavigate();
@@ -55,12 +57,8 @@ const Instances = () => {
               icon={Building2}
               title="No instances yet"
               description="Create your first property investment instance to get started with analysis and projections."
-              action={
-                <Button onClick={handleAddInstance} size="lg">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create First Instance
-                </Button>
-              }
+              actionLabel="Create First Instance"
+              onAction={handleAddInstance}
             />
           </div>
         </div>
@@ -90,12 +88,8 @@ const Instances = () => {
               icon={Building2}
               title="No instances yet"
               description="Create your first property investment instance to get started with analysis and projections."
-              action={
-                <Button onClick={handleAddInstance} size="lg">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create First Instance
-                </Button>
-              }
+              actionLabel="Create First Instance"
+              onAction={handleAddInstance}
             />
           </div>
         </div>

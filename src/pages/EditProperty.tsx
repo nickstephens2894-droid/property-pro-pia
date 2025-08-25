@@ -128,7 +128,7 @@ const EditProperty = () => {
           property_type: property.property_type || 'Apartment',
           purchase_price: property.purchase_price || 0,
           weekly_rent: property.weekly_rent || 0,
-          location: property.location || 'NSW',
+          location: (property.location as any) || 'NSW',
           property_method: property.property_method || 'built-first-owner',
           construction_year: property.construction_year || new Date().getFullYear(),
           is_construction_project: property.is_construction_project || false,
@@ -180,6 +180,22 @@ const EditProperty = () => {
     }
   }, [formData.location, formData.purchase_price, formData.is_construction_project, formData.land_value]);
 
+  // Auto-calculate purchase price for House & Land - Construction
+  useEffect(() => {
+    if (formData.property_method === 'house-land-construction') {
+      const calculatedPrice = formData.land_value + formData.construction_value;
+      setFormData(prev => {
+        if (prev.purchase_price !== calculatedPrice) {
+          return {
+            ...prev,
+            purchase_price: calculatedPrice
+          };
+        }
+        return prev;
+      });
+    }
+  }, [formData.property_method, formData.land_value, formData.construction_value]);
+
   const handleInputChange = (field: keyof EditPropertyForm, value: any) => {
     setFormData(prev => ({
       ...prev,
@@ -217,7 +233,7 @@ const EditProperty = () => {
     setLoading(true);
     try {
       // Update the property
-      await updateProperty(propertyId, formData);
+      await updateProperty(propertyId, { ...formData, id: propertyId });
       
       // Show success message
       toast({
@@ -374,13 +390,30 @@ const EditProperty = () => {
               <CardContent className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="purchase_price">Purchase Price</Label>
+                    <Label htmlFor="purchase_price">
+                      Purchase Price
+                      {formData.property_method === 'house-land-construction' && (
+                        <span className="text-xs text-muted-foreground ml-1">(Auto-calculated)</span>
+                      )}
+                    </Label>
                     <CurrencyInput
                       id="purchase_price"
                       value={formData.purchase_price}
                       onChange={(value) => handleInputChange('purchase_price', value)}
                       placeholder="Enter purchase price"
+                      disabled={formData.property_method === 'house-land-construction'}
+                      className={formData.property_method === 'house-land-construction' ? "bg-muted" : ""}
                     />
+                    {formData.property_method === 'house-land-construction' && (
+                      <p className="text-xs text-muted-foreground">
+                        Calculated as Land Value + Construction Value
+                        {formData.purchase_price > 0 && (
+                          <span className="block mt-1 font-medium text-green-600">
+                            ${formData.land_value.toLocaleString()} + ${formData.construction_value.toLocaleString()} = ${formData.purchase_price.toLocaleString()}
+                          </span>
+                        )}
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="weekly_rent">Weekly Rent</Label>
@@ -434,11 +467,11 @@ const EditProperty = () => {
                     <NumberInput
                       id="rental_growth_rate"
                       value={formData.rental_growth_rate}
-                      onChange={(value) => handleInputChange('rental_growth_rate', value)}
+                      onChange={(value) => handleInputChange('rental_growth_rate', Number(value))}
                       placeholder="3.0"
                       min={0}
                       max={20}
-                      step={0.1}
+                       step="0.1"
                       formatThousands={false}
                     />
                   </div>
@@ -513,11 +546,11 @@ const EditProperty = () => {
                     <NumberInput
                       id="property_management"
                       value={formData.property_management}
-                      onChange={(value) => handleInputChange('property_management', value)}
+                      onChange={(value) => handleInputChange('property_management', Number(value))}
                       placeholder="8.0"
                       min={0}
                       max={20}
-                      step={0.1}
+                      step="0.1"
                       formatThousands={false}
                     />
                   </div>

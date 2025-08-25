@@ -28,14 +28,14 @@ export const CurrencyInput = ({
 
   // Separate state for input values to allow free editing - initialize once (formatted when not focused)
   const [displayValue, setDisplayValue] = useState<string>(
-    value === 0 ? "" : formatNumber(value)
+    value === 0 ? "0" : (value || value === 0) ? formatNumber(value) : ""
   );
   const [isFocused, setIsFocused] = useState(false);
 
   // Keep display value in sync with external prop updates when not actively editing
   useEffect(() => {
     if (!isFocused) {
-      setDisplayValue(value === 0 ? "" : formatNumber(value));
+      setDisplayValue(value === 0 ? "0" : (value || value === 0) ? formatNumber(value) : "");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, isFocused]);
@@ -70,7 +70,7 @@ export const CurrencyInput = ({
     // Update the parent component
     onChange(numericValue);
     
-    // Re-apply formatting after editing (keep empty if user cleared)
+    // Re-apply formatting after editing (show "0" for zero value, empty only when truly cleared)
     setDisplayValue(raw === "" ? "" : formatNumber(numericValue));
   };
 

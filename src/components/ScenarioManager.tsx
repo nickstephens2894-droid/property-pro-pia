@@ -60,9 +60,7 @@ export default function ScenarioManager() {
 
     setLoading(true);
     try {
-      const success = await userDataService.saveScenario({
-        id: crypto.randomUUID(),
-        userId: user.id,
+      const success = await userDataService.saveScenario(user.id, {
         name: scenarioName.trim(),
         isPrimary: scenarios.length === 0, // First scenario becomes primary
         propertyData
