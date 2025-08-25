@@ -2,9 +2,7 @@ import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import LandingHero from "@/components/LandingHero";
-import LandingFeatures from "@/components/LandingFeatures";
-import LandingAudiences from "@/components/LandingAudiences";
-import LandingBenefits from "@/components/LandingBenefits";
+import LandingScenarios from "@/components/LandingScenarios";
 import LandingCTA from "@/components/LandingCTA";
 
 const Index = () => {
@@ -86,9 +84,7 @@ const Index = () => {
   return (
     <main className="min-h-screen">
       <LandingHero />
-      <LandingFeatures />
-      <LandingAudiences />
-      <LandingBenefits />
+      <LandingScenarios />
       <LandingCTA />
     </main>
   );

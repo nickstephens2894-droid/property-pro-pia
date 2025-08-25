@@ -19,21 +19,18 @@ const LandingHero = () => {
             multi-investor modeling, and 40-year projections. For individual investors and financial advisors.
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-            <Button size="lg" asChild className="min-w-[200px]">
+          <div className="flex justify-center mb-12">
+            <Button size="lg" asChild className="min-w-[240px]">
               <Link to="/auth">Start Free Analysis</Link>
-            </Button>
-            <Button variant="outline" size="lg" className="min-w-[200px]">
-              <Link to="/auth">Book Advisor Demo</Link>
             </Button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-16 max-w-2xl mx-auto">
             <div className="flex flex-col items-center p-6 rounded-lg bg-card shadow-sm">
               <Calculator className="h-12 w-12 text-primary mb-4" />
               <h3 className="text-lg font-semibold mb-2">Australian Tax Engine</h3>
               <p className="text-muted-foreground text-center">
-                Accurate calculations including depreciation, stamp duty, and Medicare levy
+                Accurate Div 40/43 depreciation, stamp duty, and Medicare levy calculations
               </p>
             </div>
             
@@ -41,15 +38,7 @@ const LandingHero = () => {
               <TrendingUp className="h-12 w-12 text-success mb-4" />
               <h3 className="text-lg font-semibold mb-2">40-Year Projections</h3>
               <p className="text-muted-foreground text-center">
-                Detailed cash flow analysis with CPI adjustments and real-world scenarios
-              </p>
-            </div>
-            
-            <div className="flex flex-col items-center p-6 rounded-lg bg-card shadow-sm">
-              <Users className="h-12 w-12 text-warning mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Multi-Investor Ready</h3>
-              <p className="text-muted-foreground text-center">
-                Complex ownership structures and advisor client management tools
+                Long-term analysis with inflation, CPI adjustments, and market cycles
               </p>
             </div>
           </div>
