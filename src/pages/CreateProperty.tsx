@@ -202,7 +202,10 @@ const CreateProperty = () => {
 
     setLoading(true);
     try {
-      await addProperty(formData);
+      // Remove construction_progress_payments from the data being sent to avoid database column error
+      const { construction_progress_payments, ...propertyDataWithoutProgress } = formData;
+      
+      await addProperty(propertyDataWithoutProgress);
       
       toast({
         title: "Property Created!",
