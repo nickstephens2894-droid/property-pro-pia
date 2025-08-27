@@ -2,16 +2,20 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { PropertyModelsService } from '@/services/propertyModelsService';
 import { 
   PropertyModel, 
+  CreatePropertyFormData,
   CreatePropertyModelRequest, 
   UpdatePropertyModelRequest 
 } from '@/types/propertyModels';
 import { useAuth } from './AuthContext';
 
+// Export PropertyModel for use in other components
+export type { PropertyModel };
+
 interface PropertiesContextType {
   properties: PropertyModel[];
   loading: boolean;
   error: string | null;
-  addProperty: (propertyData: CreatePropertyModelRequest) => Promise<void>;
+  addProperty: (propertyData: CreatePropertyFormData) => Promise<void>;
   updateProperty: (id: string, updates: UpdatePropertyModelRequest) => Promise<void>;
   deleteProperty: (id: string) => Promise<void>;
   getPropertyById: (id: string) => PropertyModel | undefined;
@@ -40,6 +44,13 @@ export const PropertiesProvider: React.FC<PropertiesProviderProps> = ({ children
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
+  // Auto-load properties when user is authenticated
+  useEffect(() => {
+    if (user) {
+      refreshProperties();
+    }
+  }, [user]);
+
   const refreshProperties = async () => {
     try {
       setLoading(true);
@@ -54,7 +65,7 @@ export const PropertiesProvider: React.FC<PropertiesProviderProps> = ({ children
     }
   };
 
-  const addProperty = async (propertyData: CreatePropertyModelRequest) => {
+  const addProperty = async (propertyData: CreatePropertyFormData) => {
     try {
       setError(null);
       
@@ -63,7 +74,7 @@ export const PropertiesProvider: React.FC<PropertiesProviderProps> = ({ children
       }
 
       // Add the owner_user_id to the property data
-      const propertyWithOwner = {
+      const propertyWithOwner: CreatePropertyModelRequest = {
         ...propertyData,
         owner_user_id: user.id
       };

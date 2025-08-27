@@ -15,48 +15,10 @@ import { calculateStampDuty, type Jurisdiction } from "@/utils/stampDuty";
 import { useProperties } from "@/contexts/PropertiesContext";
 import { ConstructionStagesTable } from "@/components/ConstructionStagesTable";
 import { useToast } from "@/components/ui/use-toast";
+import { CreatePropertyFormData } from '@/types/propertyModels';
 
-interface CreatePropertyForm {
-  name: string;
-  description: string;
-  property_type: 'Apartment' | 'House' | 'Townhouse' | 'Unit' | 'Land' | 'Commercial';
-  purchase_price: number;
-  weekly_rent: number;
+interface CreatePropertyForm extends CreatePropertyFormData {
   location: Jurisdiction;
-  property_method: 'house-land-construction' | 'built-first-owner' | 'built-second-owner';
-  // Property Basics
-  construction_year: number;
-  is_construction_project: boolean;
-  land_value: number;
-  construction_value: number;
-  construction_period: number;
-  construction_interest_rate: number;
-  building_value: number;
-  plant_equipment_value: number;
-  // Construction Progress Payments
-  construction_progress_payments: Array<{
-    id: string;
-    percentage: number;
-    month: number;
-    description: string;
-  }>;
-  // Transaction Costs
-  stamp_duty: number;
-  legal_fees: number;
-  inspection_fees: number;
-  council_fees: number;
-  architect_fees: number;
-  site_costs: number;
-  // Ongoing Income & Expenses
-  rental_growth_rate: number;
-  vacancy_rate: number;
-  property_management: number;
-  council_rates: number;
-  insurance: number;
-  repairs: number;
-  // Depreciation
-  depreciation_method: 'prime-cost' | 'diminishing-value';
-  is_new_property: boolean;
 }
 
 const CreateProperty = () => {
@@ -81,13 +43,6 @@ const CreateProperty = () => {
     construction_interest_rate: 0,
     building_value: 0,
     plant_equipment_value: 0,
-    construction_progress_payments: [
-      { id: '1', percentage: 10, month: 1, description: 'Site preparation & slab' },
-      { id: '2', percentage: 20, month: 2, description: 'Frame & roof' },
-      { id: '3', percentage: 25, month: 4, description: 'Lock-up stage' },
-      { id: '4', percentage: 25, month: 6, description: 'Fixing stage' },
-      { id: '5', percentage: 20, month: 8, description: 'Completion' }
-    ],
     stamp_duty: 0,
     legal_fees: 0,
     inspection_fees: 0,
@@ -171,24 +126,6 @@ const CreateProperty = () => {
     }
   }, [formData.location, formData.purchase_price, formData.is_construction_project, formData.land_value]);
 
-  // Auto-update construction stages when construction_period changes
-  useEffect(() => {
-    if (formData.is_construction_project && formData.construction_period > 0) {
-      const updatedStages = formData.construction_progress_payments.map((stage, index) => {
-        const defaultMonth = [1, 2, 4, 6, 8][index] || stage.month;
-        const adjustedMonth = Math.max(1, Math.round((defaultMonth / 8) * formData.construction_period));
-        return {
-          ...stage,
-          month: adjustedMonth
-        };
-      });
-      
-      setFormData(prev => ({
-        ...prev,
-        construction_progress_payments: updatedStages
-      }));
-    }
-  }, [formData.construction_period, formData.is_construction_project]);
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
@@ -202,10 +139,7 @@ const CreateProperty = () => {
 
     setLoading(true);
     try {
-      // Remove construction_progress_payments from the data being sent to avoid database column error
-      const { construction_progress_payments, ...propertyDataWithoutProgress } = formData;
-      
-      await addProperty(propertyDataWithoutProgress);
+      await addProperty(formData);
       
       toast({
         title: "Property Created!",
@@ -451,17 +385,6 @@ const CreateProperty = () => {
                           </div>
                         )}
 
-                        {/* Construction Stages - Only show for construction projects */}
-                        {formData.is_construction_project && (
-                          <div className="mt-6">
-                            <ConstructionStagesTable
-                              stages={formData.construction_progress_payments}
-                              onChange={(stages) => handleInputChange('construction_progress_payments', stages)}
-                              constructionValue={formData.construction_value}
-                              constructionPeriod={formData.construction_period}
-                            />
-                          </div>
-                        )}
                       </div>
                     </AccordionContent>
                   </AccordionItem>
@@ -676,12 +599,6 @@ const CreateProperty = () => {
                     <span className="text-muted-foreground">Method:</span>
                     <span className="font-medium">{PROPERTY_METHODS[formData.property_method].name}</span>
                   </div>
-                  {formData.is_construction_project && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Construction Stages:</span>
-                      <span className="font-medium">{formData.construction_progress_payments.length}</span>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
 
