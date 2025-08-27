@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import LandingHero from "@/components/LandingHero";
 import LandingScenarios from "@/components/LandingScenarios";
 import LandingCTA from "@/components/LandingCTA";
+import LandingFooter from "@/components/LandingFooter";
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -80,6 +81,7 @@ const Index = () => {
       <LandingHero />
       <LandingScenarios />
       <LandingCTA />
+      <LandingFooter />
     </main>
   );
 };

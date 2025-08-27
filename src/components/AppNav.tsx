@@ -13,7 +13,6 @@ export default function AppNav({ className = "" }: { className?: string }) {
   const { user } = useAuth();
 
   const items = [
-    { to: "/", label: "Dashboard", icon: Home },
     { to: "/instances", label: "Instances", icon: Layers },
     { to: "/investors", label: "Investors", icon: Users },
     { to: "/properties", label: "Properties", icon: Building2 },
