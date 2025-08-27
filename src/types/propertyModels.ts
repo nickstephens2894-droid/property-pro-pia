@@ -25,6 +25,14 @@ export interface PropertyModel {
   building_value: number;
   plant_equipment_value: number;
   
+  // Construction Progress Payments
+  construction_progress_payments: Array<{
+    id: string;
+    percentage: number;
+    month: number;
+    description: string;
+  }>;
+  
   // Transaction Costs
   stamp_duty: number;
   legal_fees: number;
@@ -66,6 +74,12 @@ export interface CreatePropertyModelRequest {
   construction_interest_rate: number;
   building_value: number;
   plant_equipment_value: number;
+  construction_progress_payments: Array<{
+    id: string;
+    percentage: number;
+    month: number;
+    description: string;
+  }>;
   stamp_duty: number;
   legal_fees: number;
   inspection_fees: number;

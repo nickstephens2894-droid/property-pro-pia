@@ -1,8 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Calculator, TrendingUp, Users } from "lucide-react";
+import { Calculator, TrendingUp, Users, LogIn, BarChart3 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const LandingHero = () => {
+  const { user } = useAuth();
+
   return (
     <section className="relative py-20 lg:py-28 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-secondary/10" />
@@ -19,10 +22,27 @@ const LandingHero = () => {
             multi-investor modeling, and 40-year projections. For individual investors and financial advisors.
           </p>
           
-          <div className="flex justify-center mb-12">
-            <Button size="lg" asChild className="min-w-[240px]">
-              <Link to="/auth">Start Free Analysis</Link>
-            </Button>
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-12">
+            {user ? (
+              <Button size="lg" asChild className="min-w-[200px]">
+                <Link to="/instances">
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Go to Dashboard
+                </Link>
+              </Button>
+            ) : (
+              <>
+                <Button size="lg" asChild className="min-w-[200px]">
+                  <Link to="/auth">Start Free Analysis</Link>
+                </Button>
+                <Button size="lg" variant="outline" asChild className="min-w-[200px]">
+                  <Link to="/auth">
+                    <LogIn className="h-4 w-4 mr-2" />
+                    Login
+                  </Link>
+                </Button>
+              </>
+            )}
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-16 max-w-2xl mx-auto">

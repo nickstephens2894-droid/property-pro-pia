@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Edit, Download, Trash2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 
 // Import all the components from PropertyAnalysis and Projections
 import { PropertyInputForm } from "@/components/PropertyInputForm";
@@ -89,7 +90,7 @@ const InstanceDetail = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { propertyData, updateField, calculateTotalProjectCost, calculateEquityLoanAmount, calculateHoldingCosts, applyPreset } = usePropertyData();
-  const { getInstance, updateInstance, loading: instancesLoading } = useInstances();
+  const { getInstance, updateInstance, loading: instancesLoading, deleteInstance } = useInstances();
   const { toast } = useToast();
 
   // State for the instance
@@ -102,6 +103,8 @@ const InstanceDetail = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingInstance, setDeletingInstance] = useState(false);
   const debouncedSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Track changes to mark as unsaved
@@ -1148,10 +1151,33 @@ const InstanceDetail = () => {
   };
 
   const handleDelete = () => {
-    if (confirm('Are you sure you want to delete this instance? This action cannot be undone.')) {
-      // Will be implemented when backend is ready
-      console.log('Deleting instance:', id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!id) return;
+    
+    setDeletingInstance(true);
+    try {
+      // Actually delete the instance from the database
+      await deleteInstance(id);
+      
+      toast({
+        title: "Instance Deleted",
+        description: "The instance has been successfully deleted.",
+        variant: "default",
+      });
       navigate('/instances');
+    } catch (error) {
+      console.error('Error deleting instance:', error);
+      toast({
+        title: "Delete Failed",
+        description: error instanceof Error ? error.message : "Failed to delete instance. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingInstance(false);
+      setDeleteDialogOpen(false);
     }
   };
 
@@ -1515,6 +1541,23 @@ const InstanceDetail = () => {
           <ValidationWarnings />
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          if (!deletingInstance) {
+            setDeleteDialogOpen(open);
+          }
+        }}
+        title="Delete Instance"
+        description="Are you sure you want to delete this instance? This action cannot be undone."
+        confirmText={deletingInstance ? "Deleting..." : "Delete Instance"}
+        cancelText="Cancel"
+        variant="destructive"
+        onConfirm={confirmDelete}
+        onCancel={deletingInstance ? undefined : () => setDeleteDialogOpen(false)}
+      />
     </div>
   );
 };

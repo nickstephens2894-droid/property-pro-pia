@@ -1,12 +1,17 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { PropertyModelsService } from '@/services/propertyModelsService';
-import { PropertyModel, CreatePropertyModelRequest, UpdatePropertyModelRequest } from '@/types/propertyModels';
+import { 
+  PropertyModel, 
+  CreatePropertyModelRequest, 
+  UpdatePropertyModelRequest 
+} from '@/types/propertyModels';
+import { useAuth } from './AuthContext';
 
 interface PropertiesContextType {
   properties: PropertyModel[];
   loading: boolean;
   error: string | null;
-  addProperty: (property: CreatePropertyModelRequest) => Promise<void>;
+  addProperty: (propertyData: CreatePropertyModelRequest) => Promise<void>;
   updateProperty: (id: string, updates: UpdatePropertyModelRequest) => Promise<void>;
   deleteProperty: (id: string) => Promise<void>;
   getPropertyById: (id: string) => PropertyModel | undefined;
@@ -19,28 +24,21 @@ const PropertiesContext = createContext<PropertiesContextType | undefined>(undef
 
 export const useProperties = () => {
   const context = useContext(PropertiesContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useProperties must be used within a PropertiesProvider');
   }
   return context;
 };
 
 interface PropertiesProviderProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
-
-// Re-export PropertyModel for external use
-export type { PropertyModel } from '@/types/propertyModels';
 
 export const PropertiesProvider: React.FC<PropertiesProviderProps> = ({ children }) => {
   const [properties, setProperties] = useState<PropertyModel[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Load properties from Supabase on mount
-  useEffect(() => {
-    refreshProperties();
-  }, []);
+  const { user } = useAuth();
 
   const refreshProperties = async () => {
     try {
@@ -59,7 +57,18 @@ export const PropertiesProvider: React.FC<PropertiesProviderProps> = ({ children
   const addProperty = async (propertyData: CreatePropertyModelRequest) => {
     try {
       setError(null);
-      const newProperty = await PropertyModelsService.create(propertyData);
+      
+      if (!user) {
+        throw new Error('User must be authenticated to create a property');
+      }
+
+      // Add the owner_user_id to the property data
+      const propertyWithOwner = {
+        ...propertyData,
+        owner_user_id: user.id
+      };
+
+      const newProperty = await PropertyModelsService.create(propertyWithOwner);
       setProperties(prev => [newProperty, ...prev]);
     } catch (err) {
       console.error('Error creating property:', err);

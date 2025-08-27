@@ -13,7 +13,6 @@ export default function AppNav({ className = "" }: { className?: string }) {
   const { user } = useAuth();
 
   const items = [
-    { to: "/", label: "Dashboard", icon: Home },
     { to: "/instances", label: "Instances", icon: Layers },
     { to: "/investors", label: "Investors", icon: Users },
     { to: "/properties", label: "Properties", icon: Building2 },
@@ -49,6 +48,11 @@ export default function AppNav({ className = "" }: { className?: string }) {
     );
   };
 
+  // Only show navigation for authenticated users
+  if (!user) {
+    return null;
+  }
+
   return (
     <>
       {/* Desktop top navigation - Sticky - Hidden on mobile */}
@@ -57,7 +61,12 @@ export default function AppNav({ className = "" }: { className?: string }) {
           <div className="flex items-center justify-between">
             {/* Left side - Title and Subtitle */}
             <div className="flex flex-col">
-              <h1 className="text-2xl font-bold text-gray-800">Property Pro</h1>
+              <h1 
+                className="text-2xl font-bold text-gray-800 cursor-pointer hover:text-primary transition-colors"
+                onClick={() => navigate("/")}
+              >
+                Property Pro
+              </h1>
               <p className="text-sm text-gray-600">Smart analysis for Australian property</p>
             </div>
             
@@ -68,7 +77,7 @@ export default function AppNav({ className = "" }: { className?: string }) {
             </nav>
             
             {/* Right side - User profile */}
-            {user && <UserProfile />}
+            <UserProfile />
           </div>
         </div>
       </div>
