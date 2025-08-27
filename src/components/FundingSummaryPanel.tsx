@@ -107,8 +107,8 @@ export const FundingSummaryPanel = () => {
         </CardHeader>
       </Card>
 
-      {/* Three Main Summary Cards */}
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+      {/* Three Main Summary Cards - Enhanced Mobile Layout */}
+      <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-3'}`}>
         
         {/* Purchase Costs Summary */}
         <Card className="border-l-4 border-l-blue-500 bg-gradient-to-br from-blue-50/50 to-blue-100/30 hover:from-blue-50/70 hover:to-blue-100/50 transition-all duration-200">

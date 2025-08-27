@@ -17,6 +17,7 @@ import ConstructionPeriodTable from "@/components/ConstructionPeriodTable";
 import { InvestmentResultsDetailed } from "@/components/InvestmentResultsDetailed";
 import { PropertyCalculationDetails } from "@/components/PropertyCalculationDetails";
 import { ValidationWarnings } from "@/components/ValidationWarnings";
+import { MobileFinancialSummary } from "@/components/MobileFinancialSummary";
 
 // Import the context hook
 import { usePropertyData } from "@/contexts/PropertyDataContext";
@@ -1363,41 +1364,49 @@ const InstanceDetail = () => {
 
         {/* Main Content with Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className={`grid w-full grid-cols-2 ${isMobile ? 'h-12' : ''}`}>
-            <TabsTrigger value="analysis" className={isMobile ? 'text-sm' : ''}>Analysis</TabsTrigger>
-            <TabsTrigger value="projections" className={isMobile ? 'text-sm' : ''}>Projections</TabsTrigger>
+          <TabsList className={`grid w-full grid-cols-2 ${isMobile ? 'h-12 text-sm' : 'h-10'}`}>
+            <TabsTrigger value="analysis" className={`${isMobile ? 'min-h-[44px] text-sm font-medium' : 'text-sm'}`}>
+              Analysis
+            </TabsTrigger>
+            <TabsTrigger value="projections" className={`${isMobile ? 'min-h-[44px] text-sm font-medium' : 'text-sm'}`}>
+              Projections
+            </TabsTrigger>
           </TabsList>
 
-          {/* Analysis Tab */}
+          {/* Analysis Tab - Enhanced Responsive Layout */}
           <TabsContent value="analysis" className="space-y-6">
-            {/* Single Column Layout */}
-            <div className="space-y-6">
-              {/* Funding & Finance Structure - First */}
-              <FundingSummaryPanel />
-              
-              {/* Investment Details - Second */}
-              <PropertyInputForm
-                propertyData={propertyData}
-                updateField={enhancedUpdateField}
-                investorTaxResults={investorTaxResults}
-                totalTaxableIncome={0} // Will be calculated
-                marginalTaxRate={0.3} // Will be calculated
-                isEditMode={isEditMode}
-              />
-
-              {/* Financial Analysis - Third */}
-              <PropertyCalculationDetails
-                monthlyRepayment={monthlyPayments.total}
-                annualRepayment={monthlyPayments.total * 12}
-                annualRent={investmentSummary.annualRentFromProjections}
-                propertyManagementCost={investmentSummary.annualRentFromProjections * (propertyData.propertyManagement || 0.07) / 100}
-               councilRates={propertyData.councilRates || 0}
-               insurance={propertyData.insurance || 0}
-               repairs={propertyData.repairs || 0}
-                totalDeductibleExpenses={totalDeductibleExpenses}
-               cashDeductionsSubtotal={cashDeductions}
-               paperDeductionsSubtotal={paperDeductions}
-               depreciation={{
+            {isMobile ? (
+              /* Mobile: Single Column Stack with Sticky Summary */
+              <div className="space-y-4">
+                <MobileFinancialSummary
+                  totalCost={totalProjectCost}
+                  totalFunding={funding.mainLoanAmount + funding.equityLoanAmount + propertyData.depositAmount}
+                  fundingShortfall={Math.max(0, totalProjectCost - (funding.mainLoanAmount + funding.equityLoanAmount + propertyData.depositAmount))}
+                  weeklyRent={propertyData.weeklyRent || 0}
+                  monthlyRepayment={monthlyPayments.total}
+                  weeklyCashFlow={investmentSummary.weeklyAfterTaxCashFlowSummary}
+                />
+                <FundingSummaryPanel />
+                <PropertyInputForm
+                  propertyData={propertyData}
+                  updateField={enhancedUpdateField}
+                  investorTaxResults={investorTaxResults}
+                  totalTaxableIncome={0}
+                  marginalTaxRate={0.3}
+                  isEditMode={isEditMode}
+                />
+                <PropertyCalculationDetails
+                  monthlyRepayment={monthlyPayments.total}
+                  annualRepayment={monthlyPayments.total * 12}
+                  annualRent={investmentSummary.annualRentFromProjections}
+                  propertyManagementCost={investmentSummary.annualRentFromProjections * (propertyData.propertyManagement || 0.07) / 100}
+                  councilRates={propertyData.councilRates || 0}
+                  insurance={propertyData.insurance || 0}
+                  repairs={propertyData.repairs || 0}
+                  totalDeductibleExpenses={totalDeductibleExpenses}
+                  cashDeductionsSubtotal={cashDeductions}
+                  paperDeductionsSubtotal={paperDeductions}
+                  depreciation={{
                  capitalWorks: depreciation.capitalWorks,
                  plantEquipment: depreciation.plantEquipment,
                  total: depreciation.total,
@@ -1448,14 +1457,103 @@ const InstanceDetail = () => {
                  currentPayment: loanPaymentDetails.equityLoanDetails.isIO && loanPaymentDetails.equityLoanDetails.ioTermYears > 0 ? loanPaymentDetails.equityLoanDetails.ioPayment : loanPaymentDetails.equityLoanDetails.piPayment,
                  futurePayment: loanPaymentDetails.equityLoanDetails.isIO && loanPaymentDetails.equityLoanDetails.ioTermYears > 0 ? loanPaymentDetails.equityLoanDetails.piPayment : 0
                 } : null}
-                totalAnnualInterest={annualInterest}
-                taxRefundOrLiability={totalTaxRefundOrLiability}
-                netOfTaxCostIncome={netOfTaxCostIncome}
-              />
-            </div>
-          </TabsContent>
+                 totalAnnualInterest={annualInterest}
+                 taxRefundOrLiability={totalTaxRefundOrLiability}
+                 netOfTaxCostIncome={netOfTaxCostIncome}
+               />
+              </div>
+            ) : (
+              /* Desktop: Enhanced Two-Column Layout with Better Spacing */
+              <div className="grid grid-cols-12 gap-8 min-h-[600px]">
+                {/* Left Column - Forms and Controls (8 columns) */}
+                <div className="col-span-8 space-y-8">
+                  <FundingSummaryPanel />
+                  <PropertyInputForm
+                    propertyData={propertyData}
+                    updateField={enhancedUpdateField}
+                    investorTaxResults={investorTaxResults}
+                    totalTaxableIncome={0}
+                    marginalTaxRate={0.3}
+                    isEditMode={isEditMode}
+                  />
+                </div>
+                
+                {/* Right Column - Analysis Results (4 columns) */}
+                <div className="col-span-4">
+                  <div className="sticky top-6 space-y-6">
+                    <PropertyCalculationDetails
+                      monthlyRepayment={monthlyPayments.total}
+                      annualRepayment={monthlyPayments.total * 12}
+                      annualRent={investmentSummary.annualRentFromProjections}
+                      propertyManagementCost={investmentSummary.annualRentFromProjections * (propertyData.propertyManagement || 0.07) / 100}
+                      councilRates={propertyData.councilRates || 0}
+                      insurance={propertyData.insurance || 0}
+                      repairs={propertyData.repairs || 0}
+                      totalDeductibleExpenses={totalDeductibleExpenses}
+                      cashDeductionsSubtotal={cashDeductions}
+                      paperDeductionsSubtotal={paperDeductions}
+                      depreciation={{
+                        capitalWorks: depreciation.capitalWorks,
+                        plantEquipment: depreciation.plantEquipment,
+                        total: depreciation.total,
+                        capitalWorksAvailable: propertyData.constructionYear >= 1987,
+                        plantEquipmentRestricted: !propertyData.isNewProperty
+                      }}
+                      investorTaxResults={investorTaxResults}
+                      totalTaxWithProperty={investorTaxResults.reduce((sum, result) => sum + (result.taxWithProperty || 0), 0)}
+                      totalTaxWithoutProperty={investorTaxResults.reduce((sum, result) => sum + (result.taxWithoutProperty || 0), 0)}
+                      marginalTaxRate={investmentSummary.marginalTaxRateSummary}
+                      purchasePrice={propertyData.purchasePrice || 0}
+                      constructionYear={propertyData.constructionYear || 2020}
+                      depreciationMethod={propertyData.depreciationMethod || 'prime-cost'}
+                      isConstructionProject={propertyData.isConstructionProject || false}
+                      totalProjectCost={totalProjectCost}
+                      holdingCosts={{
+                        landInterest: holdingCosts.landInterest,
+                        constructionInterest: holdingCosts.constructionInterest,
+                        total: holdingCosts.total
+                      }}
+                      funding={{
+                        totalRequired: totalProjectCost,
+                        equityUsed: funding.equityLoanAmount,
+                        cashRequired: totalProjectCost - funding.mainLoanAmount - funding.equityLoanAmount,
+                        availableEquity: 0,
+                        loanAmount: funding.mainLoanAmount
+                      }}
+                      outOfPocketHoldingCosts={0}
+                      capitalizedHoldingCosts={0}
+                      actualCashInvested={0}
+                      constructionPeriod={propertyData.constructionPeriod || 0}
+                      holdingCostFunding={propertyData.holdingCostFunding || 'cash'}
+                      mainLoanPayments={{
+                        ioPayment: loanPaymentDetails.mainLoanDetails.ioPayment,
+                        piPayment: loanPaymentDetails.mainLoanDetails.piPayment,
+                        ioTermYears: loanPaymentDetails.mainLoanDetails.ioTermYears,
+                        remainingTerm: (propertyData.loanTerm || 30) - loanPaymentDetails.mainLoanDetails.ioTermYears,
+                        totalInterest: (propertyData.loanAmount || 0) * (propertyData.interestRate || 6) / 100,
+                        currentPayment: loanPaymentDetails.mainLoanDetails.isIO && loanPaymentDetails.mainLoanDetails.ioTermYears > 0 ? loanPaymentDetails.mainLoanDetails.ioPayment : loanPaymentDetails.mainLoanDetails.piPayment,
+                        futurePayment: loanPaymentDetails.mainLoanDetails.isIO && loanPaymentDetails.mainLoanDetails.ioTermYears > 0 ? loanPaymentDetails.mainLoanDetails.piPayment : 0
+                      }}
+                      equityLoanPayments={loanPaymentDetails.equityLoanDetails ? {
+                        ioPayment: loanPaymentDetails.equityLoanDetails.ioPayment,
+                        piPayment: loanPaymentDetails.equityLoanDetails.piPayment,
+                        ioTermYears: loanPaymentDetails.equityLoanDetails.ioTermYears,
+                        remainingTerm: (propertyData.equityLoanTerm || 30) - loanPaymentDetails.equityLoanDetails.ioTermYears,
+                        totalInterest: (equityLoanAmount || 0) * (propertyData.equityLoanInterestRate || 7.2) / 100,
+                        currentPayment: loanPaymentDetails.equityLoanDetails.isIO && loanPaymentDetails.equityLoanDetails.ioTermYears > 0 ? loanPaymentDetails.equityLoanDetails.ioPayment : loanPaymentDetails.equityLoanDetails.piPayment,
+                        futurePayment: loanPaymentDetails.equityLoanDetails.isIO && loanPaymentDetails.equityLoanDetails.ioTermYears > 0 ? loanPaymentDetails.equityLoanDetails.piPayment : 0
+                      } : null}
+                      totalAnnualInterest={annualInterest}
+                      taxRefundOrLiability={totalTaxRefundOrLiability}
+                      netOfTaxCostIncome={netOfTaxCostIncome}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+           </TabsContent>
 
-          {/* Projections Tab */}
+           {/* Projections Tab */}
           <TabsContent value="projections" className="space-y-6">
             {/* Investment Summary Dashboard */}
             <PropertySummaryDashboard
@@ -1552,9 +1650,9 @@ const InstanceDetail = () => {
         variant="destructive"
         onConfirm={confirmDelete}
         onCancel={deletingInstance ? undefined : () => setDeleteDialogOpen(false)}
-      />
-    </div>
-  );
-};
+       />
+     </div>
+   );
+ };
 
-export default InstanceDetail; 
+ export default InstanceDetail;
