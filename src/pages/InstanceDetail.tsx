@@ -435,16 +435,18 @@ const InstanceDetail = () => {
       propertyData.loanAmount || 0,
       propertyData.interestRate || 6.5,
       propertyData.loanTerm || 30,
-      propertyData.mainLoanType || 'pi',
-      propertyData.ioTermYears || 5
+      propertyData.ioTermYears || 0,
+      0, // Current year (initial calculation)
+      'monthly'
     );
 
     const equityLoanPayment = equityLoanAmount > 0 ? calculateCurrentLoanPayment(
       equityLoanAmount,
       propertyData.equityLoanInterestRate || 7.2,
       propertyData.equityLoanTerm || 30,
-      propertyData.equityLoanType || 'io',
-      propertyData.equityLoanIoTermYears || 5
+      propertyData.equityLoanIoTermYears || 0,
+      0, // Current year (initial calculation)
+      'monthly'
     ) : 0;
 
     return {
