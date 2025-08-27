@@ -107,7 +107,16 @@ const InstanceDetail = () => {
   const [deletingInstance, setDeletingInstance] = useState(false);
 
   // Context hooks
-  const { propertyData, setPropertyData, updateField } = usePropertyData();
+  const { 
+    propertyData, 
+    setPropertyData, 
+    updateField, 
+    calculateTotalProjectCost, 
+    calculateTotalFunding,
+    calculateEquityLoanAmount, 
+    calculateHoldingCosts, 
+    loadScenario 
+  } = usePropertyData();
   const { getInstance, updateInstance, deleteInstance, instances } = useInstances();
   
   // State for the current instance
@@ -405,23 +414,10 @@ const InstanceDetail = () => {
     }
   }, [updateField, isEditMode]);
 
-  // Calculate project costs and funding
-  const totalProjectCost = useMemo(() => {
-    const baseCost = propertyData.purchasePrice || 0;
-    const transactionCosts = (propertyData.stampDuty || 0) + (propertyData.legalFees || 0) + (propertyData.inspectionFees || 0) + (propertyData.loanFees || 0);
-    
-      // Construction project additional costs
-      const developmentCosts = propertyData.isConstructionProject ? 
-        (propertyData.professionalFees || 0) + 
-        (propertyData.councilDevelopmentFees || 0) + 
-        (propertyData.utilityConnections || 0) +
-        (propertyData.constructionProgressPayments?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0)
-        : 0;
-    
-    return baseCost + transactionCosts + developmentCosts;
-  }, [propertyData]);
-
-  const equityLoanAmount = useMemo(() => propertyData.equityLoanAmount || 0, [propertyData.equityLoanAmount]);
+  // Use consistent calculations from context
+  const totalProjectCost = useMemo(() => calculateTotalProjectCost(), [calculateTotalProjectCost]);
+  const totalFunding = useMemo(() => calculateTotalFunding(), [calculateTotalFunding]);
+  const equityLoanAmount = useMemo(() => calculateEquityLoanAmount(), [calculateEquityLoanAmount]);
 
   const funding = useMemo(() => ({
     mainLoanAmount: propertyData.loanAmount || 0,
@@ -1148,8 +1144,8 @@ const InstanceDetail = () => {
               <div className="space-y-4">
                 <MobileFinancialSummary
                   totalCost={totalProjectCost}
-                  totalFunding={funding.mainLoanAmount + funding.equityLoanAmount + propertyData.depositAmount}
-                  fundingShortfall={Math.max(0, totalProjectCost - (funding.mainLoanAmount + funding.equityLoanAmount + propertyData.depositAmount))}
+                  totalFunding={totalFunding}
+                  fundingShortfall={Math.max(0, totalProjectCost - totalFunding)}
                   weeklyRent={propertyData.weeklyRent || 0}
                   monthlyRepayment={monthlyPayments.total}
                   weeklyCashFlow={investmentSummary.weeklyAfterTaxCashFlowSummary}
