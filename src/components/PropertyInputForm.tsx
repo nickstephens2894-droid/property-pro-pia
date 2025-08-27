@@ -2178,7 +2178,9 @@ export const PropertyInputForm = ({
                     <div className="flex-1">
                       <div className="font-medium">{investor.name}</div>
                       <div className="text-sm text-muted-foreground">
-                        Total Income: {formatCurrency((investor.annualIncome || 0) + (investor.otherIncome || 0))}
+                        Annual: ${investor.annualIncome.toLocaleString()} | 
+                        Other: ${investor.otherIncome.toLocaleString()} | 
+                        Medicare: {investor.hasMedicareLevy ? 'Yes' : 'No'}
                       </div>
                     </div>
                     <Button size="sm" variant="outline">
