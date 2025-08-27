@@ -20,7 +20,7 @@ import { ValidationWarnings } from "@/components/ValidationWarnings";
 import { MobileFinancialSummary } from "@/components/MobileFinancialSummary";
 
 // Import the context hook
-import { usePropertyData } from "@/contexts/PropertyDataContext";
+import { usePropertyData, PropertyData } from "@/contexts/PropertyDataContext";
 import { useInstances } from "@/contexts/InstancesContext";
 import { Database } from "@/integrations/supabase/types";
 
@@ -37,7 +37,7 @@ import { calculateLoanPayment, calculateCurrentLoanPayment } from "@/utils/calcu
 
 // Using the Instance type from Supabase types
 
-interface YearProjection {
+interface LocalYearProjection {
   year: number;
   rentalIncome: number;
   propertyValue: number;
@@ -48,8 +48,8 @@ interface YearProjection {
   equityLoanPayment: number;
   mainInterestYear: number;
   equityInterestYear: number;
-  mainLoanIOStatus: string;
-  equityLoanIOStatus: string;
+  mainLoanIOStatus: "IO" | "P&I";
+  equityLoanIOStatus: "IO" | "P&I";
   otherExpenses: number;
   depreciation: number;
   buildingDepreciation: number;
@@ -108,7 +108,7 @@ const InstanceDetail = () => {
 
   // Context hooks
   const { propertyData, setPropertyData, updateField } = usePropertyData();
-  const { getInstanceById, updateInstance, deleteInstance, instances } = useInstances();
+  const { getInstance, updateInstance, deleteInstance, instances } = useInstances();
   
   // State for the current instance
   const [instance, setInstance] = useState<Instance | null>(null);
@@ -121,71 +121,127 @@ const InstanceDetail = () => {
       if (!id) return;
       setLoading(true);
       try {
-        const fetchedInstance = await getInstanceById(id);
+        const fetchedInstance = await getInstance(id);
         if (fetchedInstance) {
           setInstance(fetchedInstance);
           
           // Convert the instance data to PropertyData format
-          const convertedPropertyData = {
+          const convertedPropertyData: PropertyData = {
             // Property Details
             purchasePrice: fetchedInstance.purchase_price,
             weeklyRent: fetchedInstance.weekly_rent,
             propertyManagement: fetchedInstance.property_management || 7.0,
             vacancyRate: fetchedInstance.vacancy_rate || 2.0,
             
-            // Property Information
+            // Property Information (use defaults if not available)
             propertyMethod: fetchedInstance.property_method || 'purchase',
-            address: fetchedInstance.address || '',
-            suburb: fetchedInstance.suburb || '',
-            state: fetchedInstance.state || '',
-            postcode: fetchedInstance.postcode || '',
+            address: '',
+            suburb: '',
+            state: '',
+            postcode: '',
             constructionYear: fetchedInstance.construction_year || 2020,
             isNewProperty: fetchedInstance.is_new_property || false,
+            
+            // Required fields with defaults
+            rentalGrowthRate: 5.0,
+            buildingValue: fetchedInstance.purchase_price * 0.6,
+            plantEquipmentValue: fetchedInstance.purchase_price * 0.05,
+            landValue: fetchedInstance.purchase_price * 0.4,
+            constructionValue: 0,
+            postConstructionRateReduction: 0.5,
             
             // Loan Details
             loanAmount: fetchedInstance.loan_amount || 0,
             interestRate: fetchedInstance.interest_rate || 6.5,
             loanTerm: fetchedInstance.loan_term || 30,
-            mainLoanType: fetchedInstance.main_loan_type || 'pi',
+            mainLoanType: (fetchedInstance.main_loan_type as 'io' | 'pi') || 'pi',
             ioTermYears: fetchedInstance.io_term_years || 5,
+            
+            // Traditional financing
+            deposit: 0,
+            lvr: 80,
             
             // Equity Loan Details
             equityLoanAmount: fetchedInstance.equity_loan_amount || 0,
             equityLoanInterestRate: fetchedInstance.equity_loan_interest_rate || 7.2,
             equityLoanTerm: fetchedInstance.equity_loan_term || 30,
-            equityLoanType: fetchedInstance.equity_loan_type || 'io',
+            equityLoanType: (fetchedInstance.equity_loan_type as 'io' | 'pi') || 'io',
             equityLoanIoTermYears: fetchedInstance.equity_loan_io_term_years || 5,
+            
+            // Equity funding
+            useEquityFunding: (fetchedInstance.equity_loan_amount || 0) > 0,
+            primaryPropertyValue: 1000000,
+            existingDebt: 400000,
+            maxLVR: 80,
             
             // Deposit and Costs  
             depositAmount: fetchedInstance.deposit_amount || 0,
+            minimumDepositRequired: fetchedInstance.deposit_amount || 0,
             stampDuty: fetchedInstance.stamp_duty || 0,
             legalFees: fetchedInstance.legal_fees || 1500,
             inspectionFees: fetchedInstance.inspection_fees || 500,
-            loanFees: fetchedInstance.loan_fees || 1000,
+            loanFees: 1000,
             
             // Property Expenses
             councilRates: fetchedInstance.council_rates || 2000,
             insurance: fetchedInstance.insurance || 1000,
             repairs: fetchedInstance.repairs || 1500,
             
+            // Construction costs
+            councilFees: 0,
+            architectFees: 0,
+            siteCosts: 0,
+            professionalFees: 0,
+            councilDevelopmentFees: 0,
+            utilityConnections: 0,
+            
             // Depreciation
-            depreciationMethod: fetchedInstance.depreciation_method || 'prime-cost',
+            depreciationMethod: (fetchedInstance.depreciation_method as 'prime-cost' | 'diminishing-value') || 'prime-cost',
             
             // Construction Project specific
             isConstructionProject: fetchedInstance.is_construction_project || false,
             constructionPeriod: fetchedInstance.construction_period || 0,
             constructionInterestRate: fetchedInstance.construction_interest_rate || 6.5,
-            holdingCostFunding: fetchedInstance.holding_cost_funding || 'cash',
+            holdingCostFunding: (fetchedInstance.holding_cost_funding as 'cash' | 'debt' | 'hybrid') || 'cash',
+            holdingCostCashPercentage: 100,
+            capitalizeConstructionCosts: false,
+            constructionEquityRepaymentType: 'io' as 'io' | 'pi',
+            landHoldingInterest: 0,
+            constructionHoldingInterest: 0,
+            totalHoldingCosts: 0,
             
             // Development costs (for construction projects)
-            constructionProgressPayments: fetchedInstance.construction_progress_payments || [],
-            professionalFees: fetchedInstance.professional_fees || 0,
-            councilDevelopmentFees: fetchedInstance.council_development_fees || 0,
-            utilityConnections: fetchedInstance.utility_connections || 0,
+            constructionProgressPayments: Array.isArray(fetchedInstance.construction_progress_payments) 
+              ? fetchedInstance.construction_progress_payments.map((p: any) => ({
+                  id: p.id || Math.random().toString(),
+                  percentage: p.percentage || 0,
+                  month: p.month || 1,
+                  description: p.description || '',
+                  amount: p.amount || 0
+                }))
+              : [],
+            
+            // Property state and metadata
+            propertyState: 'VIC' as 'ACT' | 'NSW' | 'NT' | 'QLD' | 'SA' | 'TAS' | 'VIC' | 'WA',
+            propertyType: 'Apartment',
+            location: 'VIC',
             
             // Investors
-            investors: fetchedInstance.investors || [],
-            ownershipAllocations: fetchedInstance.ownership_allocations || []
+            investors: Array.isArray(fetchedInstance.investors) 
+              ? (fetchedInstance.investors as any[]).map((inv: any) => ({
+                  id: inv.id || Math.random().toString(),
+                  name: inv.name || '',
+                  annualIncome: inv.annualIncome || 0,
+                  otherIncome: inv.otherIncome || 0,
+                  hasMedicareLevy: inv.hasMedicareLevy || false
+                }))
+              : [],
+            ownershipAllocations: Array.isArray(fetchedInstance.ownership_allocations)
+              ? (fetchedInstance.ownership_allocations as any[]).map((alloc: any) => ({
+                  investorId: alloc.investorId || '',
+                  ownershipPercentage: alloc.ownershipPercentage || 0
+                }))
+              : []
           };
           
           setPropertyData(convertedPropertyData);
@@ -204,7 +260,7 @@ const InstanceDetail = () => {
     };
 
     loadInstance();
-  }, [id, getInstanceById, setPropertyData, toast]);
+  }, [id, getInstance, setPropertyData, toast]);
 
   // Track changes to propertyData for unsaved changes indicator
   useEffect(() => {
@@ -245,73 +301,65 @@ const InstanceDetail = () => {
     
     setSaving(true);
     try {
-      // Convert PropertyData back to Instance format for database
-      const updatedInstance: Partial<Instance> = {
-        name: instance.name, // Keep existing name
-        
-        // Property Details
-        purchase_price: propertyData.purchasePrice || 0,
-        weekly_rent: propertyData.weeklyRent || 0,
-        property_management: propertyData.propertyManagement || 7.0,
-        vacancy_rate: propertyData.vacancyRate || 2.0,
-        
-        // Property Information
-        property_method: propertyData.propertyMethod || 'purchase',
-        address: propertyData.address || '',
-        suburb: propertyData.suburb || '',
-        state: propertyData.state || '',
-        postcode: propertyData.postcode || '',
-        construction_year: propertyData.constructionYear || 2020,
-        is_new_property: propertyData.isNewProperty || false,
-        
-        // Loan Details
-        loan_amount: propertyData.loanAmount || 0,
-        interest_rate: propertyData.interestRate || 6.5,
-        loan_term: propertyData.loanTerm || 30,
-        main_loan_type: propertyData.mainLoanType || 'pi',
-        io_term_years: propertyData.ioTermYears || 5,
-        
-        // Equity Loan Details
-        equity_loan_amount: propertyData.equityLoanAmount || 0,
-        equity_loan_interest_rate: propertyData.equityLoanInterestRate || 7.2,
-        equity_loan_term: propertyData.equityLoanTerm || 30,
-        equity_loan_type: propertyData.equityLoanType || 'io',
-        equity_loan_io_term_years: propertyData.equityLoanIoTermYears || 5,
-        
-        // Deposit and Costs
-        deposit_amount: propertyData.depositAmount || 0,
-        stamp_duty: propertyData.stampDuty || 0,
-        legal_fees: propertyData.legalFees || 1500,
-        inspection_fees: propertyData.inspectionFees || 500,
-        loan_fees: propertyData.loanFees || 1000,
-        
-        // Property Expenses
-        council_rates: propertyData.councilRates || 2000,
-        insurance: propertyData.insurance || 1000,
-        repairs: propertyData.repairs || 1500,
-        
-        // Depreciation
-        depreciation_method: propertyData.depreciationMethod || 'prime-cost',
-        
-        // Construction Project specific
-        is_construction_project: propertyData.isConstructionProject || false,
-        construction_period: propertyData.constructionPeriod || 0,
-        construction_interest_rate: propertyData.constructionInterestRate || 6.5,
-        holding_cost_funding: propertyData.holdingCostFunding || 'cash',
-        
-        // Development costs
-        construction_progress_payments: propertyData.constructionProgressPayments || [],
-        professional_fees: propertyData.professionalFees || 0,
-        council_development_fees: propertyData.councilDevelopmentFees || 0,
-        utility_connections: propertyData.utilityConnections || 0,
-        
-        // Investors
-        investors: propertyData.investors || [],
-        ownership_allocations: propertyData.ownershipAllocations || [],
-        
-        // Timestamps
-        updated_at: new Date().toISOString()
-      };
+        // Convert PropertyData back to Instance format for database
+        const updatedInstance: Partial<Instance> = {
+          name: instance.name, // Keep existing name
+          
+          // Property Details
+          purchase_price: propertyData.purchasePrice || 0,
+          weekly_rent: propertyData.weeklyRent || 0,
+          property_management: propertyData.propertyManagement || 7.0,
+          vacancy_rate: propertyData.vacancyRate || 2.0,
+          
+          // Property Information
+          property_method: propertyData.propertyMethod || 'purchase',
+          construction_year: propertyData.constructionYear || 2020,
+          is_new_property: propertyData.isNewProperty || false,
+          
+          // Loan Details
+          loan_amount: propertyData.loanAmount || 0,
+          interest_rate: propertyData.interestRate || 6.5,
+          loan_term: propertyData.loanTerm || 30,
+          main_loan_type: propertyData.mainLoanType || 'pi',
+          io_term_years: propertyData.ioTermYears || 5,
+          
+          // Equity Loan Details
+          equity_loan_amount: propertyData.equityLoanAmount || 0,
+          equity_loan_interest_rate: propertyData.equityLoanInterestRate || 7.2,
+          equity_loan_term: propertyData.equityLoanTerm || 30,
+          equity_loan_type: propertyData.equityLoanType || 'io',
+          equity_loan_io_term_years: propertyData.equityLoanIoTermYears || 5,
+          
+          // Deposit and Costs
+          deposit_amount: propertyData.depositAmount || 0,
+          stamp_duty: propertyData.stampDuty || 0,
+          legal_fees: propertyData.legalFees || 1500,
+          inspection_fees: propertyData.inspectionFees || 500,
+          
+          // Property Expenses
+          council_rates: propertyData.councilRates || 2000,
+          insurance: propertyData.insurance || 1000,
+          repairs: propertyData.repairs || 1500,
+          
+          // Depreciation
+          depreciation_method: propertyData.depreciationMethod || 'prime-cost',
+          
+          // Construction Project specific
+          is_construction_project: propertyData.isConstructionProject || false,
+          construction_period: propertyData.constructionPeriod || 0,
+          construction_interest_rate: propertyData.constructionInterestRate || 6.5,
+          holding_cost_funding: propertyData.holdingCostFunding || 'cash',
+          
+          // Development costs
+          construction_progress_payments: propertyData.constructionProgressPayments as any || [],
+          
+          // Investors
+          investors: propertyData.investors as any || [],
+          ownership_allocations: propertyData.ownershipAllocations as any || [],
+          
+          // Timestamps
+          updated_at: new Date().toISOString()
+        };
 
       const savedInstance = await updateInstance(id, updatedInstance);
       if (savedInstance) {
@@ -351,7 +399,7 @@ const InstanceDetail = () => {
 
   // Enhanced updateField function that triggers edit mode
   const enhancedUpdateField = useCallback((path: string, value: any) => {
-    updateField(path, value);
+    updateField(path as keyof PropertyData, value);
     if (!isEditMode) {
       setIsEditMode(true);
     }
@@ -362,13 +410,13 @@ const InstanceDetail = () => {
     const baseCost = propertyData.purchasePrice || 0;
     const transactionCosts = (propertyData.stampDuty || 0) + (propertyData.legalFees || 0) + (propertyData.inspectionFees || 0) + (propertyData.loanFees || 0);
     
-    // Construction project additional costs
-    const developmentCosts = propertyData.isConstructionProject ? 
-      (propertyData.professionalFees || 0) + 
-      (propertyData.councilDevelopmentFees || 0) + 
-      (propertyData.utilityConnections || 0) +
-      (propertyData.constructionProgressPayments?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0)
-      : 0;
+      // Construction project additional costs
+      const developmentCosts = propertyData.isConstructionProject ? 
+        (propertyData.professionalFees || 0) + 
+        (propertyData.councilDevelopmentFees || 0) + 
+        (propertyData.utilityConnections || 0) +
+        (propertyData.constructionProgressPayments?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0)
+        : 0;
     
     return baseCost + transactionCosts + developmentCosts;
   }, [propertyData]);
@@ -437,8 +485,14 @@ const InstanceDetail = () => {
     const landValue = propertyData.purchasePrice || 0;
     const landInterest = (landValue * interestRate * months) / 12;
     
+    // Construction progress payment costs - handle potential string values
+    const constructionCosts = propertyData.constructionProgressPayments?.reduce((sum, payment) => {
+      const amount = typeof payment.amount === 'number' ? payment.amount : 
+                    typeof payment.amount === 'string' ? parseFloat(payment.amount) || 0 : 0;
+      return sum + amount;
+    }, 0) || 0;
+    
     // Construction interest (on progressive drawdowns - approximate 50% average)
-    const constructionCosts = (propertyData.constructionProgressPayments?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0);
     const constructionInterest = (constructionCosts * 0.5 * interestRate * months) / 12;
     
     return {
@@ -511,14 +565,14 @@ const InstanceDetail = () => {
   }, [propertyData.investors, propertyData.ownershipAllocations]);
 
   // Calculate detailed projections
-  const projections = useMemo(() => {
-    const years: YearProjection[] = [];
+  const projections = useMemo((): LocalYearProjection[] => {
+    const years: LocalYearProjection[] = [];
     const baseYear = 1;
     const startYear = yearRange[0];
     const endYear = yearRange[1];
     
     // Construction period projection (Year 0)
-    let constructionPeriodProjection: YearProjection | null = null;
+    let constructionPeriodProjection: LocalYearProjection | null = null;
     if (propertyData.isConstructionProject && propertyData.constructionPeriod) {
       const constructionMonthlyInterest = holdingCosts.total / (propertyData.constructionPeriod || 1);
       const constructionTaxBenefit = -constructionMonthlyInterest * (propertyData.constructionPeriod || 1);
@@ -534,8 +588,8 @@ const InstanceDetail = () => {
         equityLoanPayment: 0,
         mainInterestYear: holdingCosts.landInterest,
         equityInterestYear: holdingCosts.constructionInterest,
-        mainLoanIOStatus: 'Interest Only',
-        equityLoanIOStatus: 'Interest Only',
+        mainLoanIOStatus: 'IO' as "IO" | "P&I",
+        equityLoanIOStatus: 'IO' as "IO" | "P&I",
         otherExpenses: 0,
         depreciation: 0,
         buildingDepreciation: 0,
@@ -568,8 +622,8 @@ const InstanceDetail = () => {
       const equityInterestYear = equityLoanBalance * (propertyData.equityLoanInterestRate || 7.2) / 100;
       
       // Determine loan status
-      const mainLoanIOStatus = (propertyData.mainLoanType === 'io' && year <= (propertyData.ioTermYears || 5)) ? 'Interest Only' : 'Principal & Interest';
-      const equityLoanIOStatus = (propertyData.equityLoanType === 'io' && year <= (propertyData.equityLoanIoTermYears || 5)) ? 'Interest Only' : 'Principal & Interest';
+      const mainLoanIOStatus: "IO" | "P&I" = (propertyData.mainLoanType === 'io' && year <= (propertyData.ioTermYears || 5)) ? 'IO' : 'P&I';
+      const equityLoanIOStatus: "IO" | "P&I" = (propertyData.equityLoanType === 'io' && year <= (propertyData.equityLoanIoTermYears || 5)) ? 'IO' : 'P&I';
       
       // Calculate expenses
       const propertyManagementCost = rentalIncome * (propertyData.propertyManagement || 7) / 100;
@@ -1303,14 +1357,14 @@ const InstanceDetail = () => {
                 </Tabs>
               </CardHeader>
               <CardContent>
-                <ProjectionsTable 
-                  projections={projections}
-                  assumptions={{} as any}
-                  validatedYearRange={yearRange}
-                  formatCurrency={formatCurrency}
-                  formatPercentage={formatPercentage}
-                  viewMode={viewMode}
-                />
+            <ProjectionsTable 
+              projections={projections}
+              assumptions={{} as any}
+              validatedYearRange={[yearRange[0], yearRange[1]] as [number, number]}
+              formatCurrency={formatCurrency}
+              formatPercentage={formatPercentage}
+              viewMode={viewMode}
+            />
               </CardContent>
             </Card>
 

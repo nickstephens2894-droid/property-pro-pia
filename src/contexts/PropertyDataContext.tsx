@@ -31,6 +31,13 @@ export interface PropertyData {
   buildingValue: number;
   plantEquipmentValue: number;
   
+  // Property Information
+  propertyMethod?: string;
+  address?: string;
+  suburb?: string;
+  state?: string;
+  postcode?: string;
+  
   // Construction-specific
   landValue: number;
   constructionValue: number;
@@ -44,7 +51,8 @@ export interface PropertyData {
     percentage: number;
     month: number;
     description: string;
-  }>; 
+    amount?: number;
+  }>;
   
   // Traditional Financing
   deposit: number;
@@ -88,11 +96,15 @@ export interface PropertyData {
   stampDuty: number;
   legalFees: number;
   inspectionFees: number;
+  loanFees?: number;
   
   // Construction Costs
   councilFees: number;
   architectFees: number;
   siteCosts: number;
+  professionalFees?: number;
+  councilDevelopmentFees?: number;
+  utilityConnections?: number;
   
   // Annual Expenses
   propertyManagement: number;
