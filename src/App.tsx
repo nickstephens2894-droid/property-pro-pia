@@ -32,7 +32,7 @@ const queryClient = new QueryClient();
 
 function AppLayout() {
   const location = useLocation();
-  const hideNav = location.pathname.startsWith("/auth");
+  const hideNav = location.pathname.startsWith("/auth") || location.pathname === "/";
 
   return (
     <div className="min-h-screen">

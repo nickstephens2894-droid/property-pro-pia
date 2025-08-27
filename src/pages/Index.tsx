@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Navigate } from "react-router-dom";
 import LandingHero from "@/components/LandingHero";
 import LandingScenarios from "@/components/LandingScenarios";
 import LandingCTA from "@/components/LandingCTA";
@@ -11,11 +10,11 @@ const Index = () => {
   useEffect(() => {
     // SEO for landing page
     document.title = user 
-      ? "Dashboard | Property Pro" 
+      ? "Home | Property Pro" 
       : "Property Pro — Smart Analysis for Australian Property Investment";
     
     const desc = user
-      ? "Access your property investment analysis dashboard with projections, investors, and scenarios."
+      ? "Welcome to Property Pro - Your property investment analysis dashboard with projections, investors, and scenarios."
       : "Professional Australian property investment analysis with tax calculations, multi-investor modeling, and 40-year projections. Trusted by investors and financial advisors.";
     
     let meta = document.querySelector('meta[name="description"]');
@@ -75,12 +74,7 @@ const Index = () => {
     );
   }
 
-  // Redirect authenticated users to their instances dashboard
-  if (user) {
-    return <Navigate to="/instances" replace />;
-  }
-
-  // Landing page for non-authenticated users
+  // Home page for all users (authenticated and unauthenticated)
   return (
     <main className="min-h-screen">
       <LandingHero />
