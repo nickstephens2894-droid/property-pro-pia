@@ -1013,7 +1013,7 @@ export const PropertyInputForm = ({
                 Add Payment
               </Button>
             </div>
-            <div className="space-y-3 max-h-60 overflow-y-auto">
+            <div className="space-y-3">
               {propertyData.constructionProgressPayments?.map((payment, index) => (
                 <div key={payment.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-2 items-end bg-muted/30 p-3 rounded">
                   <div className="md:col-span-4">
