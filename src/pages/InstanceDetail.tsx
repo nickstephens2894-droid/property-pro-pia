@@ -201,7 +201,8 @@ const InstanceDetail = () => {
               depreciationMethod: instanceData.depreciation_method as "prime-cost" | "diminishing-value",
               isNewProperty: instanceData.is_new_property,
               currentPropertyMethod: instanceData.property_method as any,
-              currentFundingMethod: instanceData.funding_method as any
+              currentFundingMethod: instanceData.funding_method as any,
+              propertyState: instanceData.property_state as any
             }, instanceData.property_method as any, instanceData.funding_method as any);
             setIsDataLoaded(true);
             console.log('✅ Instance data loaded and applied');
