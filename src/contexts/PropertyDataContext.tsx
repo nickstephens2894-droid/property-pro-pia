@@ -31,13 +31,6 @@ export interface PropertyData {
   buildingValue: number;
   plantEquipmentValue: number;
   
-  // Property Information
-  propertyMethod?: string;
-  address?: string;
-  suburb?: string;
-  state?: string;
-  postcode?: string;
-  
   // Construction-specific
   landValue: number;
   constructionValue: number;
@@ -51,8 +44,7 @@ export interface PropertyData {
     percentage: number;
     month: number;
     description: string;
-    amount?: number;
-  }>;
+  }>; 
   
   // Traditional Financing
   deposit: number;
@@ -96,15 +88,11 @@ export interface PropertyData {
   stampDuty: number;
   legalFees: number;
   inspectionFees: number;
-  loanFees?: number;
   
   // Construction Costs
   councilFees: number;
   architectFees: number;
   siteCosts: number;
-  professionalFees?: number;
-  councilDevelopmentFees?: number;
-  utilityConnections?: number;
   
   // Annual Expenses
   propertyManagement: number;
@@ -142,7 +130,6 @@ interface PropertyDataContextType {
   resetToDefaults: () => void;
   calculateEquityLoanAmount: () => number;
   calculateTotalProjectCost: () => number;
-  calculateTotalFunding: () => number;
   calculateAvailableEquity: () => number;
   calculateHoldingCosts: () => { 
     landInterest: number; 
@@ -488,13 +475,6 @@ export const PropertyDataProvider = ({ children }: { children: ReactNode }) => {
     return Math.max(0, Math.min(maxLoanByLVR, maxLoanByFunding));
   };
 
-  const calculateTotalFunding = useCallback(() => {
-    const mainLoanAmount = propertyData.loanAmount || 0;
-    const equityLoanAmount = calculateEquityLoanAmount();
-    const cashDeposit = propertyData.depositAmount || 0;
-    return mainLoanAmount + equityLoanAmount + cashDeposit;  
-  }, [propertyData.loanAmount, propertyData.depositAmount, calculateEquityLoanAmount]);
-
   const calculateFundingAnalysis = () => {
     const totalProjectCost = calculateTotalProjectCost();
     const availableEquity = calculateAvailableEquity();
@@ -577,7 +557,6 @@ export const PropertyDataProvider = ({ children }: { children: ReactNode }) => {
       resetToDefaults,
       calculateEquityLoanAmount,
       calculateTotalProjectCost,
-      calculateTotalFunding,
       calculateAvailableEquity,
       calculateHoldingCosts,
       calculateMinimumDeposit,

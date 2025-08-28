@@ -545,10 +545,9 @@ export const PropertyInputForm = ({
             value={openSections} 
             onValueChange={(newOpenSections) => {
               if (isMobile) {
-                // On mobile, only allow one section open at a time for better UX
-                setOpenSections(newOpenSections.slice(-1));
+                // On mobile, only allow one section open at a time
+                setOpenSections(newOpenSections.slice(-1)); // Keep only the last opened section
               } else {
-                // On desktop, allow multiple sections for efficient workflow
                 setOpenSections(newOpenSections);
               }
             }}
@@ -603,45 +602,45 @@ export const PropertyInputForm = ({
                       )}
                     </div>
 
-                     <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-2 lg:grid-cols-3'}`}>
-                       <div className="space-y-2">
-                         <Label htmlFor={`income-${investor.id}`} className="text-sm font-medium">
-                           Annual Income
-                         </Label>
-                         <CurrencyInput
-                           id={`income-${investor.id}`}
-                           value={investor.annualIncome}
-                           onChange={(value) => updateInvestor(investor.id, 'annualIncome', value)}
-                           className={`${isMobile ? 'min-h-[48px] text-base' : 'min-h-[40px]'}`}
-                           placeholder="Enter annual income"
-                         />
-                       </div>
-                       <div className="space-y-2">
-                         <Label htmlFor={`other-income-${investor.id}`} className="text-sm font-medium">
-                           Other Income
-                         </Label>
-                         <CurrencyInput
-                           id={`other-income-${investor.id}`}
-                           value={investor.otherIncome}
-                           onChange={(value) => updateInvestor(investor.id, 'otherIncome', value)}
-                           className={`${isMobile ? 'min-h-[48px] text-base' : 'min-h-[40px]'}`}
-                           placeholder="Enter other income"
-                         />
-                       </div>
-                     </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor={`income-${investor.id}`} className="text-sm md:text-sm font-medium">
+                          Annual Income
+                        </Label>
+                        <CurrencyInput
+                          id={`income-${investor.id}`}
+                          value={investor.annualIncome}
+                          onChange={(value) => updateInvestor(investor.id, 'annualIncome', value)}
+                          className="min-h-[44px] md:min-h-10"
+                          placeholder="Enter annual income"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`other-income-${investor.id}`} className="text-sm md:text-sm font-medium">
+                          Other Income
+                        </Label>
+                        <CurrencyInput
+                          id={`other-income-${investor.id}`}
+                          value={investor.otherIncome}
+                          onChange={(value) => updateInvestor(investor.id, 'otherIncome', value)}
+                          className="min-h-[44px] md:min-h-10"
+                          placeholder="Enter other income"
+                        />
+                      </div>
+                    </div>
 
-                     <div className="flex items-center space-x-3 py-3">
-                       <input
-                         type="checkbox"
-                         id={`medicare-${investor.id}`}
-                         checked={investor.hasMedicareLevy}
-                         onChange={(e) => updateInvestor(investor.id, 'hasMedicareLevy', e.target.checked)}
-                         className={`rounded border-border ${isMobile ? 'w-5 h-5' : 'w-4 h-4'}`}
-                       />
-                       <Label htmlFor={`medicare-${investor.id}`} className={`cursor-pointer ${isMobile ? 'text-base' : 'text-sm'}`}>
-                         Subject to Medicare Levy
-                       </Label>
-                     </div>
+                    <div className="flex items-center space-x-3 py-2">
+                      <input
+                        type="checkbox"
+                        id={`medicare-${investor.id}`}
+                        checked={investor.hasMedicareLevy}
+                        onChange={(e) => updateInvestor(investor.id, 'hasMedicareLevy', e.target.checked)}
+                        className="rounded border-border w-4 h-4 md:w-3 md:h-3"
+                      />
+                      <Label htmlFor={`medicare-${investor.id}`} className="text-sm cursor-pointer">
+                        Subject to Medicare Levy
+                      </Label>
+                    </div>
 
                     {/* Display tax summary for this investor */}
                     {investorTaxResults.find(r => r.investor.id === investor.id) && (
@@ -685,19 +684,19 @@ export const PropertyInputForm = ({
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
-               <div className={`space-y-${isMobile ? '4' : '6'}`}>
-                 <div className="space-y-3">
-                   <Label className="text-sm font-medium">Property Method</Label>
-                   <Select
-                     value={propertyData.currentPropertyMethod}
-                     onValueChange={(value) => {
-                       updateField('currentPropertyMethod', value as PropertyMethod);
-                       updateField('isConstructionProject', value === 'house-land-construction');
-                     }}
-                   >
-                     <SelectTrigger className={`${isMobile ? 'min-h-[48px] text-base' : 'min-h-[40px]'}`}>
-                       <SelectValue placeholder="Select property method..." />
-                     </SelectTrigger>
+              <div className="space-y-4 md:space-y-6">
+                <div className="space-y-3">
+                  <Label className="text-sm md:text-sm font-medium">Property Method</Label>
+                  <Select
+                    value={propertyData.currentPropertyMethod}
+                    onValueChange={(value) => {
+                      updateField('currentPropertyMethod', value as PropertyMethod);
+                      updateField('isConstructionProject', value === 'house-land-construction');
+                    }}
+                  >
+                    <SelectTrigger className="min-h-[44px] md:min-h-10">
+                      <SelectValue placeholder="Select property method..." />
+                    </SelectTrigger>
                     <SelectContent className="bg-background border border-border z-50">
                       {Object.entries(PROPERTY_METHODS).map(([key, method]) => (
                         <SelectItem key={key} value={key} className="min-h-[44px] md:min-h-auto">
@@ -1811,16 +1810,16 @@ export const PropertyInputForm = ({
 
           {/* 7. Ongoing Income & Expenses */}
           <AccordionItem value="ongoing-income-expenses" className="border-b">
-            <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50">
-              <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <DollarSign className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
-                  <span className="font-medium text-sm md:text-base truncate">Ongoing Income & Expenses</span>
+            <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
+              <div className="flex items-center gap-2 w-full">
+                <DollarSign className="h-4 w-4 text-primary" />
+                <span className="font-medium">Ongoing Income & Expenses</span>
+                <div className="ml-auto">
+                  <AccordionCompletionIndicator status={annualExpensesStatus} />
                 </div>
-                <AccordionCompletionIndicator status={annualExpensesStatus} />
               </div>
             </AccordionTrigger>
-            <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
+            <AccordionContent className="px-6 pb-6">
               <div className="space-y-6">
                 {/* Rental Income Section */}
                 <div className="space-y-4">
@@ -1915,16 +1914,16 @@ export const PropertyInputForm = ({
 
           {/* 8. Tax Optimization */}
           <AccordionItem value="tax-optimization" className="border-b">
-            <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50">
-              <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <Calculator className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
-                  <span className="font-medium text-sm md:text-base truncate">Tax Optimization & Depreciation</span>
+            <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
+              <div className="flex items-center gap-2 w-full">
+                <Calculator className="h-4 w-4 text-primary" />
+                <span className="font-medium">Tax Optimization & Depreciation</span>
+                <div className="ml-auto">
+                  <AccordionCompletionIndicator status={taxOptimizationStatus} />
                 </div>
-                <AccordionCompletionIndicator status={taxOptimizationStatus} />
               </div>
             </AccordionTrigger>
-           <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
+           <AccordionContent className="px-6 pb-6">
               <div className="space-y-6">
                 {/* Depreciation Settings */}
                 <div className="space-y-4">
@@ -2179,9 +2178,7 @@ export const PropertyInputForm = ({
                     <div className="flex-1">
                       <div className="font-medium">{investor.name}</div>
                       <div className="text-sm text-muted-foreground">
-                        Annual: ${investor.annualIncome.toLocaleString()} | 
-                        Other: ${investor.otherIncome.toLocaleString()} | 
-                        Medicare: {investor.hasMedicareLevy ? 'Yes' : 'No'}
+                        Total Income: {formatCurrency((investor.annualIncome || 0) + (investor.otherIncome || 0))}
                       </div>
                     </div>
                     <Button size="sm" variant="outline">

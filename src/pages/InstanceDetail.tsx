@@ -17,10 +17,9 @@ import ConstructionPeriodTable from "@/components/ConstructionPeriodTable";
 import { InvestmentResultsDetailed } from "@/components/InvestmentResultsDetailed";
 import { PropertyCalculationDetails } from "@/components/PropertyCalculationDetails";
 import { ValidationWarnings } from "@/components/ValidationWarnings";
-import { MobileFinancialSummary } from "@/components/MobileFinancialSummary";
 
 // Import the context hook
-import { usePropertyData, PropertyData } from "@/contexts/PropertyDataContext";
+import { usePropertyData } from "@/contexts/PropertyDataContext";
 import { useInstances } from "@/contexts/InstancesContext";
 import { Database } from "@/integrations/supabase/types";
 
@@ -37,7 +36,7 @@ import { calculateLoanPayment, calculateCurrentLoanPayment } from "@/utils/calcu
 
 // Using the Instance type from Supabase types
 
-interface LocalYearProjection {
+interface YearProjection {
   year: number;
   rentalIncome: number;
   propertyValue: number;
@@ -48,22 +47,21 @@ interface LocalYearProjection {
   equityLoanPayment: number;
   mainInterestYear: number;
   equityInterestYear: number;
-  mainLoanIOStatus: "IO" | "P&I";
-  equityLoanIOStatus: "IO" | "P&I";
+  mainLoanIOStatus: 'IO' | 'P&I';
+  equityLoanIOStatus: 'IO' | 'P&I';
   otherExpenses: number;
   depreciation: number;
   buildingDepreciation: number;
   fixturesDepreciation: number;
   taxableIncome: number;
   taxBenefit: number;
-  afterTaxCashFlow: number; 
+  afterTaxCashFlow: number;
   cumulativeCashFlow: number;
   propertyEquity: number;
   totalReturn: number;
 }
 
-// Type definition for the assumptions object 
-interface Assumptions {
+type Assumptions = {
   initialPropertyValue: number;
   initialWeeklyRent: Triplet<number>;
   capitalGrowthRate: Triplet<number>;
@@ -75,8 +73,8 @@ interface Assumptions {
   equityInterestRate: number;
   mainLoanTerm: number;
   equityLoanTerm: number;
-  mainLoanType: string;
-  equityLoanType: string;
+  mainLoanType: 'io' | 'pi';
+  equityLoanType: 'io' | 'pi';
   mainIOTermYears: number;
   equityIOTermYears: number;
   propertyManagementRate: Triplet<number>;
@@ -85,310 +83,347 @@ interface Assumptions {
   repairs: number;
   expenseInflationRate: number;
   depreciationYear1: number;
-  isConstructionProject: boolean;
-  constructionPeriod: number;
-}
+};
 
 const InstanceDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { propertyData, updateField, calculateTotalProjectCost, calculateEquityLoanAmount, calculateHoldingCosts, applyPreset } = usePropertyData();
+  const { getInstance, updateInstance, loading: instancesLoading, deleteInstance } = useInstances();
   const { toast } = useToast();
 
-  // State management
+  // State for the instance
+  const [instance, setInstance] = useState<Instance | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("analysis");
-  const [yearRange, setYearRange] = useState([1, 10]);
-  const [viewMode, setViewMode] = useState<'year' | 'table'>('year');
+  const [yearRange, setYearRange] = useState<[number, number]>([1, 30]);
+  const [viewMode, setViewMode] = useState<'year' | 'table'>("table");
   const [isEditMode, setIsEditMode] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingInstance, setDeletingInstance] = useState(false);
+  const debouncedSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Context hooks
-  const { 
-    propertyData, 
-    setPropertyData, 
-    updateField, 
-    calculateTotalProjectCost, 
-    calculateTotalFunding,
-    calculateEquityLoanAmount, 
-    calculateHoldingCosts, 
-    loadScenario 
-  } = usePropertyData();
-  const { getInstance, updateInstance, deleteInstance, instances } = useInstances();
-  
-  // State for the current instance
-  const [instance, setInstance] = useState<Instance | null>(null);
-  
-  // Track unsaved changes
-  const lastSavedDataRef = useRef<string>('');
-
-  useEffect(() => {
-    const loadInstance = async () => {
-      if (!id) return;
-      setLoading(true);
-      try {
-        const fetchedInstance = await getInstance(id);
-        if (fetchedInstance) {
-          setInstance(fetchedInstance);
-          
-          // Convert the instance data to PropertyData format
-          const convertedPropertyData: PropertyData = {
-            // Property Details
-            purchasePrice: fetchedInstance.purchase_price,
-            weeklyRent: fetchedInstance.weekly_rent,
-            propertyManagement: fetchedInstance.property_management || 7.0,
-            vacancyRate: fetchedInstance.vacancy_rate || 2.0,
-            
-            // Property Information (use defaults if not available)
-            propertyMethod: fetchedInstance.property_method || 'purchase',
-            address: '',
-            suburb: '',
-            state: '',
-            postcode: '',
-            constructionYear: fetchedInstance.construction_year || 2020,
-            isNewProperty: fetchedInstance.is_new_property || false,
-            
-            // Required fields with defaults
-            rentalGrowthRate: 5.0,
-            buildingValue: fetchedInstance.purchase_price * 0.6,
-            plantEquipmentValue: fetchedInstance.purchase_price * 0.05,
-            landValue: fetchedInstance.purchase_price * 0.4,
-            constructionValue: 0,
-            postConstructionRateReduction: 0.5,
-            
-            // Loan Details
-            loanAmount: fetchedInstance.loan_amount || 0,
-            interestRate: fetchedInstance.interest_rate || 6.5,
-            loanTerm: fetchedInstance.loan_term || 30,
-            mainLoanType: (fetchedInstance.main_loan_type as 'io' | 'pi') || 'pi',
-            ioTermYears: fetchedInstance.io_term_years || 5,
-            
-            // Traditional financing
-            deposit: 0,
-            lvr: 80,
-            
-            // Equity Loan Details
-            equityLoanAmount: fetchedInstance.equity_loan_amount || 0,
-            equityLoanInterestRate: fetchedInstance.equity_loan_interest_rate || 7.2,
-            equityLoanTerm: fetchedInstance.equity_loan_term || 30,
-            equityLoanType: (fetchedInstance.equity_loan_type as 'io' | 'pi') || 'io',
-            equityLoanIoTermYears: fetchedInstance.equity_loan_io_term_years || 5,
-            
-            // Equity funding
-            useEquityFunding: (fetchedInstance.equity_loan_amount || 0) > 0,
-            primaryPropertyValue: 1000000,
-            existingDebt: 400000,
-            maxLVR: 80,
-            
-            // Deposit and Costs  
-            depositAmount: fetchedInstance.deposit_amount || 0,
-            minimumDepositRequired: fetchedInstance.deposit_amount || 0,
-            stampDuty: fetchedInstance.stamp_duty || 0,
-            legalFees: fetchedInstance.legal_fees || 1500,
-            inspectionFees: fetchedInstance.inspection_fees || 500,
-            loanFees: 1000,
-            
-            // Property Expenses
-            councilRates: fetchedInstance.council_rates || 2000,
-            insurance: fetchedInstance.insurance || 1000,
-            repairs: fetchedInstance.repairs || 1500,
-            
-            // Construction costs
-            councilFees: 0,
-            architectFees: 0,
-            siteCosts: 0,
-            professionalFees: 0,
-            councilDevelopmentFees: 0,
-            utilityConnections: 0,
-            
-            // Depreciation
-            depreciationMethod: (fetchedInstance.depreciation_method as 'prime-cost' | 'diminishing-value') || 'prime-cost',
-            
-            // Construction Project specific
-            isConstructionProject: fetchedInstance.is_construction_project || false,
-            constructionPeriod: fetchedInstance.construction_period || 0,
-            constructionInterestRate: fetchedInstance.construction_interest_rate || 6.5,
-            holdingCostFunding: (fetchedInstance.holding_cost_funding as 'cash' | 'debt' | 'hybrid') || 'cash',
-            holdingCostCashPercentage: 100,
-            capitalizeConstructionCosts: false,
-            constructionEquityRepaymentType: 'io' as 'io' | 'pi',
-            landHoldingInterest: 0,
-            constructionHoldingInterest: 0,
-            totalHoldingCosts: 0,
-            
-            // Development costs (for construction projects)
-            constructionProgressPayments: Array.isArray(fetchedInstance.construction_progress_payments) 
-              ? fetchedInstance.construction_progress_payments.map((p: any) => ({
-                  id: p.id || Math.random().toString(),
-                  percentage: p.percentage || 0,
-                  month: p.month || 1,
-                  description: p.description || '',
-                  amount: p.amount || 0
-                }))
-              : [],
-            
-            // Property state and metadata
-            propertyState: 'VIC' as 'ACT' | 'NSW' | 'NT' | 'QLD' | 'SA' | 'TAS' | 'VIC' | 'WA',
-            propertyType: 'Apartment',
-            location: 'VIC',
-            
-            // Investors
-            investors: Array.isArray(fetchedInstance.investors) 
-              ? (fetchedInstance.investors as any[]).map((inv: any) => ({
-                  id: inv.id || Math.random().toString(),
-                  name: inv.name || '',
-                  annualIncome: inv.annualIncome || 0,
-                  otherIncome: inv.otherIncome || 0,
-                  hasMedicareLevy: inv.hasMedicareLevy || false
-                }))
-              : [],
-            ownershipAllocations: Array.isArray(fetchedInstance.ownership_allocations)
-              ? (fetchedInstance.ownership_allocations as any[]).map((alloc: any) => ({
-                  investorId: alloc.investorId || '',
-                  ownershipPercentage: alloc.ownershipPercentage || 0
-                }))
-              : []
-          };
-          
-          setPropertyData(convertedPropertyData);
-          lastSavedDataRef.current = JSON.stringify(convertedPropertyData);
-        }
-      } catch (error) {
-        console.error('Error loading instance:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load instance data",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadInstance();
-  }, [id, getInstance, setPropertyData, toast]);
-
-  // Track changes to propertyData for unsaved changes indicator
-  useEffect(() => {
-    const currentDataString = JSON.stringify(propertyData);
-    if (lastSavedDataRef.current && lastSavedDataRef.current !== currentDataString) {
-      setHasUnsavedChanges(true);
-    } else {
-      setHasUnsavedChanges(false);
-    }
-  }, [propertyData]);
-
-  // Auto-save debounced
-  useEffect(() => {
-    if (!hasUnsavedChanges || !isEditMode) return;
-    
-    const timer = setTimeout(() => {
-      handleSaveInstance();
-    }, 2000); // Auto-save after 2 seconds of inactivity
-
-    return () => clearTimeout(timer);
-  }, [propertyData, hasUnsavedChanges, isEditMode]);
-
-  // Warning before leaving page with unsaved changes
+  // Track changes to mark as unsaved
+  // Warn before page unload if there are unsaved changes
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
+      if (hasUnsavedChanges && isEditMode) {
         e.preventDefault();
         e.returnValue = '';
+        return '';
       }
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [hasUnsavedChanges]);
+  }, [hasUnsavedChanges, isEditMode]);
+
+  useEffect(() => {
+    if (id && !isDataLoaded) {
+      const loadInstance = async () => {
+        try {
+          setLoading(true);
+          const instanceData = getInstance(id);
+        if (instanceData) {
+          setInstance(instanceData);
+          console.log('🔄 Loading instance data:', {
+            id: instanceData.id,
+            constructionValue: instanceData.construction_value,
+            buildingValue: instanceData.building_value,
+            plantEquipmentValue: instanceData.plant_equipment_value,
+            purchasePrice: instanceData.purchase_price,
+            investors: instanceData.investors,
+            ownershipAllocations: instanceData.ownership_allocations,
+            isEditMode,
+            isDataLoaded
+          });
+          
+          // Only apply preset if not in edit mode and data hasn't been loaded yet
+          if (!isEditMode && !hasUnsavedChanges) {
+            console.log('📋 Applying preset data from instance:', {
+              investors: instanceData.investors,
+              ownershipAllocations: instanceData.ownership_allocations
+            });
+            applyPreset({
+              investors: instanceData.investors as any,
+              ownershipAllocations: instanceData.ownership_allocations as any,
+              isConstructionProject: instanceData.is_construction_project,
+              purchasePrice: instanceData.purchase_price,
+              weeklyRent: instanceData.weekly_rent,
+              rentalGrowthRate: instanceData.rental_growth_rate,
+              vacancyRate: instanceData.vacancy_rate,
+              constructionYear: instanceData.construction_year,
+              buildingValue: instanceData.building_value,
+              plantEquipmentValue: instanceData.plant_equipment_value,
+              landValue: instanceData.land_value,
+              constructionValue: instanceData.construction_value,
+              constructionPeriod: instanceData.construction_period,
+              constructionInterestRate: instanceData.construction_interest_rate,
+              constructionProgressPayments: instanceData.construction_progress_payments as any,
+              deposit: instanceData.deposit,
+              loanAmount: instanceData.loan_amount,
+              interestRate: instanceData.interest_rate,
+              loanTerm: instanceData.loan_term,
+              lvr: instanceData.lvr,
+              mainLoanType: instanceData.main_loan_type as "io" | "pi",
+              ioTermYears: instanceData.io_term_years,
+              useEquityFunding: instanceData.use_equity_funding,
+              primaryPropertyValue: instanceData.primary_property_value,
+              existingDebt: instanceData.existing_debt,
+              maxLVR: instanceData.max_lvr,
+              equityLoanType: instanceData.equity_loan_type as "io" | "pi",
+              equityLoanIoTermYears: instanceData.equity_loan_io_term_years,
+              equityLoanInterestRate: instanceData.equity_loan_interest_rate,
+              equityLoanTerm: instanceData.equity_loan_term,
+              depositAmount: instanceData.deposit_amount,
+              minimumDepositRequired: instanceData.minimum_deposit_required,
+              holdingCostFunding: instanceData.holding_cost_funding as "cash" | "debt" | "hybrid",
+              holdingCostCashPercentage: instanceData.holding_cost_cash_percentage,
+              capitalizeConstructionCosts: instanceData.capitalize_construction_costs,
+              constructionEquityRepaymentType: instanceData.construction_equity_repayment_type as "io" | "pi",
+              landHoldingInterest: instanceData.land_holding_interest,
+              constructionHoldingInterest: instanceData.construction_holding_interest,
+              totalHoldingCosts: instanceData.total_holding_costs,
+              stampDuty: instanceData.stamp_duty,
+              legalFees: instanceData.legal_fees,
+              inspectionFees: instanceData.inspection_fees,
+              councilFees: instanceData.council_fees,
+              architectFees: instanceData.architect_fees,
+              siteCosts: instanceData.site_costs,
+              propertyManagement: instanceData.property_management,
+              councilRates: instanceData.council_rates,
+              insurance: instanceData.insurance,
+              repairs: instanceData.repairs,
+              depreciationMethod: instanceData.depreciation_method as "prime-cost" | "diminishing-value",
+              isNewProperty: instanceData.is_new_property,
+              currentPropertyMethod: instanceData.property_method as any,
+              currentFundingMethod: instanceData.funding_method as any
+            }, instanceData.property_method as any, instanceData.funding_method as any);
+            setIsDataLoaded(true);
+            console.log('✅ Instance data loaded and applied');
+          } else {
+            console.log('⚠️ Skipping preset application - edit mode or has unsaved changes');
+            setIsDataLoaded(true);
+          }
+        }
+        } catch (error) {
+          console.error('❌ Failed to load instance:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      loadInstance();
+    }
+  }, [id, getInstance, applyPreset, isDataLoaded, isEditMode, hasUnsavedChanges]);
+
+  // Track changes to mark as unsaved with improved logic
+  const lastPropertyDataRef = useRef(propertyData);
+  useEffect(() => {
+    if (isDataLoaded && !loading && isEditMode) {
+      // Only mark as unsaved if data actually changed (deep comparison on key fields)
+      const currentData = propertyData;
+      const lastData = lastPropertyDataRef.current;
+      
+      const keyFieldsChanged = currentData.purchasePrice !== lastData.purchasePrice ||
+        currentData.weeklyRent !== lastData.weeklyRent ||
+        currentData.constructionValue !== lastData.constructionValue ||
+        currentData.buildingValue !== lastData.buildingValue ||
+        currentData.plantEquipmentValue !== lastData.plantEquipmentValue ||
+        currentData.landValue !== lastData.landValue ||
+        currentData.loanAmount !== lastData.loanAmount ||
+        currentData.depositAmount !== lastData.depositAmount;
+      
+      if (keyFieldsChanged) {
+        console.log('📝 Property data changed, marking as unsaved:', {
+          purchasePrice: { old: lastData.purchasePrice, new: currentData.purchasePrice },
+          constructionValue: { old: lastData.constructionValue, new: currentData.constructionValue },
+          buildingValue: { old: lastData.buildingValue, new: currentData.buildingValue }
+        });
+        setHasUnsavedChanges(true);
+      }
+    }
+    
+    lastPropertyDataRef.current = propertyData;
+  }, [propertyData, loading, isDataLoaded, isEditMode]);
+
+  // Improved debounced auto-save with faster response and validation
+  useEffect(() => {
+    if (hasUnsavedChanges && isEditMode && !saving && isDataLoaded && instance) {
+      // Clear existing timeout
+      if (debouncedSaveTimeoutRef.current) {
+        clearTimeout(debouncedSaveTimeoutRef.current);
+      }
+      
+      // Validate that we have essential data before saving
+      const hasValidData = propertyData.purchasePrice > 0 || propertyData.constructionValue > 0;
+      
+      if (hasValidData) {
+        // Set new timeout for debounced save - reduced to 1 second for more responsive saving
+        debouncedSaveTimeoutRef.current = setTimeout(() => {
+          console.log('💾 Auto-saving changes (1s timeout)...', {
+            purchasePrice: propertyData.purchasePrice,
+            constructionValue: propertyData.constructionValue,
+            buildingValue: propertyData.buildingValue
+          });
+          handleSaveInstance();
+        }, 1000); // Reduced from 3000ms to 1000ms for faster auto-save
+      } else {
+        console.log('⚠️ Skipping auto-save - invalid data detected');
+      }
+    }
+    
+    return () => {
+      if (debouncedSaveTimeoutRef.current) {
+        clearTimeout(debouncedSaveTimeoutRef.current);
+      }
+    };
+  }, [hasUnsavedChanges, isEditMode, saving, isDataLoaded, instance, propertyData.purchasePrice, propertyData.constructionValue, propertyData.buildingValue]);
+
+  // Convert propertyData back to instance format for saving
+  const convertPropertyDataToInstance = () => {
+    if (!instance) return null;
+    
+    return {
+      name: instance.name, // Keep original name for now
+      description: null, // Instance doesn't have description field in schema
+      status: instance.status,
+      property_type: propertyData.propertyType || 'Apartment',
+      property_method: propertyData.currentPropertyMethod || 'built-first-owner',
+      location: propertyData.location || 'NSW',
+      purchase_price: propertyData.purchasePrice || 0,
+      weekly_rent: propertyData.weeklyRent || 0,
+      rental_growth_rate: propertyData.rentalGrowthRate || 5.0,
+      vacancy_rate: propertyData.vacancyRate || 2.0,
+      capital_growth_rate: 7.0, // Default value as it's not in PropertyData
+      is_construction_project: propertyData.isConstructionProject || false,
+      construction_year: propertyData.constructionYear || 2025,
+      land_value: propertyData.landValue || 0,
+      construction_value: propertyData.constructionValue || 0,
+      construction_period: propertyData.constructionPeriod || 0,
+      construction_interest_rate: propertyData.constructionInterestRate || 7.0,
+      post_construction_rate_reduction: propertyData.postConstructionRateReduction || 0.5,
+      building_value: propertyData.buildingValue || 0,
+      plant_equipment_value: propertyData.plantEquipmentValue || 0,
+      construction_progress_payments: propertyData.constructionProgressPayments || [],
+      stamp_duty: propertyData.stampDuty || 0,
+      legal_fees: propertyData.legalFees || 0,
+      inspection_fees: propertyData.inspectionFees || 0,
+      council_fees: propertyData.councilFees || 0,
+      architect_fees: propertyData.architectFees || 0,
+      site_costs: propertyData.siteCosts || 0,
+      property_management: propertyData.propertyManagement || 8.0,
+      council_rates: propertyData.councilRates || 0,
+      insurance: propertyData.insurance || 0,
+      repairs: propertyData.repairs || 0,
+      is_new_property: propertyData.isNewProperty || true,
+      deposit: propertyData.deposit || 0,
+      loan_amount: propertyData.loanAmount || 0,
+      interest_rate: propertyData.interestRate || 6.0,
+      loan_term: propertyData.loanTerm || 30,
+      lvr: propertyData.lvr || 80,
+      main_loan_type: propertyData.mainLoanType || 'pi',
+      io_term_years: propertyData.ioTermYears || 5,
+      use_equity_funding: propertyData.useEquityFunding || false,
+      primary_property_value: propertyData.primaryPropertyValue || 0,
+      existing_debt: propertyData.existingDebt || 0,
+      max_lvr: propertyData.maxLVR || 80,
+      equity_loan_type: propertyData.equityLoanType || 'pi',
+      equity_loan_io_term_years: propertyData.equityLoanIoTermYears || 3,
+      equity_loan_interest_rate: propertyData.equityLoanInterestRate || 7.2,
+      equity_loan_term: propertyData.equityLoanTerm || 25,
+      deposit_amount: propertyData.depositAmount || 0,
+      minimum_deposit_required: propertyData.minimumDepositRequired || 0,
+      holding_cost_funding: propertyData.holdingCostFunding || 'cash',
+      holding_cost_cash_percentage: propertyData.holdingCostCashPercentage || 100,
+      capitalize_construction_costs: propertyData.capitalizeConstructionCosts || false,
+      construction_equity_repayment_type: propertyData.constructionEquityRepaymentType || 'io',
+      land_holding_interest: propertyData.landHoldingInterest || 0,
+      construction_holding_interest: propertyData.constructionHoldingInterest || 0,
+      total_holding_costs: propertyData.totalHoldingCosts || 0,
+      investors: propertyData.investors as any || [],
+      ownership_allocations: propertyData.ownershipAllocations as any || [],
+      total_project_cost: totalProjectCost,
+      equity_loan_amount: equityLoanAmount,
+      available_equity: 0, // Will be calculated
+      minimum_cash_required: 0, // Will be calculated
+      actual_cash_deposit: propertyData.depositAmount || 0, // Use depositAmount as fallback
+      funding_shortfall: 0, // Will be calculated
+      funding_surplus: 0, // Will be calculated
+      projections: [], // Will be calculated on save
+      assumptions: {}, // Will be calculated on save
+      weekly_cashflow_year1: investmentSummary.weeklyAfterTaxCashFlowSummary,
+      tax_savings_year1: -investmentSummary.taxDifferenceSummary,
+      tax_savings_total: investmentSummary.taxSavingsTotal,
+      net_equity_at_year_to: investmentSummary.equityAtYearTo,
+      roi_at_year_to: investmentSummary.roiAtYearTo,
+      analysis_year_to: yearRange[1],
+      depreciation_method: propertyData.depreciationMethod || 'prime-cost',
+      funding_method: propertyData.currentFundingMethod,
+      property_state: propertyData.propertyState || 'VIC'
+    };
+  };
 
   const handleSaveInstance = async () => {
-    if (!id || !instance || saving) return;
+    if (!instance || !id) {
+      console.error('❌ Cannot save - missing instance or id');
+      return;
+    }
     
-    setSaving(true);
     try {
-        // Convert PropertyData back to Instance format for database
-        const updatedInstance: Partial<Instance> = {
-          name: instance.name, // Keep existing name
-          
-          // Property Details
-          purchase_price: propertyData.purchasePrice || 0,
-          weekly_rent: propertyData.weeklyRent || 0,
-          property_management: propertyData.propertyManagement || 7.0,
-          vacancy_rate: propertyData.vacancyRate || 2.0,
-          
-          // Property Information
-          property_method: propertyData.propertyMethod || 'purchase',
-          construction_year: propertyData.constructionYear || 2020,
-          is_new_property: propertyData.isNewProperty || false,
-          
-          // Loan Details
-          loan_amount: propertyData.loanAmount || 0,
-          interest_rate: propertyData.interestRate || 6.5,
-          loan_term: propertyData.loanTerm || 30,
-          main_loan_type: propertyData.mainLoanType || 'pi',
-          io_term_years: propertyData.ioTermYears || 5,
-          
-          // Equity Loan Details
-          equity_loan_amount: propertyData.equityLoanAmount || 0,
-          equity_loan_interest_rate: propertyData.equityLoanInterestRate || 7.2,
-          equity_loan_term: propertyData.equityLoanTerm || 30,
-          equity_loan_type: propertyData.equityLoanType || 'io',
-          equity_loan_io_term_years: propertyData.equityLoanIoTermYears || 5,
-          
-          // Deposit and Costs
-          deposit_amount: propertyData.depositAmount || 0,
-          stamp_duty: propertyData.stampDuty || 0,
-          legal_fees: propertyData.legalFees || 1500,
-          inspection_fees: propertyData.inspectionFees || 500,
-          
-          // Property Expenses
-          council_rates: propertyData.councilRates || 2000,
-          insurance: propertyData.insurance || 1000,
-          repairs: propertyData.repairs || 1500,
-          
-          // Depreciation
-          depreciation_method: propertyData.depreciationMethod || 'prime-cost',
-          
-          // Construction Project specific
-          is_construction_project: propertyData.isConstructionProject || false,
-          construction_period: propertyData.constructionPeriod || 0,
-          construction_interest_rate: propertyData.constructionInterestRate || 6.5,
-          holding_cost_funding: propertyData.holdingCostFunding || 'cash',
-          
-          // Development costs
-          construction_progress_payments: propertyData.constructionProgressPayments as any || [],
-          
-          // Investors
-          investors: propertyData.investors as any || [],
-          ownership_allocations: propertyData.ownershipAllocations as any || [],
-          
-          // Timestamps
-          updated_at: new Date().toISOString()
-        };
-
-      const savedInstance = await updateInstance(id, updatedInstance);
-      if (savedInstance) {
-        setInstance(savedInstance);
-        lastSavedDataRef.current = JSON.stringify(propertyData);
+      setSaving(true);
+      console.log('💾 Starting save process...', {
+        instanceId: id,
+        hasUnsavedChanges,
+        isEditMode,
+        propertyData: {
+          purchasePrice: propertyData.purchasePrice,
+          constructionValue: propertyData.constructionValue,
+          buildingValue: propertyData.buildingValue,
+          plantEquipmentValue: propertyData.plantEquipmentValue
+        }
+      });
+      
+      const instanceUpdates = convertPropertyDataToInstance();
+      
+      if (instanceUpdates) {
+        console.log('🔄 Saving instance updates:', {
+          purchase_price: instanceUpdates.purchase_price,
+          construction_value: instanceUpdates.construction_value,
+          building_value: instanceUpdates.building_value,
+          plant_equipment_value: instanceUpdates.plant_equipment_value
+        });
+        
+        await updateInstance(id, instanceUpdates);
         setHasUnsavedChanges(false);
         
+        console.log('✅ Instance saved successfully');
         toast({
-          title: "Instance Saved",
-          description: "Your changes have been saved successfully.",
-          variant: "default",
+          title: "Instance Updated",
+          description: "Your instance has been successfully updated.",
         });
+      } else {
+        console.error('❌ Failed to convert property data to instance format');
       }
     } catch (error) {
-      console.error('Error saving instance:', error);
+      console.error('❌ Failed to save instance:', error);
       toast({
-        title: "Save Failed",
-        description: error instanceof Error ? error.message : "Failed to save changes. Please try again.",
+        title: "Error",
+        description: "Failed to update instance. Please try again.",
         variant: "destructive",
       });
+      
+      // Add retry logic
+      setTimeout(() => {
+        if (hasUnsavedChanges && isEditMode) {
+          console.log('🔄 Retrying auto-save in 5 seconds...');
+          handleSaveInstance();
+        }
+      }, 5000);
     } finally {
       setSaving(false);
     }
@@ -396,271 +431,470 @@ const InstanceDetail = () => {
 
   const handleCancelEdit = () => {
     if (hasUnsavedChanges) {
-      // Revert to last saved state
-      if (lastSavedDataRef.current) {
-        const lastSavedData = JSON.parse(lastSavedDataRef.current);
-        setPropertyData(lastSavedData);
+      if (confirm('You have unsaved changes. Are you sure you want to discard them?')) {
+        setIsEditMode(false);
+        setHasUnsavedChanges(false);
+        // Reload the instance data to reset any changes with proper field mapping
+        if (instance) {
+          applyPreset({
+            investors: instance.investors as any,
+            ownershipAllocations: instance.ownership_allocations as any,
+            isConstructionProject: instance.is_construction_project,
+            purchasePrice: instance.purchase_price,
+            weeklyRent: instance.weekly_rent,
+            rentalGrowthRate: instance.rental_growth_rate,
+            vacancyRate: instance.vacancy_rate,
+            constructionYear: instance.construction_year,
+            buildingValue: instance.building_value,
+            plantEquipmentValue: instance.plant_equipment_value,
+            landValue: instance.land_value,
+            constructionValue: instance.construction_value,
+            constructionPeriod: instance.construction_period,
+            constructionInterestRate: instance.construction_interest_rate,
+            postConstructionRateReduction: instance.post_construction_rate_reduction,
+            constructionProgressPayments: instance.construction_progress_payments as any,
+            deposit: instance.deposit,
+            loanAmount: instance.loan_amount,
+            interestRate: instance.interest_rate,
+            loanTerm: instance.loan_term,
+            lvr: instance.lvr,
+            mainLoanType: instance.main_loan_type as "io" | "pi",
+            ioTermYears: instance.io_term_years,
+            useEquityFunding: instance.use_equity_funding,
+            primaryPropertyValue: instance.primary_property_value,
+            existingDebt: instance.existing_debt,
+            maxLVR: instance.max_lvr,
+            equityLoanType: instance.equity_loan_type as "io" | "pi",
+            equityLoanIoTermYears: instance.equity_loan_io_term_years,
+            equityLoanInterestRate: instance.equity_loan_interest_rate,
+            equityLoanTerm: instance.equity_loan_term,
+            depositAmount: instance.deposit_amount,
+            minimumDepositRequired: instance.minimum_deposit_required,
+            holdingCostFunding: instance.holding_cost_funding as "cash" | "debt" | "hybrid",
+            holdingCostCashPercentage: instance.holding_cost_cash_percentage,
+            capitalizeConstructionCosts: instance.capitalize_construction_costs,
+            constructionEquityRepaymentType: instance.construction_equity_repayment_type as "io" | "pi",
+            landHoldingInterest: instance.land_holding_interest,
+            constructionHoldingInterest: instance.construction_holding_interest,
+            totalHoldingCosts: instance.total_holding_costs,
+            stampDuty: instance.stamp_duty,
+            legalFees: instance.legal_fees,
+            inspectionFees: instance.inspection_fees,
+            councilFees: instance.council_fees,
+            architectFees: instance.architect_fees,
+            siteCosts: instance.site_costs,
+            propertyManagement: instance.property_management,
+            councilRates: instance.council_rates,
+            insurance: instance.insurance,
+            repairs: instance.repairs,
+            // Fix depreciation method mapping
+            depreciationMethod: instance.depreciation_method as "prime-cost" | "diminishing-value",
+            isNewProperty: instance.is_new_property,
+            currentPropertyMethod: instance.property_method as any,
+            currentFundingMethod: instance.funding_method as any
+          }, instance.property_method as any, instance.funding_method as any);
+        }
       }
-      setHasUnsavedChanges(false);
+    } else {
+      setIsEditMode(false);
     }
-    setIsEditMode(false);
   };
 
-  // Enhanced updateField function that triggers edit mode
-  const enhancedUpdateField = useCallback((path: string, value: any) => {
-    updateField(path as keyof PropertyData, value);
-    if (!isEditMode) {
+  const enhancedUpdateField = (field: keyof typeof propertyData, value: any) => {
+    console.log('🔧 Field update:', { field, value, isEditMode, isDataLoaded });
+    
+    // Enable edit mode if not already enabled and data is loaded
+    if (!isEditMode && isDataLoaded) {
+      console.log('📝 Enabling edit mode due to field update');
       setIsEditMode(true);
     }
-  }, [updateField, isEditMode]);
+    
+    updateField(field, value);
+    
+    if (isDataLoaded) {
+      setHasUnsavedChanges(true);
+    }
+  };
 
-  // Use consistent calculations from context
-  const totalProjectCost = useMemo(() => calculateTotalProjectCost(), [calculateTotalProjectCost]);
-  const totalFunding = useMemo(() => calculateTotalFunding(), [calculateTotalFunding]);
-  const equityLoanAmount = useMemo(() => calculateEquityLoanAmount(), [calculateEquityLoanAmount]);
+  // Calculate all the necessary values for the components
+  const totalProjectCost = calculateTotalProjectCost();
+  const equityLoanAmount = calculateEquityLoanAmount();
 
-  const funding = useMemo(() => ({
-    mainLoanAmount: propertyData.loanAmount || 0,
-    equityLoanAmount: equityLoanAmount,
-    totalLoanAmount: (propertyData.loanAmount || 0) + equityLoanAmount,
-    cashRequired: Math.max(0, totalProjectCost - (propertyData.loanAmount || 0) - equityLoanAmount)
-  }), [propertyData.loanAmount, equityLoanAmount, totalProjectCost]);
-
+  // Calculate monthly payments using useMemo for performance
   const monthlyPayments = useMemo(() => {
-    const mainLoanPayment = calculateCurrentLoanPayment(
-      propertyData.loanAmount || 0,
-      propertyData.interestRate || 6.5,
+    // Use the new calculation functions to properly handle P&I vs IO
+    const mainCurrentPayment = calculateCurrentLoanPayment(
+      propertyData.loanAmount || 0, 
+      propertyData.interestRate || 6, 
       propertyData.loanTerm || 30,
       propertyData.ioTermYears || 0,
       0, // Current year (initial calculation)
       'monthly'
     );
-
-    const equityLoanPayment = equityLoanAmount > 0 ? calculateCurrentLoanPayment(
-      equityLoanAmount,
-      propertyData.equityLoanInterestRate || 7.2,
-      propertyData.equityLoanTerm || 30,
-      propertyData.equityLoanIoTermYears || 0,
-      0, // Current year (initial calculation)
-      'monthly'
-    ) : 0;
-
-    return {
-      mainLoan: mainLoanPayment,
-      equityLoan: equityLoanPayment,
-      total: mainLoanPayment + equityLoanPayment
+    
+    const equityCurrentPayment = propertyData.useEquityFunding ? 
+      calculateCurrentLoanPayment(
+        equityLoanAmount || 0, 
+        propertyData.equityLoanInterestRate || 7.2, 
+        propertyData.equityLoanTerm || 30,
+        propertyData.equityLoanIoTermYears || 0,
+        0, // Current year (initial calculation)
+        'monthly'
+      ) : 0;
+      
+    return { 
+      mainMonthly: mainCurrentPayment, 
+      equityMonthly: equityCurrentPayment, 
+      total: mainCurrentPayment + equityCurrentPayment 
     };
-  }, [propertyData, equityLoanAmount]);
+  }, [propertyData.loanAmount, propertyData.interestRate, propertyData.loanTerm, propertyData.mainLoanType, propertyData.ioTermYears, propertyData.useEquityFunding, equityLoanAmount, propertyData.equityLoanInterestRate, propertyData.equityLoanTerm, propertyData.equityLoanType, propertyData.equityLoanIoTermYears]);
 
+  // Calculate loan payment details
   const loanPaymentDetails = useMemo(() => {
     const mainLoanDetails = {
-      ioPayment: calculateLoanPayment(propertyData.loanAmount || 0, propertyData.interestRate || 6.5, 0),
-      piPayment: calculateLoanPayment(propertyData.loanAmount || 0, propertyData.interestRate || 6.5, propertyData.loanTerm || 30),
-      ioTermYears: propertyData.ioTermYears || 5,
-      isIO: propertyData.mainLoanType === 'io'
+      isIO: propertyData.mainLoanType === 'io',
+      ioPayment: (propertyData.loanAmount || 0) * (propertyData.interestRate || 6) / 100 / 12,
+      piPayment: calculateLoanPayment(propertyData.loanAmount || 0, propertyData.interestRate || 6, propertyData.loanTerm || 30, 'monthly'),
+      ioTermYears: propertyData.ioTermYears || 0
     };
 
-    const equityLoanDetails = equityLoanAmount > 0 ? {
-      ioPayment: calculateLoanPayment(equityLoanAmount, propertyData.equityLoanInterestRate || 7.2, 0),
-      piPayment: calculateLoanPayment(equityLoanAmount, propertyData.equityLoanInterestRate || 7.2, propertyData.equityLoanTerm || 30),
-      ioTermYears: propertyData.equityLoanIoTermYears || 5,
-      isIO: propertyData.equityLoanType === 'io'
+    const equityLoanDetails = propertyData.useEquityFunding ? {
+      isIO: propertyData.equityLoanType === 'io',
+      ioPayment: (equityLoanAmount || 0) * (propertyData.equityLoanInterestRate || 7.2) / 100 / 12,
+      piPayment: calculateLoanPayment(equityLoanAmount || 0, propertyData.equityLoanInterestRate || 7.2, propertyData.equityLoanTerm || 30, 'monthly'),
+      ioTermYears: propertyData.equityLoanIoTermYears || 0
     } : null;
 
     return { mainLoanDetails, equityLoanDetails };
-  }, [propertyData, equityLoanAmount]);
+  }, [propertyData.loanAmount, propertyData.interestRate, propertyData.loanTerm, propertyData.mainLoanType, propertyData.ioTermYears, propertyData.useEquityFunding, equityLoanAmount, propertyData.equityLoanInterestRate, propertyData.equityLoanTerm, propertyData.equityLoanType, propertyData.equityLoanIoTermYears]);
+  
+  const funding = {
+    mainLoanAmount: propertyData.loanAmount,
+    equityLoanAmount: equityLoanAmount,
+    totalProjectCost: totalProjectCost
+  };
 
-  // Calculate holding costs for construction projects
+  // Calculate holding costs
   const holdingCosts = useMemo(() => {
-    if (!propertyData.isConstructionProject || !propertyData.constructionPeriod) {
-      return { landInterest: 0, constructionInterest: 0, total: 0 };
-    }
+    return calculateHoldingCosts();
+  }, [calculateHoldingCosts]);
 
-    const months = propertyData.constructionPeriod;
-    const interestRate = (propertyData.constructionInterestRate || 6.5) / 100;
-    
-    // Land interest (on full loan amount)
-    const landValue = propertyData.purchasePrice || 0;
-    const landInterest = (landValue * interestRate * months) / 12;
-    
-    // Construction progress payment costs - handle potential string values
-    const constructionCosts = propertyData.constructionProgressPayments?.reduce((sum, payment) => {
-      const amount = typeof payment.amount === 'number' ? payment.amount : 
-                    typeof payment.amount === 'string' ? parseFloat(payment.amount) || 0 : 0;
-      return sum + amount;
-    }, 0) || 0;
-    
-    // Construction interest (on progressive drawdowns - approximate 50% average)
-    const constructionInterest = (constructionCosts * 0.5 * interestRate * months) / 12;
-    
-    return {
-      landInterest,
-      constructionInterest,
-      total: landInterest + constructionInterest
-    };
-  }, [propertyData]);
-
-  // Calculate depreciation
-  const depreciation = useMemo(() => {
-    const isEligibleForCapitalWorks = (propertyData.constructionYear || 2020) >= 1987;
-    const method = propertyData.depreciationMethod || 'prime-cost';
-    
-    // Capital Works (Building) - 2.5% or 4% depending on method
-    const capitalWorksRate = method === 'prime-cost' ? 0.025 : 0.04;
-    const buildingValue = (propertyData.purchasePrice || 0) * 0.6; // Assume 60% building value
-    const capitalWorks = isEligibleForCapitalWorks ? buildingValue * capitalWorksRate : 0;
-    
-    // Plant & Equipment - typically 15-20% in first year
-    const plantEquipmentValue = (propertyData.purchasePrice || 0) * 0.05; // Assume 5% P&E value
-    const plantEquipmentRate = propertyData.isNewProperty ? 0.2 : 0.15; // Higher for new properties
-    const plantEquipment = plantEquipmentValue * plantEquipmentRate;
-    
-    return {
-      capitalWorks,
-      plantEquipment,
-      total: capitalWorks + plantEquipment
-    };
-  }, [propertyData]);
-
-  // Calculate depreciation for a specific year
+  // Calculate depreciation with separate building and fixtures amounts per year
   const calculateDepreciationForYear = useCallback((year: number) => {
-    const method = propertyData.depreciationMethod || 'prime-cost';
-    const buildingValue = (propertyData.purchasePrice || 0) * 0.6;
-    const isEligibleForCapitalWorks = (propertyData.constructionYear || 2020) >= 1987;
+    const buildingValue = propertyData.buildingValue || 0;
+    const plantEquipmentValue = propertyData.plantEquipmentValue || 0;
     
-    // Building depreciation (Capital Works)
-    const capitalWorksRate = method === 'prime-cost' ? 0.025 : 0.04;
-    const building = isEligibleForCapitalWorks ? buildingValue * capitalWorksRate : 0;
+    // Building depreciation: 2.5% annually (prime cost method) - available if built after Sept 1987
+    const buildingDepreciationAvailable = propertyData.constructionYear >= 1987;
+    const buildingDepreciationAnnual = buildingDepreciationAvailable ? buildingValue * 0.025 : 0;
     
-    // Plant & Equipment depreciation (diminishing value)
-    const plantEquipmentValue = (propertyData.purchasePrice || 0) * 0.05;
-    const baseRate = propertyData.isNewProperty ? 0.2 : 0.15;
-    const fixtures = plantEquipmentValue * baseRate * Math.pow(0.8, year - 1);
+    // Fixtures depreciation: 15% using chosen method - available for new properties only
+    const fixturesDepreciationAvailable = propertyData.isNewProperty;
+    let fixturesDepreciationAnnual = 0;
     
-    return { building, fixtures, total: building + fixtures };
-  }, [propertyData]);
+    if (fixturesDepreciationAvailable && plantEquipmentValue > 0) {
+      if (propertyData.depreciationMethod === 'prime-cost') {
+        // Prime cost: 15% of original value each year
+        fixturesDepreciationAnnual = plantEquipmentValue * 0.15;
+      } else {
+        // Diminishing value: 15% of remaining value each year
+        const remainingValue = plantEquipmentValue * Math.pow(0.85, year - 1);
+        fixturesDepreciationAnnual = remainingValue > 0 ? remainingValue * 0.15 : 0;
+      }
+    }
+    
+    return {
+      building: Math.max(0, buildingDepreciationAnnual),
+      fixtures: Math.max(0, fixturesDepreciationAnnual),
+      total: Math.max(0, buildingDepreciationAnnual + fixturesDepreciationAnnual)
+    };
+  }, [propertyData.buildingValue, propertyData.plantEquipmentValue, propertyData.constructionYear, propertyData.isNewProperty, propertyData.depreciationMethod]);
 
-  // Calculate total tax difference
-  const calculateTotalTaxDifference = useCallback((rentalIncome: number, totalDeductibleExpenses: number) => {
+  // Calculate total annual depreciation for display
+  const depreciation = useMemo(() => {
+    const year1 = calculateDepreciationForYear(1);
+    return {
+      capitalWorks: year1.building,
+      plantEquipment: year1.fixtures,
+      total: year1.total
+    };
+  }, [calculateDepreciationForYear]);
+
+  // Calculate total household tax difference from property taxable income, indexing investor incomes by CPI
+  const calculateTotalTaxDifference = (propertyTaxableIncome: number, year: number) => {
+    console.log('🔍 calculateTotalTaxDifference called:', { propertyTaxableIncome, year });
+    console.log('📊 Investors data:', propertyData.investors);
+    console.log('📊 Ownership allocations:', propertyData.ownershipAllocations);
+    
+    const cpiMultiplier = year >= 1 ? Math.pow(1 + 2.5 / 100, year - 1) : 1;
+    let totalDifference = 0;
+    
     if (!propertyData.investors || propertyData.investors.length === 0) {
+      console.log('⚠️ No investors found in propertyData');
       return 0;
     }
-
-    const taxableIncome = rentalIncome - totalDeductibleExpenses;
     
-    return propertyData.investors.reduce((totalTaxDifference, investor) => {
-      const ownership = propertyData.ownershipAllocations?.find(o => o.investorId === investor.id);
+    propertyData.investors.forEach(investor => {
+      const ownership = propertyData.ownershipAllocations.find(o => o.investorId === investor.id);
       const ownershipPercentage = ownership ? ownership.ownershipPercentage / 100 : 0;
+      console.log(`👤 Processing investor ${investor.name}:`, { 
+        ownershipPercentage, 
+        annualIncome: investor.annualIncome,
+        otherIncome: investor.otherIncome 
+      });
       
-      const investorTaxableIncome = taxableIncome * ownershipPercentage;
-      const totalIncome = investor.annualIncome + (investor.otherIncome || 0);
-      
-      const taxWithoutProperty = totalTaxAU(totalIncome, investor.hasMedicareLevy);
-      const taxWithProperty = totalTaxAU(totalIncome + investorTaxableIncome, investor.hasMedicareLevy);
-      
-      return totalTaxDifference + (taxWithProperty - taxWithoutProperty);
-    }, 0);
-  }, [propertyData.investors, propertyData.ownershipAllocations]);
-
-  // Calculate detailed projections
-  const projections = useMemo((): LocalYearProjection[] => {
-    const years: LocalYearProjection[] = [];
-    const baseYear = 1;
-    const startYear = yearRange[0];
-    const endYear = yearRange[1];
+      if (ownershipPercentage > 0) {
+        const baseIncome = (investor.annualIncome + investor.otherIncome) * cpiMultiplier;
+        const allocatedPropertyIncome = propertyTaxableIncome * ownershipPercentage;
+        const taxWithoutProperty = totalTaxAU(baseIncome, investor.hasMedicareLevy);
+        const taxWithProperty = totalTaxAU(baseIncome + allocatedPropertyIncome, investor.hasMedicareLevy);
+        
+        console.log(`💰 Tax calculation for ${investor.name}:`, {
+          baseIncome,
+          allocatedPropertyIncome,
+          taxWithoutProperty,
+          taxWithProperty,
+          difference: taxWithProperty - taxWithoutProperty
+        });
+        
+        totalDifference += taxWithProperty - taxWithoutProperty;
+      }
+    });
     
-    // Construction period projection (Year 0)
-    let constructionPeriodProjection: LocalYearProjection | null = null;
-    if (propertyData.isConstructionProject && propertyData.constructionPeriod) {
-      const constructionMonthlyInterest = holdingCosts.total / (propertyData.constructionPeriod || 1);
-      const constructionTaxBenefit = -constructionMonthlyInterest * (propertyData.constructionPeriod || 1);
-      
+    console.log('💸 Total tax difference:', totalDifference);
+    return totalDifference;
+  };
+
+  // Calculate comprehensive projections using the same logic as the main Projections page
+  const projections = useMemo(() => {
+    const years: YearProjection[] = [];
+    const weeklyRent = resolve({ mode: 'auto', auto: propertyData.weeklyRent, manual: null }) ?? 0;
+    const annualRent = weeklyRent * 52;
+    let mainLoanBalance = funding.mainLoanAmount;
+    let equityLoanBalance = funding.equityLoanAmount;
+
+    // Track remaining months for dynamic rate adjustments
+    const calculateMonthlyPayment = (balance: number, monthlyRate: number, remainingMonths: number) => {
+      if (remainingMonths <= 0) return 0;
+      if (monthlyRate === 0) return balance / remainingMonths;
+      return balance * (monthlyRate * Math.pow(1 + monthlyRate, remainingMonths)) / (Math.pow(1 + monthlyRate, remainingMonths) - 1);
+    };
+    
+    const mainTotalMonths = (propertyData.loanTerm || 30) * 12;
+    const mainIOMonths = (propertyData.mainLoanType === 'io' ? (propertyData.ioTermYears || 0) : 0) * 12;
+    let mainRemainingMonths = Math.max(0, mainTotalMonths - mainIOMonths);
+    
+    const equityTotalMonths = (propertyData.equityLoanTerm || 30) * 12;
+    const equityIOMonths = (propertyData.equityLoanType === 'io' ? (propertyData.equityLoanIoTermYears || 0) : 0) * 12;
+    let equityRemainingMonths = Math.max(0, equityTotalMonths - equityIOMonths);
+    let cumulativeCashFlow = 0;
+
+    // Construction period calculation (if applicable)
+    let constructionPeriodProjection: YearProjection | null = null;
+
+    // Adjust opening balances for construction period (capitalisation and equity P&I)
+    if (propertyData.isConstructionProject && propertyData.constructionPeriod > 0) {
+      const months = propertyData.constructionPeriod;
+
+      // Capitalisation split
+      const capitalisePortion = propertyData.capitalizeConstructionCosts
+        ? 1
+        : propertyData.holdingCostFunding === 'debt'
+        ? 1
+        : propertyData.holdingCostFunding === 'hybrid'
+        ? Math.max(0, Math.min(1, (100 - (propertyData.holdingCostCashPercentage || 0)) / 100))
+        : 0;
+
+      // Rates during construction
+      const mainMonthlyRateConstruction = (propertyData.constructionInterestRate || propertyData.interestRate || 6.0) / 100 / 12;
+      const equityMonthlyRateConstruction = (propertyData.equityLoanInterestRate || 7.2) / 100 / 12;
+
+      // Main loan: IO during construction
+      const mainInterestAccrued = funding.mainLoanAmount * mainMonthlyRateConstruction * months;
+      const mainInterestCapitalised = mainInterestAccrued * capitalisePortion;
+      const mainInterestCash = mainInterestAccrued - mainInterestCapitalised;
+      // Update opening main balance for post-construction
+      mainLoanBalance = funding.mainLoanAmount + mainInterestCapitalised;
+
+      // Equity loan during construction: IO or P&I
+      let equityInterestAccrued = 0;
+      let equityInterestCapitalised = 0;
+      let equityInterestCash = 0;
+      let equityPrincipalPaid = 0;
+      let equityBalanceTemp = funding.equityLoanAmount;
+
+      if (equityBalanceTemp > 0) {
+        if (propertyData.constructionEquityRepaymentType === 'io') {
+          equityInterestAccrued = equityBalanceTemp * equityMonthlyRateConstruction * months;
+          equityInterestCapitalised = equityInterestAccrued * capitalisePortion;
+          equityInterestCash = equityInterestAccrued - equityInterestCapitalised;
+          // Balance only increases by capitalised interest under IO
+          equityBalanceTemp = equityBalanceTemp + equityInterestCapitalised;
+        } else {
+          // P&I during construction: principal is always cash, interest can be capitalised per split
+          const totalMonths = equityTotalMonths; // use full term for amortisation baseline
+          const monthlyPayment = calculateMonthlyPayment(equityBalanceTemp, equityMonthlyRateConstruction, totalMonths);
+          for (let m = 0; m < months; m++) {
+            const interest = equityBalanceTemp * equityMonthlyRateConstruction;
+            const principal = Math.min(Math.max(0, monthlyPayment - interest), equityBalanceTemp);
+            equityInterestAccrued += interest;
+            const capInt = interest * capitalisePortion;
+            equityInterestCapitalised += capInt;
+            equityInterestCash += interest - capInt;
+            equityPrincipalPaid += principal; // always cash
+            equityBalanceTemp = Math.max(0, equityBalanceTemp - principal + capInt);
+            if (equityBalanceTemp <= 0) break;
+          }
+          // Reduce remaining P&I months after construction
+          equityRemainingMonths = Math.max(0, equityRemainingMonths - months);
+        }
+      }
+
+      // Set post-construction opening balance
+      equityLoanBalance = equityBalanceTemp;
+
+      const totalInterestAccrued = mainInterestAccrued + equityInterestAccrued;
+      const constructionMainPaymentCash = mainInterestCash; // IO interest cash portion only
+      const constructionEquityPaymentCash = equityInterestCash + equityPrincipalPaid;
+
+      // Tax: use existing holdingCosts breakdown (deductible interest proxy)
+      const constructionTaxableIncome = -holdingCosts.total;
+      const constructionTaxBenefit = -calculateTotalTaxDifference(constructionTaxableIncome, 0);
+      const constructionAfterTaxCashFlow = -(constructionMainPaymentCash + constructionEquityPaymentCash) + constructionTaxBenefit;
+      cumulativeCashFlow += constructionAfterTaxCashFlow;
+
       constructionPeriodProjection = {
         year: 0,
         rentalIncome: 0,
-        propertyValue: totalProjectCost,
-        mainLoanBalance: propertyData.loanAmount || 0,
-        equityLoanBalance: equityLoanAmount,
-        totalInterest: holdingCosts.total,
-        mainLoanPayment: 0,
-        equityLoanPayment: 0,
-        mainInterestYear: holdingCosts.landInterest,
-        equityInterestYear: holdingCosts.constructionInterest,
-        mainLoanIOStatus: 'IO' as "IO" | "P&I",
-        equityLoanIOStatus: 'IO' as "IO" | "P&I",
+        propertyValue: 0,
+        mainLoanBalance: 0,
+        equityLoanBalance: 0,
+        totalInterest: Math.round(holdingCosts.total), // Use holding costs total, not loan interest payments
+        mainLoanPayment: Math.round(constructionMainPaymentCash),
+        equityLoanPayment: Math.round(constructionEquityPaymentCash),
+        mainInterestYear: Math.round(mainInterestAccrued),
+        equityInterestYear: Math.round(equityInterestAccrued),
+        mainLoanIOStatus: 'IO',
+        equityLoanIOStatus: propertyData.constructionEquityRepaymentType === 'pi' ? 'P&I' : 'IO',
         otherExpenses: 0,
         depreciation: 0,
         buildingDepreciation: 0,
         fixturesDepreciation: 0,
-        taxableIncome: -holdingCosts.total,
-        taxBenefit: constructionTaxBenefit,
-        afterTaxCashFlow: -holdingCosts.total + Math.abs(constructionTaxBenefit),
-        cumulativeCashFlow: -holdingCosts.total + Math.abs(constructionTaxBenefit),
-        propertyEquity: totalProjectCost - (propertyData.loanAmount || 0) - equityLoanAmount,
-        totalReturn: 0
+        taxableIncome: Math.round(constructionTaxableIncome),
+        taxBenefit: Math.round(constructionTaxBenefit),
+        afterTaxCashFlow: Math.round(constructionAfterTaxCashFlow),
+        cumulativeCashFlow,
+        propertyEquity: 0,
+        totalReturn: Math.round(constructionAfterTaxCashFlow),
       };
     }
-    
-    // Yearly projections
-    for (let year = startYear; year <= endYear; year++) {
-      const yearsSinceStart = year - baseYear;
-      const cpiMultiplier = Math.pow(1 + 2.5 / 100, yearsSinceStart);
-      const rentalGrowthMultiplier = Math.pow(1 + 5.0 / 100, yearsSinceStart);
-      const capitalGrowthMultiplier = Math.pow(1 + 7.0 / 100, yearsSinceStart);
-      
-      const rentalIncome = (propertyData.weeklyRent || 0) * 52 * rentalGrowthMultiplier * (1 - (propertyData.vacancyRate || 2) / 100);
-      const propertyValue = (propertyData.purchasePrice || totalProjectCost) * capitalGrowthMultiplier;
-      
-      // Calculate loan balances (simplified)
-      const mainLoanBalance = Math.max(0, (propertyData.loanAmount || 0) - (year * 1000)); // Simplified principal reduction
-      const equityLoanBalance = Math.max(0, equityLoanAmount - (year * 500)); // Simplified principal reduction
-      
-      // Calculate interest payments
-      const mainInterestYear = mainLoanBalance * (propertyData.interestRate || 6.5) / 100;
-      const equityInterestYear = equityLoanBalance * (propertyData.equityLoanInterestRate || 7.2) / 100;
-      
-      // Determine loan status
-      const mainLoanIOStatus: "IO" | "P&I" = (propertyData.mainLoanType === 'io' && year <= (propertyData.ioTermYears || 5)) ? 'IO' : 'P&I';
-      const equityLoanIOStatus: "IO" | "P&I" = (propertyData.equityLoanType === 'io' && year <= (propertyData.equityLoanIoTermYears || 5)) ? 'IO' : 'P&I';
-      
-      // Calculate expenses
-      const propertyManagementCost = rentalIncome * (propertyData.propertyManagement || 7) / 100;
-      const councilRates = (propertyData.councilRates || 0) * cpiMultiplier;
-      const insurance = (propertyData.insurance || 0) * cpiMultiplier;
-      const repairs = (propertyData.repairs || 0) * cpiMultiplier;
-      const otherExpenses = propertyManagementCost + councilRates + insurance + repairs;
-      
-      // Calculate depreciation for this year
+
+    for (let year = 1; year <= 40; year++) {
+      // Rental income with growth and vacancy
+      const rentalGrowth = 5.0 / 100; // 5% rental growth
+      const vacancy = (propertyData.vacancyRate || 5.0) / 100;
+      const grossRentalIncome = annualRent * Math.pow(1 + rentalGrowth, year - 1);
+      const rentalIncome = grossRentalIncome * (1 - vacancy);
+
+      // Property value with capital growth
+      const capitalGrowth = 7.0 / 100; // 7% capital growth
+      const propertyValue = (propertyData.purchasePrice || totalProjectCost) * Math.pow(1 + capitalGrowth, year - 1);
+
+      // Main and equity loan calculations
+      const mainIsIOPeriod = propertyData.mainLoanType === 'io' && year <= (propertyData.ioTermYears || 0);
+      const equityIsIOPeriod = propertyData.equityLoanType === 'io' && year <= (propertyData.equityLoanIoTermYears || 0) && funding.equityLoanAmount > 0;
+      const mainLoanIOStatus: 'IO' | 'P&I' = mainIsIOPeriod ? 'IO' : 'P&I';
+      const equityLoanIOStatus: 'IO' | 'P&I' = equityIsIOPeriod ? 'IO' : 'P&I';
+
+      const mainMonthlyRate = (propertyData.interestRate || 6.0) / 100 / 12;
+      const equityMonthlyRate = (propertyData.equityLoanInterestRate || 7.2) / 100 / 12;
+
+      let mainLoanPayment = 0;
+      let equityLoanPayment = 0;
+      let mainInterestYear = 0;
+      let equityInterestYear = 0;
+
+      // Main loan
+      if (mainIsIOPeriod) {
+        const months = 12;
+        const monthly = mainLoanBalance * mainMonthlyRate;
+        mainLoanPayment = monthly * months;
+        mainInterestYear = mainLoanPayment; // IO payments are all interest
+      } else if (mainRemainingMonths > 0 && mainLoanBalance > 0) {
+        const months = Math.min(12, mainRemainingMonths);
+        const monthlyPayment = calculateMonthlyPayment(mainLoanBalance, mainMonthlyRate, mainRemainingMonths);
+        for (let m = 0; m < months; m++) {
+          const interest = mainLoanBalance * mainMonthlyRate;
+          const principal = Math.min(monthlyPayment - interest, mainLoanBalance);
+          mainLoanBalance = Math.max(0, mainLoanBalance - principal);
+          mainInterestYear += interest;
+          mainLoanPayment += interest + principal;
+          mainRemainingMonths -= 1;
+          if (mainLoanBalance <= 0) break;
+        }
+      }
+
+      // Equity loan
+      if (funding.equityLoanAmount > 0) {
+        if (equityIsIOPeriod) {
+          const months = 12;
+          const monthly = equityLoanBalance * equityMonthlyRate;
+          equityLoanPayment = monthly * months;
+          equityInterestYear = equityLoanPayment;
+        } else if (equityRemainingMonths > 0 && equityLoanBalance > 0) {
+          const months = Math.min(12, equityRemainingMonths);
+          const monthlyPayment = calculateMonthlyPayment(equityLoanBalance, equityMonthlyRate, equityRemainingMonths);
+          for (let m = 0; m < months; m++) {
+            const interest = equityLoanBalance * equityMonthlyRate;
+            const principal = Math.min(monthlyPayment - interest, equityLoanBalance);
+            equityLoanBalance = Math.max(0, equityLoanBalance - principal);
+            equityInterestYear += interest;
+            equityLoanPayment += interest + principal;
+            equityRemainingMonths -= 1;
+            if (equityLoanBalance <= 0) break;
+          }
+        }
+      }
+
+      const totalInterest = mainInterestYear + equityInterestYear;
+
+      // Operating expenses with inflation
+      const inflationMultiplier = Math.pow(1 + 2.5 / 100, year - 1);
+      const pmRate = (propertyData.propertyManagement || 7.0) / 100;
+      const propertyManagement = rentalIncome * pmRate;
+      const councilRates = (propertyData.councilRates || 0) * inflationMultiplier;
+      const insurance = (propertyData.insurance || 0) * inflationMultiplier;
+      const repairs = (propertyData.repairs || 0) * inflationMultiplier;
+      const otherExpenses = propertyManagement + councilRates + insurance + repairs;
+
+      // Depreciation using proper calculation for each year
       const yearDepreciation = calculateDepreciationForYear(year);
       const depreciationAmount = yearDepreciation.total;
-      
-      // Calculate tax
-      const totalDeductibleExpenses = mainInterestYear + equityInterestYear + otherExpenses + depreciationAmount;
-      const taxableIncome = rentalIncome - totalDeductibleExpenses;
-      const taxBenefit = -calculateTotalTaxDifference(rentalIncome, totalDeductibleExpenses);
-      
-      // Calculate cash flow
-      const grossCashFlow = rentalIncome - monthlyPayments.total * 12 - otherExpenses;
-      const afterTaxCashFlow = grossCashFlow + taxBenefit;
-      
-      // Calculate cumulative cash flow
-      const previousYear = years[years.length - 1];
-      const cumulativeCashFlow = (previousYear?.cumulativeCashFlow || (constructionPeriodProjection?.cumulativeCashFlow || 0)) + afterTaxCashFlow;
-      
-      // Calculate equity and return
-      const totalLoanBalance = mainLoanBalance + equityLoanBalance;
-      const propertyEquity = propertyValue - totalLoanBalance;
-      const totalReturn = propertyEquity + cumulativeCashFlow;
 
+      // Tax calculations using progressive tax method
+      const taxableIncome = rentalIncome - totalInterest - otherExpenses - depreciationAmount;
+      const taxBenefit = -calculateTotalTaxDifference(taxableIncome, year);
+
+      // Cash flow calculations
+      const totalLoanPayments = mainLoanPayment + equityLoanPayment;
+      const afterTaxCashFlow = rentalIncome - otherExpenses - totalLoanPayments + taxBenefit;
+      cumulativeCashFlow += afterTaxCashFlow;
+
+      // Property equity
+      const propertyEquity = propertyValue - mainLoanBalance - equityLoanBalance;
+
+      // Total return (cash flow + equity growth)
+      const totalReturn = afterTaxCashFlow + (year > 1 ? propertyValue - (propertyData.purchasePrice || totalProjectCost) * Math.pow(1 + capitalGrowth, year - 2) : 0);
+      
       years.push({
         year,
         rentalIncome,
         propertyValue,
         mainLoanBalance,
         equityLoanBalance,
-        totalInterest: mainInterestYear + equityInterestYear,
-        mainLoanPayment: monthlyPayments.mainLoan * 12,
-        equityLoanPayment: monthlyPayments.equityLoan * 12,
+        totalInterest,
+        mainLoanPayment,
+        equityLoanPayment,
         mainInterestYear,
         equityInterestYear,
         mainLoanIOStatus,
@@ -1123,59 +1357,106 @@ const InstanceDetail = () => {
           </div>
         </div>
 
+
+
+
+
         {/* Main Content with Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className={`grid w-full grid-cols-3 ${isMobile ? 'h-12 text-sm' : 'h-10'}`}>
-            <TabsTrigger value="analysis" className={`${isMobile ? 'min-h-[44px] text-sm font-medium' : 'text-sm'}`}>
-              Analysis
-            </TabsTrigger>
-            <TabsTrigger value="projections" className={`${isMobile ? 'min-h-[44px] text-sm font-medium' : 'text-sm'}`}>
-              Projections
-            </TabsTrigger>
-            <TabsTrigger value="summary" className={`${isMobile ? 'min-h-[44px] text-sm font-medium' : 'text-sm'}`}>
-              Summary
-            </TabsTrigger>
+          <TabsList className={`grid w-full grid-cols-2 ${isMobile ? 'h-12' : ''}`}>
+            <TabsTrigger value="analysis" className={isMobile ? 'text-sm' : ''}>Analysis</TabsTrigger>
+            <TabsTrigger value="projections" className={isMobile ? 'text-sm' : ''}>Projections</TabsTrigger>
           </TabsList>
 
-          {/* Analysis Tab - Input Forms Only */}
+          {/* Analysis Tab */}
           <TabsContent value="analysis" className="space-y-6">
-            {isMobile ? (
-              /* Mobile: Single Column Stack with Sticky Summary */
-              <div className="space-y-4">
-                <MobileFinancialSummary
-                  totalCost={totalProjectCost}
-                  totalFunding={totalFunding}
-                  fundingShortfall={Math.max(0, totalProjectCost - totalFunding)}
-                  weeklyRent={propertyData.weeklyRent || 0}
-                  monthlyRepayment={monthlyPayments.total}
-                  weeklyCashFlow={investmentSummary.weeklyAfterTaxCashFlowSummary}
-                />
-                <PropertyInputForm
-                  propertyData={propertyData}
-                  updateField={enhancedUpdateField}
-                  investorTaxResults={investorTaxResults}
-                  totalTaxableIncome={0}
-                  marginalTaxRate={0.3}
-                  isEditMode={isEditMode}
-                />
-              </div>
-            ) : (
-              /* Desktop: Single Column Layout for Input Forms */
-              <div className="max-w-5xl mx-auto space-y-8">
-                <PropertyInputForm
-                  propertyData={propertyData}
-                  updateField={enhancedUpdateField}
-                  investorTaxResults={investorTaxResults}
-                  totalTaxableIncome={0}
-                  marginalTaxRate={0.3}
-                  isEditMode={isEditMode}
-                />
-              </div>
-            )}
+            {/* Single Column Layout */}
+            <div className="space-y-6">
+              {/* Funding & Finance Structure - First */}
+              <FundingSummaryPanel />
+              
+              {/* Investment Details - Second */}
+              <PropertyInputForm
+                propertyData={propertyData}
+                updateField={enhancedUpdateField}
+                investorTaxResults={investorTaxResults}
+                totalTaxableIncome={0} // Will be calculated
+                marginalTaxRate={0.3} // Will be calculated
+                isEditMode={isEditMode}
+              />
+
+              {/* Financial Analysis - Third */}
+              <PropertyCalculationDetails
+                monthlyRepayment={monthlyPayments.total}
+                annualRepayment={monthlyPayments.total * 12}
+                annualRent={investmentSummary.annualRentFromProjections}
+                propertyManagementCost={investmentSummary.annualRentFromProjections * (propertyData.propertyManagement || 0.07) / 100}
+               councilRates={propertyData.councilRates || 0}
+               insurance={propertyData.insurance || 0}
+               repairs={propertyData.repairs || 0}
+                totalDeductibleExpenses={totalDeductibleExpenses}
+               cashDeductionsSubtotal={cashDeductions}
+               paperDeductionsSubtotal={paperDeductions}
+               depreciation={{
+                 capitalWorks: depreciation.capitalWorks,
+                 plantEquipment: depreciation.plantEquipment,
+                 total: depreciation.total,
+                 capitalWorksAvailable: propertyData.constructionYear >= 1987,
+                 plantEquipmentRestricted: !propertyData.isNewProperty
+               }}
+               investorTaxResults={investorTaxResults}
+               totalTaxWithProperty={investorTaxResults.reduce((sum, result) => sum + (result.taxWithProperty || 0), 0)}
+               totalTaxWithoutProperty={investorTaxResults.reduce((sum, result) => sum + (result.taxWithoutProperty || 0), 0)}
+               marginalTaxRate={investmentSummary.marginalTaxRateSummary}
+               purchasePrice={propertyData.purchasePrice || 0}
+               constructionYear={propertyData.constructionYear || 2020}
+               depreciationMethod={propertyData.depreciationMethod || 'prime-cost'}
+               isConstructionProject={propertyData.isConstructionProject || false}
+               totalProjectCost={totalProjectCost}
+               holdingCosts={{
+                 landInterest: holdingCosts.landInterest,
+                 constructionInterest: holdingCosts.constructionInterest,
+                 total: holdingCosts.total
+               }}
+               funding={{
+                 totalRequired: totalProjectCost,
+                 equityUsed: funding.equityLoanAmount,
+                 cashRequired: totalProjectCost - funding.mainLoanAmount - funding.equityLoanAmount,
+                 availableEquity: 0, // Will be calculated
+                 loanAmount: funding.mainLoanAmount
+               }}
+               outOfPocketHoldingCosts={0} // Will be calculated
+               capitalizedHoldingCosts={0} // Will be calculated
+               actualCashInvested={0} // Will be calculated
+               constructionPeriod={propertyData.constructionPeriod || 0}
+               holdingCostFunding={propertyData.holdingCostFunding || 'cash'}
+               mainLoanPayments={{
+                 ioPayment: loanPaymentDetails.mainLoanDetails.ioPayment,
+                 piPayment: loanPaymentDetails.mainLoanDetails.piPayment,
+                 ioTermYears: loanPaymentDetails.mainLoanDetails.ioTermYears,
+                 remainingTerm: (propertyData.loanTerm || 30) - loanPaymentDetails.mainLoanDetails.ioTermYears,
+                 totalInterest: (propertyData.loanAmount || 0) * (propertyData.interestRate || 6) / 100,
+                 currentPayment: loanPaymentDetails.mainLoanDetails.isIO && loanPaymentDetails.mainLoanDetails.ioTermYears > 0 ? loanPaymentDetails.mainLoanDetails.ioPayment : loanPaymentDetails.mainLoanDetails.piPayment,
+                 futurePayment: loanPaymentDetails.mainLoanDetails.isIO && loanPaymentDetails.mainLoanDetails.ioTermYears > 0 ? loanPaymentDetails.mainLoanDetails.piPayment : 0
+               }}
+               equityLoanPayments={loanPaymentDetails.equityLoanDetails ? {
+                 ioPayment: loanPaymentDetails.equityLoanDetails.ioPayment,
+                 piPayment: loanPaymentDetails.equityLoanDetails.piPayment,
+                 ioTermYears: loanPaymentDetails.equityLoanDetails.ioTermYears,
+                 remainingTerm: (propertyData.equityLoanTerm || 30) - loanPaymentDetails.equityLoanDetails.ioTermYears,
+                 totalInterest: (equityLoanAmount || 0) * (propertyData.equityLoanInterestRate || 7.2) / 100,
+                 currentPayment: loanPaymentDetails.equityLoanDetails.isIO && loanPaymentDetails.equityLoanDetails.ioTermYears > 0 ? loanPaymentDetails.equityLoanDetails.ioPayment : loanPaymentDetails.equityLoanDetails.piPayment,
+                 futurePayment: loanPaymentDetails.equityLoanDetails.isIO && loanPaymentDetails.equityLoanDetails.ioTermYears > 0 ? loanPaymentDetails.equityLoanDetails.piPayment : 0
+                } : null}
+                totalAnnualInterest={annualInterest}
+                taxRefundOrLiability={totalTaxRefundOrLiability}
+                netOfTaxCostIncome={netOfTaxCostIncome}
+              />
+            </div>
           </TabsContent>
 
-          {/* Summary Tab - Funding & Investment Results */}
-          <TabsContent value="summary" className="space-y-6">
+          {/* Projections Tab */}
+          <TabsContent value="projections" className="space-y-6">
             {/* Investment Summary Dashboard */}
             <PropertySummaryDashboard
               weeklyCashflowYear1={investmentSummary.weeklyAfterTaxCashFlowSummary}
@@ -1186,179 +1467,6 @@ const InstanceDetail = () => {
               yearTo={yearRange[1]}
             />
 
-            {/* Investment Results Detailed */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Investment Results Summary</CardTitle>
-                <CardDescription>Comprehensive analysis of your investment performance</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <InvestmentResultsDetailed
-                  projections={projections}
-                  yearTo={yearRange[1]}
-                  initialPropertyValue={propertyData.purchasePrice || 0}
-                  totalProjectCost={totalProjectCost}
-                  cpiRate={2.5}
-                  formatCurrency={formatCurrency}
-                  formatPercentage={formatPercentage}
-                />
-              </CardContent>
-            </Card>
-
-            {isMobile ? (
-              /* Mobile: Single Column Stack */
-              <div className="space-y-4">
-                <FundingSummaryPanel />
-                <PropertyCalculationDetails
-                  monthlyRepayment={monthlyPayments.total}
-                  annualRepayment={monthlyPayments.total * 12}
-                  annualRent={investmentSummary.annualRentFromProjections}
-                  propertyManagementCost={investmentSummary.annualRentFromProjections * (propertyData.propertyManagement || 0.07) / 100}
-                  councilRates={propertyData.councilRates || 0}
-                  insurance={propertyData.insurance || 0}
-                  repairs={propertyData.repairs || 0}
-                  totalDeductibleExpenses={totalDeductibleExpenses}
-                  cashDeductionsSubtotal={cashDeductions}
-                  paperDeductionsSubtotal={paperDeductions}
-                  depreciation={{
-                    capitalWorks: depreciation.capitalWorks,
-                    plantEquipment: depreciation.plantEquipment,
-                    total: depreciation.total,
-                    capitalWorksAvailable: propertyData.constructionYear >= 1987,
-                    plantEquipmentRestricted: !propertyData.isNewProperty
-                  }}
-                  investorTaxResults={investorTaxResults}
-                  totalTaxWithProperty={investorTaxResults.reduce((sum, result) => sum + (result.taxWithProperty || 0), 0)}
-                  totalTaxWithoutProperty={investorTaxResults.reduce((sum, result) => sum + (result.taxWithoutProperty || 0), 0)}
-                  marginalTaxRate={investmentSummary.marginalTaxRateSummary}
-                  purchasePrice={propertyData.purchasePrice || 0}
-                  constructionYear={propertyData.constructionYear || 2020}
-                  depreciationMethod={propertyData.depreciationMethod || 'prime-cost'}
-                  isConstructionProject={propertyData.isConstructionProject || false}
-                  totalProjectCost={totalProjectCost}
-                  holdingCosts={{
-                    landInterest: holdingCosts.landInterest,
-                    constructionInterest: holdingCosts.constructionInterest,
-                    total: holdingCosts.total
-                  }}
-                  funding={{
-                    totalRequired: totalProjectCost,
-                    equityUsed: funding.equityLoanAmount,
-                    cashRequired: totalProjectCost - funding.mainLoanAmount - funding.equityLoanAmount,
-                    availableEquity: 0,
-                    loanAmount: funding.mainLoanAmount
-                  }}
-                  outOfPocketHoldingCosts={0}
-                  capitalizedHoldingCosts={0}
-                  actualCashInvested={0}
-                  constructionPeriod={propertyData.constructionPeriod || 0}
-                  holdingCostFunding={propertyData.holdingCostFunding || 'cash'}
-                  mainLoanPayments={{
-                    ioPayment: loanPaymentDetails.mainLoanDetails.ioPayment,
-                    piPayment: loanPaymentDetails.mainLoanDetails.piPayment,
-                    ioTermYears: loanPaymentDetails.mainLoanDetails.ioTermYears,
-                    remainingTerm: (propertyData.loanTerm || 30) - loanPaymentDetails.mainLoanDetails.ioTermYears,
-                    totalInterest: (propertyData.loanAmount || 0) * (propertyData.interestRate || 6) / 100,
-                    currentPayment: loanPaymentDetails.mainLoanDetails.isIO && loanPaymentDetails.mainLoanDetails.ioTermYears > 0 ? loanPaymentDetails.mainLoanDetails.ioPayment : loanPaymentDetails.mainLoanDetails.piPayment,
-                    futurePayment: loanPaymentDetails.mainLoanDetails.isIO && loanPaymentDetails.mainLoanDetails.ioTermYears > 0 ? loanPaymentDetails.mainLoanDetails.piPayment : 0
-                  }}
-                  equityLoanPayments={loanPaymentDetails.equityLoanDetails ? {
-                    ioPayment: loanPaymentDetails.equityLoanDetails.ioPayment,
-                    piPayment: loanPaymentDetails.equityLoanDetails.piPayment,
-                    ioTermYears: loanPaymentDetails.equityLoanDetails.ioTermYears,
-                    remainingTerm: (propertyData.equityLoanTerm || 30) - loanPaymentDetails.equityLoanDetails.ioTermYears,
-                    totalInterest: (equityLoanAmount || 0) * (propertyData.equityLoanInterestRate || 7.2) / 100,
-                    currentPayment: loanPaymentDetails.equityLoanDetails.isIO && loanPaymentDetails.equityLoanDetails.ioTermYears > 0 ? loanPaymentDetails.equityLoanDetails.ioPayment : loanPaymentDetails.equityLoanDetails.piPayment,
-                    futurePayment: loanPaymentDetails.equityLoanDetails.isIO && loanPaymentDetails.equityLoanDetails.ioTermYears > 0 ? loanPaymentDetails.equityLoanDetails.piPayment : 0
-                  } : null}
-                  totalAnnualInterest={annualInterest}
-                  taxRefundOrLiability={totalTaxRefundOrLiability}
-                  netOfTaxCostIncome={netOfTaxCostIncome}
-                />
-              </div>
-            ) : (
-              /* Desktop: Two-Column Layout for Summary Content */
-              <div className="grid grid-cols-12 gap-8">
-                {/* Left Column - Funding Summary (5 columns) */}
-                <div className="col-span-5 space-y-6">
-                  <FundingSummaryPanel />
-                </div>
-                
-                {/* Right Column - Calculation Details (7 columns) */}
-                <div className="col-span-7">
-                  <PropertyCalculationDetails
-                    monthlyRepayment={monthlyPayments.total}
-                    annualRepayment={monthlyPayments.total * 12}
-                    annualRent={investmentSummary.annualRentFromProjections}
-                    propertyManagementCost={investmentSummary.annualRentFromProjections * (propertyData.propertyManagement || 0.07) / 100}
-                    councilRates={propertyData.councilRates || 0}
-                    insurance={propertyData.insurance || 0}
-                    repairs={propertyData.repairs || 0}
-                    totalDeductibleExpenses={totalDeductibleExpenses}
-                    cashDeductionsSubtotal={cashDeductions}
-                    paperDeductionsSubtotal={paperDeductions}
-                    depreciation={{
-                      capitalWorks: depreciation.capitalWorks,
-                      plantEquipment: depreciation.plantEquipment,
-                      total: depreciation.total,
-                      capitalWorksAvailable: propertyData.constructionYear >= 1987,
-                      plantEquipmentRestricted: !propertyData.isNewProperty
-                    }}
-                    investorTaxResults={investorTaxResults}
-                    totalTaxWithProperty={investorTaxResults.reduce((sum, result) => sum + (result.taxWithProperty || 0), 0)}
-                    totalTaxWithoutProperty={investorTaxResults.reduce((sum, result) => sum + (result.taxWithoutProperty || 0), 0)}
-                    marginalTaxRate={investmentSummary.marginalTaxRateSummary}
-                    purchasePrice={propertyData.purchasePrice || 0}
-                    constructionYear={propertyData.constructionYear || 2020}
-                    depreciationMethod={propertyData.depreciationMethod || 'prime-cost'}
-                    isConstructionProject={propertyData.isConstructionProject || false}
-                    totalProjectCost={totalProjectCost}
-                    holdingCosts={{
-                      landInterest: holdingCosts.landInterest,
-                      constructionInterest: holdingCosts.constructionInterest,
-                      total: holdingCosts.total
-                    }}
-                    funding={{
-                      totalRequired: totalProjectCost,
-                      equityUsed: funding.equityLoanAmount,
-                      cashRequired: totalProjectCost - funding.mainLoanAmount - funding.equityLoanAmount,
-                      availableEquity: 0,
-                      loanAmount: funding.mainLoanAmount
-                    }}
-                    outOfPocketHoldingCosts={0}
-                    capitalizedHoldingCosts={0}
-                    actualCashInvested={0}
-                    constructionPeriod={propertyData.constructionPeriod || 0}
-                    holdingCostFunding={propertyData.holdingCostFunding || 'cash'}
-                    mainLoanPayments={{
-                      ioPayment: loanPaymentDetails.mainLoanDetails.ioPayment,
-                      piPayment: loanPaymentDetails.mainLoanDetails.piPayment,
-                      ioTermYears: loanPaymentDetails.mainLoanDetails.ioTermYears,
-                      remainingTerm: (propertyData.loanTerm || 30) - loanPaymentDetails.mainLoanDetails.ioTermYears,
-                      totalInterest: (propertyData.loanAmount || 0) * (propertyData.interestRate || 6) / 100,
-                      currentPayment: loanPaymentDetails.mainLoanDetails.isIO && loanPaymentDetails.mainLoanDetails.ioTermYears > 0 ? loanPaymentDetails.mainLoanDetails.ioPayment : loanPaymentDetails.mainLoanDetails.piPayment,
-                      futurePayment: loanPaymentDetails.mainLoanDetails.isIO && loanPaymentDetails.mainLoanDetails.ioTermYears > 0 ? loanPaymentDetails.mainLoanDetails.piPayment : 0
-                    }}
-                    equityLoanPayments={loanPaymentDetails.equityLoanDetails ? {
-                      ioPayment: loanPaymentDetails.equityLoanDetails.ioPayment,
-                      piPayment: loanPaymentDetails.equityLoanDetails.piPayment,
-                      ioTermYears: loanPaymentDetails.equityLoanDetails.ioTermYears,
-                      remainingTerm: (propertyData.equityLoanTerm || 30) - loanPaymentDetails.equityLoanDetails.ioTermYears,
-                      totalInterest: (equityLoanAmount || 0) * (propertyData.equityLoanInterestRate || 7.2) / 100,
-                      currentPayment: loanPaymentDetails.equityLoanDetails.isIO && loanPaymentDetails.equityLoanDetails.ioTermYears > 0 ? loanPaymentDetails.equityLoanDetails.ioPayment : loanPaymentDetails.equityLoanDetails.piPayment,
-                      futurePayment: loanPaymentDetails.equityLoanDetails.isIO && loanPaymentDetails.equityLoanDetails.ioTermYears > 0 ? loanPaymentDetails.equityLoanDetails.piPayment : 0
-                    } : null}
-                    totalAnnualInterest={annualInterest}
-                    taxRefundOrLiability={totalTaxRefundOrLiability}
-                    netOfTaxCostIncome={netOfTaxCostIncome}
-                  />
-                </div>
-              </div>
-            )}
-          </TabsContent>
-
-          {/* Projections Tab */}
-          <TabsContent value="projections" className="space-y-6">
             {/* Projections Table */}
             <Card>
               <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -1374,14 +1482,14 @@ const InstanceDetail = () => {
                 </Tabs>
               </CardHeader>
               <CardContent>
-            <ProjectionsTable 
-              projections={projections}
-              assumptions={{} as any}
-              validatedYearRange={[yearRange[0], yearRange[1]] as [number, number]}
-              formatCurrency={formatCurrency}
-              formatPercentage={formatPercentage}
-              viewMode={viewMode}
-            />
+                <ProjectionsTable 
+                  projections={projections}
+                  assumptions={{} as any}
+                  validatedYearRange={yearRange}
+                  formatCurrency={formatCurrency}
+                  formatPercentage={formatPercentage}
+                  viewMode={viewMode}
+                />
               </CardContent>
             </Card>
 
@@ -1402,6 +1510,24 @@ const InstanceDetail = () => {
               </Card>
             )}
 
+            {/* Investment Results Detailed */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Investment Results Summary</CardTitle>
+                <CardDescription>Comprehensive analysis of your investment performance</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <InvestmentResultsDetailed
+                  projections={projections}
+                  yearTo={yearRange[1]}
+                  initialPropertyValue={propertyData.purchasePrice || 0}
+                  totalProjectCost={totalProjectCost}
+                  cpiRate={2.5}
+                  formatCurrency={formatCurrency}
+                  formatPercentage={formatPercentage}
+                />
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
         
@@ -1426,9 +1552,9 @@ const InstanceDetail = () => {
         variant="destructive"
         onConfirm={confirmDelete}
         onCancel={deletingInstance ? undefined : () => setDeleteDialogOpen(false)}
-       />
-     </div>
-   );
- };
+      />
+    </div>
+  );
+};
 
- export default InstanceDetail;
+export default InstanceDetail; 

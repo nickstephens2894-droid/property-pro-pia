@@ -325,11 +325,8 @@ export default function Investors() {
                                 {investor.name}
                               </Link>
                             </h3>
-                            <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
-                              <span>Income: ${formatCurrency(investor.annualIncome || 0)}</span>
-                              <span>Other: ${formatCurrency(investor.otherIncome || 0)}</span>
-                              <span>Non-taxable: ${formatCurrency(investor.nonTaxableIncome || 0)}</span>
-                              <span>Medicare: {investor.hasMedicareLevy ? 'Yes' : 'No'}</span>
+                            <div className="mt-1 text-xs text-muted-foreground">
+                              <span>Total Income: {formatCurrency((investor.annualIncome || 0) + (investor.otherIncome || 0))}</span>
                             </div>
                           </div>
                         </div>
