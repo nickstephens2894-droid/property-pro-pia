@@ -1,9 +1,8 @@
 import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import ComingSoonHero from "@/components/ComingSoonHero";
-import EarlyAccessBenefits from "@/components/EarlyAccessBenefits";
-import LaunchTimeline from "@/components/LaunchTimeline";
-import WaitlistCTA from "@/components/WaitlistCTA";
+import LandingHero from "@/components/LandingHero";
+import LandingScenarios from "@/components/LandingScenarios";
+import LandingCTA from "@/components/LandingCTA";
 import LandingFooter from "@/components/LandingFooter";
 
 const Index = () => {
@@ -13,11 +12,11 @@ const Index = () => {
     // SEO for landing page
     document.title = user 
       ? "Home | Property Pro" 
-      : "Property Pro - Coming Soon | Australian Property Investment Analysis";
+      : "Property Pro — Smart Analysis for Australian Property Investment";
     
     const desc = user
       ? "Welcome to Property Pro - Your property investment analysis dashboard with projections, investors, and scenarios."
-      : "Join the waitlist for Australia's most advanced property investment platform. Early access starts Q1 2025 with exclusive founding member benefits and 30% launch discount.";
+      : "Professional Australian property investment analysis with tax calculations, multi-investor modeling, and 40-year projections. Trusted by investors and financial advisors.";
     
     let meta = document.querySelector('meta[name="description"]');
     if (!meta) {
@@ -79,10 +78,9 @@ const Index = () => {
   // Home page for all users (authenticated and unauthenticated)
   return (
     <main className="min-h-screen">
-      <ComingSoonHero />
-      <EarlyAccessBenefits />
-      <LaunchTimeline />
-      <WaitlistCTA />
+      <LandingHero />
+      <LandingScenarios />
+      <LandingCTA />
       <LandingFooter />
     </main>
   );
