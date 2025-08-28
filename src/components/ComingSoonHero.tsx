@@ -1,12 +1,14 @@
 import { Button } from "@/components/ui/button";
-import { Calculator, TrendingUp, Clock, Mail } from "lucide-react";
+import { Calculator, TrendingUp, Clock, Mail, LogIn } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 const ComingSoonHero = () => {
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
 
   const handleWaitlistSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,8 +61,20 @@ const ComingSoonHero = () => {
             </Button>
           </form>
 
-          <div className="text-sm text-muted-foreground mb-12">
+          <div className="text-sm text-muted-foreground mb-6">
             🎉 <strong>Early Access Bonus:</strong> 30% off your first year + exclusive lease discounts
+          </div>
+
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-12">
+            <span>Already have an account?</span>
+            <Button 
+              variant="link" 
+              onClick={() => navigate('/auth')}
+              className="h-auto p-0 text-sm"
+            >
+              <LogIn className="h-4 w-4 mr-1" />
+              Sign In
+            </Button>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-16 max-w-2xl mx-auto">
