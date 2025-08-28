@@ -78,7 +78,7 @@ const ProjectionsTable = ({
     p.year >= validatedYearRange[0] && p.year <= validatedYearRange[1]
   );
 
-  const isMobileView = isMobile || viewMode === 'year';
+  const isMobileView = viewMode === 'year';
 
   if (isMobileView) {
     return (
@@ -670,12 +670,12 @@ const DesktopProjectionsTable = ({
       <table className="w-full border-collapse">
         <thead>
 <tr>
-  <th className="sticky left-0 top-0 bg-background z-20 min-w-[180px] text-left p-3 border-b">End of year</th>
+  <th className="sticky left-0 top-0 bg-background z-20 min-w-[180px] text-left text-base md:text-sm p-4 md:p-3 border-b">End of year</th>
   {assumptions.isConstructionProject && assumptions.constructionPeriod > 0 && (
-    <th className="sticky top-0 bg-muted/30 z-20 text-center font-medium p-3 border-b">Construction</th>
+    <th className="sticky top-0 bg-muted/30 z-20 text-center font-medium text-base md:text-sm p-4 md:p-3 border-b">Construction</th>
   )}
   {projections.map((projection: YearProjection) => (
-    <th key={projection.year} className="sticky top-0 bg-background z-20 text-center min-w-[100px] font-medium p-3 border-b">
+    <th key={projection.year} className="sticky top-0 bg-background z-20 text-center min-w-[100px] font-medium text-base md:text-sm p-4 md:p-3 border-b">
       {projection.year === 0 ? 'Construction' : `Year ${projection.year}`}
     </th>
   ))}
@@ -684,9 +684,9 @@ const DesktopProjectionsTable = ({
         <tbody>
 {/* Property Value */}
 <tr className="border-b">
-  <td className="sticky left-0 bg-background z-10 font-medium p-3">Property value</td>
+  <td className="sticky left-0 bg-background z-10 font-medium text-base md:text-sm p-4 md:p-3">Property value</td>
   {projections.map((projection: YearProjection) => (
-    <td key={projection.year} className="text-center font-mono text-sm p-3">
+    <td key={projection.year} className="text-center font-mono text-base md:text-sm p-4 md:p-3">
       {projection.year === 0 ? "—" : formatCurrency(projection.propertyValue)}
     </td>
   ))}
@@ -694,9 +694,9 @@ const DesktopProjectionsTable = ({
 
 {/* Equity */}
 <tr className="border-b">
-  <td className="sticky left-0 bg-background z-10 font-medium p-3">Equity</td>
+  <td className="sticky left-0 bg-background z-10 font-medium text-base md:text-sm p-4 md:p-3">Equity</td>
   {projections.map((projection: YearProjection) => (
-    <td key={projection.year} className={`text-center font-mono text-sm p-3 ${projection.year === 0 ? 'text-muted-foreground' : projection.propertyEquity < 0 ? 'text-destructive' : 'text-foreground'}`}>
+    <td key={projection.year} className={`text-center font-mono text-base md:text-sm p-4 md:p-3 ${projection.year === 0 ? 'text-muted-foreground' : projection.propertyEquity < 0 ? 'text-destructive' : 'text-foreground'}`}>
       {projection.year === 0 ? "—" : formatCurrency(projection.propertyEquity)}
     </td>
   ))}
@@ -704,14 +704,14 @@ const DesktopProjectionsTable = ({
 
 {/* Total Loan Balance - Expandable */}
 <tr className="border-b hover:bg-muted/50 cursor-pointer" onClick={() => setShowLoanDetails(!showLoanDetails)}>
-  <td className="sticky left-0 bg-background z-10 font-medium p-3">
+  <td className="sticky left-0 bg-background z-10 font-medium text-base md:text-sm p-4 md:p-3">
     <div className="flex items-center gap-2">
       {showLoanDetails ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
       Total loan balance
     </div>
   </td>
   {projections.map((projection: YearProjection) => (
-    <td key={projection.year} className="text-center font-mono text-sm p-3">
+    <td key={projection.year} className="text-center font-mono text-base md:text-sm p-4 md:p-3">
       {projection.year === 0 ? "—" : formatCurrency(projection.mainLoanBalance + projection.equityLoanBalance)}
     </td>
   ))}
@@ -720,11 +720,11 @@ const DesktopProjectionsTable = ({
 {/* Main Loan Balance Details */}
 {showLoanDetails && (
   <tr className="bg-blue-50 dark:bg-blue-950/20 border-b">
-    <td className="sticky left-0 bg-blue-50 dark:bg-blue-950/20 z-10 pl-8 text-sm p-3">
+    <td className="sticky left-0 bg-blue-50 dark:bg-blue-950/20 z-10 pl-8 text-sm md:text-xs p-4 md:p-3">
       Main loan balance
     </td>
     {projections.map((projection: YearProjection) => (
-      <td key={projection.year} className="text-center font-mono text-xs p-3">
+      <td key={projection.year} className="text-center font-mono text-sm md:text-xs p-4 md:p-3">
         {projection.year === 0 ? "—" : formatCurrency(projection.mainLoanBalance)}
       </td>
     ))}
@@ -734,11 +734,11 @@ const DesktopProjectionsTable = ({
 {/* Equity Loan Balance Details */}
 {showLoanDetails && (assumptions.initialEquityLoanBalance as number) > 0 && (
   <tr className="bg-green-50 dark:bg-green-950/20 border-b">
-    <td className="sticky left-0 bg-green-50 dark:bg-green-950/20 z-10 pl-8 text-sm p-3">
+    <td className="sticky left-0 bg-green-50 dark:bg-green-950/20 z-10 pl-8 text-sm md:text-xs p-4 md:p-3">
       Equity loan balance
     </td>
     {projections.map((projection: YearProjection) => (
-      <td key={projection.year} className="text-center font-mono text-xs p-3">
+      <td key={projection.year} className="text-center font-mono text-sm md:text-xs p-4 md:p-3">
         {projection.year === 0 ? "—" : formatCurrency(projection.equityLoanBalance)}
       </td>
     ))}
@@ -747,15 +747,15 @@ const DesktopProjectionsTable = ({
 
 {/* Expenses Header */}
 <tr className="bg-muted/30 border-y">
-  <td className="sticky left-0 bg-muted/30 z-10 font-semibold p-3">Expenses</td>
+  <td className="sticky left-0 bg-muted/30 z-10 font-semibold text-base md:text-sm p-4 md:p-3">Expenses</td>
   {projections.map((p: YearProjection) => (
-    <td key={p.year} className="bg-muted/30 p-3" />
+    <td key={p.year} className="bg-muted/30 p-4 md:p-3" />
   ))}
 </tr>
 
 {/* Annual Mortgage Repayments - Expandable */}
 <tr className="border-b hover:bg-muted/50 cursor-pointer" onClick={() => setShowMortgageDetails(!showMortgageDetails)}>
-  <td className="sticky left-0 bg-background z-10 font-medium p-3">
+  <td className="sticky left-0 bg-background z-10 font-medium text-base md:text-sm p-4 md:p-3">
     <div className="flex items-center gap-2">
       {showMortgageDetails ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
       Annual mortgage repayments
@@ -766,7 +766,7 @@ const DesktopProjectionsTable = ({
     </div>
   </td>
   {projections.map((projection: YearProjection) => (
-    <td key={projection.year} className="text-center font-mono text-sm p-3">
+    <td key={projection.year} className="text-center font-mono text-base md:text-sm p-4 md:p-3">
       {formatCurrency(projection.mainLoanPayment + projection.equityLoanPayment)}
     </td>
   ))}
@@ -775,11 +775,11 @@ const DesktopProjectionsTable = ({
 {/* Interest Components (P&I years) */}
 {showMortgageDetails && (
   <tr className="bg-blue-50 dark:bg-blue-950/20 border-b">
-    <td className="sticky left-0 bg-blue-50 dark:bg-blue-950/20 z-10 pl-8 text-sm p-3">
+    <td className="sticky left-0 bg-blue-50 dark:bg-blue-950/20 z-10 pl-8 text-sm md:text-xs p-4 md:p-3">
       Main loan interest component (P\u0026I)
     </td>
     {projections.map((projection: YearProjection) => (
-      <td key={projection.year} className="text-center font-mono text-xs p-3">
+      <td key={projection.year} className="text-center font-mono text-sm md:text-xs p-4 md:p-3">
         {projection.mainLoanIOStatus === 'P\u0026I' ? formatCurrency(projection.mainInterestYear) : '—'}
       </td>
     ))}
@@ -787,11 +787,11 @@ const DesktopProjectionsTable = ({
 )}
 {showMortgageDetails && (assumptions.initialEquityLoanBalance as number) > 0 && (
   <tr className="bg-green-50 dark:bg-green-950/20 border-b">
-    <td className="sticky left-0 bg-green-50 dark:bg-green-950/20 z-10 pl-8 text-sm p-3">
+    <td className="sticky left-0 bg-green-50 dark:bg-green-950/20 z-10 pl-8 text-sm md:text-xs p-4 md:p-3">
       Equity loan interest component (P\u0026I)
     </td>
     {projections.map((projection: YearProjection) => (
-      <td key={projection.year} className="text-center font-mono text-xs p-3">
+      <td key={projection.year} className="text-center font-mono text-sm md:text-xs p-4 md:p-3">
         {projection.equityLoanIOStatus === 'P\u0026I' ? formatCurrency(projection.equityInterestYear) : '—'}
       </td>
     ))}
@@ -801,52 +801,52 @@ const DesktopProjectionsTable = ({
 {/* Interest Expense */}
 {showMortgageDetails && (
   <tr className="bg-red-50 dark:bg-red-950/20 border-b">
-    <td className="sticky left-0 bg-red-50 dark:bg-red-950/20 z-10 pl-8 text-sm p-3">
+    <td className="sticky left-0 bg-red-50 dark:bg-red-950/20 z-10 pl-8 text-sm md:text-xs p-4 md:p-3">
       Net interest expense
     </td>
     {projections.map((projection: YearProjection) => (
-      <td key={projection.year} className="text-center font-mono text-xs p-3">{formatCurrency(projection.totalInterest)}</td>
+      <td key={projection.year} className="text-center font-mono text-sm md:text-xs p-4 md:p-3">{formatCurrency(projection.totalInterest)}</td>
     ))}
   </tr>
 )}
 
 {/* Operating Expenses - Expandable */}
 <tr className="border-b hover:bg-muted/50 cursor-pointer" onClick={() => setShowOperatingDetails(!showOperatingDetails)}>
-  <td className="sticky left-0 bg-background z-10 font-medium p-3">
+  <td className="sticky left-0 bg-background z-10 font-medium text-base md:text-sm p-4 md:p-3">
     <div className="flex items-center gap-2">
       {showOperatingDetails ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
       Operating expenses
     </div>
   </td>
   {projections.map((projection: YearProjection) => (
-    <td key={projection.year} className="text-center font-mono text-sm p-3">{formatCurrency(projection.otherExpenses)}</td>
+    <td key={projection.year} className="text-center font-mono text-base md:text-sm p-4 md:p-3">{formatCurrency(projection.otherExpenses)}</td>
   ))}
 </tr>
 
 {/* Income Header */}
 <tr className="bg-muted/30 border-y">
-  <td className="sticky left-0 bg-muted/30 z-10 font-semibold p-3">Income</td>
+  <td className="sticky left-0 bg-muted/30 z-10 font-semibold text-base md:text-sm p-4 md:p-3">Income</td>
   {projections.map((p: YearProjection) => (
-    <td key={p.year} className="bg-muted/30 p-3" />
+    <td key={p.year} className="bg-muted/30 p-4 md:p-3" />
   ))}
 </tr>
 
 {/* Rental Income */}
 <tr className="border-b">
-  <td className="sticky left-0 bg-background z-10 font-medium p-3">Rental income</td>
+  <td className="sticky left-0 bg-background z-10 font-medium text-base md:text-sm p-4 md:p-3">Rental income</td>
   {projections.map((projection: YearProjection) => (
-    <td key={projection.year} className="text-center font-mono text-sm p-3">{formatCurrency(projection.rentalIncome)}</td>
+    <td key={projection.year} className="text-center font-mono text-base md:text-sm p-4 md:p-3">{formatCurrency(projection.rentalIncome)}</td>
   ))}
 </tr>
 
 {/* Property Management */}
 {showOperatingDetails && (
   <tr className="bg-orange-50 dark:bg-orange-950/20 border-b">
-    <td className="sticky left-0 bg-orange-50 dark:bg-orange-950/20 z-10 pl-8 text-sm p-3">
+    <td className="sticky left-0 bg-orange-50 dark:bg-orange-950/20 z-10 pl-8 text-sm md:text-xs p-4 md:p-3">
       Property management ({formatPercentage((assumptions.propertyManagementRate as number) || 0)})
     </td>
     {projections.map((projection: YearProjection) => (
-      <td key={projection.year} className="text-center font-mono text-xs p-3">
+      <td key={projection.year} className="text-center font-mono text-sm md:text-xs p-4 md:p-3">
         {formatCurrency(projection.rentalIncome * (((assumptions.propertyManagementRate as number) || 0) / 100))}
       </td>
     ))}
@@ -856,11 +856,11 @@ const DesktopProjectionsTable = ({
 {/* Council Rates */}
 {showOperatingDetails && (
   <tr className="bg-orange-50 dark:bg-orange-950/20 border-b">
-    <td className="sticky left-0 bg-orange-50 dark:bg-orange-950/20 z-10 pl-8 text-sm p-3">
+    <td className="sticky left-0 bg-orange-50 dark:bg-orange-950/20 z-10 pl-8 text-sm md:text-xs p-4 md:p-3">
       Council rates
     </td>
     {projections.map((projection: YearProjection) => (
-      <td key={projection.year} className="text-center font-mono text-xs p-3">
+      <td key={projection.year} className="text-center font-mono text-sm md:text-xs p-4 md:p-3">
         {formatCurrency((assumptions.councilRates as number) * Math.pow(1 + (assumptions.expenseInflationRate as number) / 100, projection.year - 1))}
       </td>
     ))}
@@ -870,11 +870,11 @@ const DesktopProjectionsTable = ({
 {/* Insurance */}
 {showOperatingDetails && (
   <tr className="bg-orange-50 dark:bg-orange-950/20 border-b">
-    <td className="sticky left-0 bg-orange-50 dark:bg-orange-950/20 z-10 pl-8 text-sm p-3">
+    <td className="sticky left-0 bg-orange-50 dark:bg-orange-950/20 z-10 pl-8 text-sm md:text-xs p-4 md:p-3">
       Insurance
     </td>
     {projections.map((projection: YearProjection) => (
-      <td key={projection.year} className="text-center font-mono text-xs p-3">
+      <td key={projection.year} className="text-center font-mono text-sm md:text-xs p-4 md:p-3">
         {formatCurrency((assumptions.insurance as number) * Math.pow(1 + (assumptions.expenseInflationRate as number) / 100, projection.year - 1))}
       </td>
     ))}
@@ -884,11 +884,11 @@ const DesktopProjectionsTable = ({
 {/* Repairs & Maintenance */}
 {showOperatingDetails && (
   <tr className="bg-orange-50 dark:bg-orange-950/20 border-b">
-    <td className="sticky left-0 bg-orange-50 dark:bg-orange-950/20 z-10 pl-8 text-sm p-3">
+    <td className="sticky left-0 bg-orange-50 dark:bg-orange-950/20 z-10 pl-8 text-sm md:text-xs p-4 md:p-3">
       Repairs & maintenance
     </td>
     {projections.map((projection: YearProjection) => (
-      <td key={projection.year} className="text-center font-mono text-xs p-3">
+      <td key={projection.year} className="text-center font-mono text-sm md:text-xs p-4 md:p-3">
         {formatCurrency((assumptions.repairs as number) * Math.pow(1 + (assumptions.expenseInflationRate as number) / 100, projection.year - 1))}
       </td>
     ))}
@@ -897,29 +897,29 @@ const DesktopProjectionsTable = ({
 
 {/* Non-cash Header */}
 <tr className="bg-muted/30 border-y">
-  <td className="sticky left-0 bg-muted/30 z-10 font-semibold p-3">Non-cash</td>
+  <td className="sticky left-0 bg-muted/30 z-10 font-semibold text-base md:text-sm p-4 md:p-3">Non-cash</td>
   {projections.map((p: YearProjection) => (
-    <td key={p.year} className="bg-muted/30 p-3" />
+    <td key={p.year} className="bg-muted/30 p-4 md:p-3" />
   ))}
 </tr>
 
 {/* Depreciation - Expandable */}
 <tr className="border-b hover:bg-muted/50 cursor-pointer" onClick={() => setShowDepreciationDetails(!showDepreciationDetails)}>
-  <td className="sticky left-0 bg-background z-10 font-medium p-3">
+  <td className="sticky left-0 bg-background z-10 font-medium text-base md:text-sm p-4 md:p-3">
     <div className="flex items-center gap-2">
       {showDepreciationDetails ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
       Depreciation
     </div>
   </td>
   {projections.map((projection: YearProjection) => (
-    <td key={projection.year} className="text-center font-mono text-sm p-3">{formatCurrency(projection.depreciation)}</td>
+    <td key={projection.year} className="text-center font-mono text-base md:text-sm p-4 md:p-3">{formatCurrency(projection.depreciation)}</td>
   ))}
 </tr>
 
 {/* Building Depreciation */}
 {showDepreciationDetails && (
   <tr className="bg-purple-50 dark:bg-purple-950/20 border-b">
-    <td className="sticky left-0 bg-purple-50 dark:bg-purple-950/20 z-10 pl-8 text-sm p-3">
+    <td className="sticky left-0 bg-purple-50 dark:bg-purple-950/20 z-10 pl-8 text-sm md:text-xs p-4 md:p-3">
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger className="flex items-center gap-1">
@@ -934,7 +934,7 @@ const DesktopProjectionsTable = ({
       </TooltipProvider>
     </td>
     {projections.map((projection: YearProjection) => (
-      <td key={projection.year} className="text-center font-mono text-xs p-3">
+      <td key={projection.year} className="text-center font-mono text-sm md:text-xs p-4 md:p-3">
         {formatCurrency(projection.buildingDepreciation)}
       </td>
     ))}
@@ -944,7 +944,7 @@ const DesktopProjectionsTable = ({
 {/* Fixtures & Fittings Depreciation */}
 {showDepreciationDetails && (
   <tr className="bg-purple-50 dark:bg-purple-950/20 border-b">
-    <td className="sticky left-0 bg-purple-50 dark:bg-purple-950/20 z-10 pl-8 text-sm p-3">
+    <td className="sticky left-0 bg-purple-50 dark:bg-purple-950/20 z-10 pl-8 text-sm md:text-xs p-4 md:p-3">
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger className="flex items-center gap-1">
@@ -959,7 +959,7 @@ const DesktopProjectionsTable = ({
       </TooltipProvider>
     </td>
     {projections.map((projection: YearProjection) => (
-      <td key={projection.year} className="text-center font-mono text-xs p-3">
+      <td key={projection.year} className="text-center font-mono text-sm md:text-xs p-4 md:p-3">
         {formatCurrency(projection.fixturesDepreciation)}
       </td>
     ))}
@@ -968,9 +968,9 @@ const DesktopProjectionsTable = ({
 
 {/* Tax Benefit */}
 <tr className="border-b">
-  <td className="sticky left-0 bg-background z-10 font-medium p-3">Tax benefit</td>
+  <td className="sticky left-0 bg-background z-10 font-medium text-base md:text-sm p-4 md:p-3">Tax benefit</td>
   {projections.map((projection: YearProjection) => (
-    <td key={projection.year} className={`text-center font-mono text-sm p-3 ${projection.taxBenefit > 0 ? 'text-green-600' : 'text-destructive'}`}>
+    <td key={projection.year} className={`text-center font-mono text-base md:text-sm p-4 md:p-3 ${projection.taxBenefit > 0 ? 'text-green-600' : 'text-destructive'}`}>
       {formatCurrency(projection.taxBenefit)}
     </td>
   ))}
@@ -978,14 +978,14 @@ const DesktopProjectionsTable = ({
 
 {/* After-tax Cash Flow (Weekly) - Expandable */}
 <tr className="bg-muted/50 border-t-2 border-b hover:bg-muted/60 cursor-pointer" onClick={() => setShowCashFlowDetails(!showCashFlowDetails)}>
-  <td className="sticky left-0 bg-muted/50 z-10 font-bold p-3">
+  <td className="sticky left-0 bg-muted/50 z-10 font-bold text-base md:text-sm p-4 md:p-3">
     <div className="flex items-center gap-2">
       {showCashFlowDetails ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
       After-tax cash flow (weekly)
     </div>
   </td>
   {projections.map((projection: YearProjection) => (
-    <td key={projection.year} className={`text-center bg-muted/50 font-mono text-sm font-bold p-3 ${(projection.afterTaxCashFlow / 52) >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+    <td key={projection.year} className={`text-center bg-muted/50 font-mono text-base md:text-sm font-bold p-4 md:p-3 ${(projection.afterTaxCashFlow / 52) >= 0 ? 'text-green-600' : 'text-destructive'}`}>
       {formatCurrency(projection.afterTaxCashFlow / 52)}
     </td>
   ))}
@@ -994,11 +994,11 @@ const DesktopProjectionsTable = ({
 {/* After-tax Cash Flow (Annual) */}
 {showCashFlowDetails && (
   <tr className="bg-yellow-50 dark:bg-yellow-950/20 border-b">
-    <td className="sticky left-0 bg-yellow-50 dark:bg-yellow-950/20 z-10 pl-8 text-sm p-3">
+    <td className="sticky left-0 bg-yellow-50 dark:bg-yellow-950/20 z-10 pl-8 text-sm md:text-xs p-4 md:p-3">
       After-tax cash flow (annual)
     </td>
     {projections.map((projection: YearProjection) => (
-      <td key={projection.year} className={`text-center font-mono text-xs p-3 ${projection.afterTaxCashFlow >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+      <td key={projection.year} className={`text-center font-mono text-sm md:text-xs p-4 md:p-3 ${projection.afterTaxCashFlow >= 0 ? 'text-green-600' : 'text-destructive'}`}>
         {formatCurrency(projection.afterTaxCashFlow)}
       </td>
     ))}
@@ -1008,20 +1008,20 @@ const DesktopProjectionsTable = ({
 {/* Cumulative Cash Flow */}
 {showCashFlowDetails && (
   <tr className="bg-yellow-50 dark:bg-yellow-950/20 border-b">
-    <td className="sticky left-0 bg-yellow-50 dark:bg-yellow-950/20 z-10 pl-8 text-sm p-3">
+    <td className="sticky left-0 bg-yellow-50 dark:bg-yellow-950/20 z-10 pl-8 text-sm md:text-xs p-4 md:p-3">
       Cumulative cash flow
     </td>
     {projections.map((projection: YearProjection) => (
-      <td key={projection.year} className="text-center font-mono text-xs p-3">{formatCurrency(projection.cumulativeCashFlow)}</td>
+      <td key={projection.year} className="text-center font-mono text-sm md:text-xs p-4 md:p-3">{formatCurrency(projection.cumulativeCashFlow)}</td>
     ))}
   </tr>
 )}
 
 {/* Total Return */}
 <tr>
-  <td className="sticky left-0 bg-background z-10 font-medium p-3">Total return</td>
+  <td className="sticky left-0 bg-background z-10 font-medium text-base md:text-sm p-4 md:p-3">Total return</td>
   {projections.map((projection: YearProjection) => (
-    <td key={projection.year} className="text-center font-mono text-sm p-3">{formatCurrency(projection.totalReturn)}</td>
+    <td key={projection.year} className="text-center font-mono text-base md:text-sm p-4 md:p-3">{formatCurrency(projection.totalReturn)}</td>
   ))}
 </tr>
         </tbody>
