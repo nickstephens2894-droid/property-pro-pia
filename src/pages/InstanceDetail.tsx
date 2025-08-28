@@ -1174,8 +1174,37 @@ const InstanceDetail = () => {
             )}
           </TabsContent>
 
-          {/* Summary Tab - Funding & Calculation Details */}
+          {/* Summary Tab - Funding & Investment Results */}
           <TabsContent value="summary" className="space-y-6">
+            {/* Investment Summary Dashboard */}
+            <PropertySummaryDashboard
+              weeklyCashflowYear1={investmentSummary.weeklyAfterTaxCashFlowSummary}
+              taxSavingsYear1={investmentSummary.taxBenefitFromProjections}
+              taxSavingsTotal={investmentSummary.taxSavingsTotal}
+              netEquityAtYearTo={investmentSummary.equityAtYearTo}
+              roiAtYearTo={investmentSummary.roiAtYearTo}
+              yearTo={yearRange[1]}
+            />
+
+            {/* Investment Results Detailed */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Investment Results Summary</CardTitle>
+                <CardDescription>Comprehensive analysis of your investment performance</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <InvestmentResultsDetailed
+                  projections={projections}
+                  yearTo={yearRange[1]}
+                  initialPropertyValue={propertyData.purchasePrice || 0}
+                  totalProjectCost={totalProjectCost}
+                  cpiRate={2.5}
+                  formatCurrency={formatCurrency}
+                  formatPercentage={formatPercentage}
+                />
+              </CardContent>
+            </Card>
+
             {isMobile ? (
               /* Mobile: Single Column Stack */
               <div className="space-y-4">
@@ -1330,16 +1359,6 @@ const InstanceDetail = () => {
 
           {/* Projections Tab */}
           <TabsContent value="projections" className="space-y-6">
-            {/* Investment Summary Dashboard */}
-            <PropertySummaryDashboard
-              weeklyCashflowYear1={investmentSummary.weeklyAfterTaxCashFlowSummary}
-              taxSavingsYear1={investmentSummary.taxBenefitFromProjections}
-              taxSavingsTotal={investmentSummary.taxSavingsTotal}
-              netEquityAtYearTo={investmentSummary.equityAtYearTo}
-              roiAtYearTo={investmentSummary.roiAtYearTo}
-              yearTo={yearRange[1]}
-            />
-
             {/* Projections Table */}
             <Card>
               <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -1383,24 +1402,6 @@ const InstanceDetail = () => {
               </Card>
             )}
 
-            {/* Investment Results Detailed */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Investment Results Summary</CardTitle>
-                <CardDescription>Comprehensive analysis of your investment performance</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <InvestmentResultsDetailed
-                  projections={projections}
-                  yearTo={yearRange[1]}
-                  initialPropertyValue={propertyData.purchasePrice || 0}
-                  totalProjectCost={totalProjectCost}
-                  cpiRate={2.5}
-                  formatCurrency={formatCurrency}
-                  formatPercentage={formatPercentage}
-                />
-              </CardContent>
-            </Card>
           </TabsContent>
         </Tabs>
         
