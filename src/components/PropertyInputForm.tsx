@@ -1811,16 +1811,16 @@ export const PropertyInputForm = ({
 
           {/* 7. Ongoing Income & Expenses */}
           <AccordionItem value="ongoing-income-expenses" className="border-b">
-            <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
-              <div className="flex items-center gap-2 w-full">
-                <DollarSign className="h-4 w-4 text-primary" />
-                <span className="font-medium">Ongoing Income & Expenses</span>
-                <div className="ml-auto">
-                  <AccordionCompletionIndicator status={annualExpensesStatus} />
+            <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50">
+              <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <DollarSign className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
+                  <span className="font-medium text-sm md:text-base truncate">Ongoing Income & Expenses</span>
                 </div>
+                <AccordionCompletionIndicator status={annualExpensesStatus} />
               </div>
             </AccordionTrigger>
-            <AccordionContent className="px-6 pb-6">
+            <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
               <div className="space-y-6">
                 {/* Rental Income Section */}
                 <div className="space-y-4">
@@ -1915,16 +1915,16 @@ export const PropertyInputForm = ({
 
           {/* 8. Tax Optimization */}
           <AccordionItem value="tax-optimization" className="border-b">
-            <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
-              <div className="flex items-center gap-2 w-full">
-                <Calculator className="h-4 w-4 text-primary" />
-                <span className="font-medium">Tax Optimization & Depreciation</span>
-                <div className="ml-auto">
-                  <AccordionCompletionIndicator status={taxOptimizationStatus} />
+            <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50">
+              <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <Calculator className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
+                  <span className="font-medium text-sm md:text-base truncate">Tax Optimization & Depreciation</span>
                 </div>
+                <AccordionCompletionIndicator status={taxOptimizationStatus} />
               </div>
             </AccordionTrigger>
-           <AccordionContent className="px-6 pb-6">
+           <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
               <div className="space-y-6">
                 {/* Depreciation Settings */}
                 <div className="space-y-4">
