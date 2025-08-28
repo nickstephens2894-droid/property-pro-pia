@@ -306,6 +306,18 @@ export const PropertyInputForm = ({
         }
       }
       
+      // Sync purchase price for construction projects when land or construction values change
+      if (propertyData.isConstructionProject && (field === 'landValue' || field === 'constructionValue')) {
+        const newLandValue = field === 'landValue' ? value : propertyData.landValue;
+        const newConstructionValue = field === 'constructionValue' ? value : propertyData.constructionValue;
+        const newPurchasePrice = newLandValue + newConstructionValue;
+        
+        // Only update if significantly different to avoid micro-adjustments
+        if (Math.abs(propertyData.purchasePrice - newPurchasePrice) > 10) {
+          updateField('purchasePrice', newPurchasePrice);
+        }
+      }
+      
       // Update holding costs when construction parameters change
       if (['landValue', 'constructionValue', 'constructionPeriod', 'constructionInterestRate'].includes(field)) {
         const costs = calculateHoldingCosts();
@@ -690,8 +702,25 @@ export const PropertyInputForm = ({
                   <Select
                     value={propertyData.currentPropertyMethod}
                     onValueChange={(value) => {
-                      updateField('currentPropertyMethod', value as PropertyMethod);
-                      updateField('isConstructionProject', value === 'house-land-construction');
+                      const newMethod = value as PropertyMethod;
+                      const wasConstruction = propertyData.isConstructionProject;
+                      const willBeConstruction = newMethod === 'house-land-construction';
+                      
+                      // Update the property method and construction flag
+                      updateField('currentPropertyMethod', newMethod);
+                      updateField('isConstructionProject', willBeConstruction);
+                      
+                      // Handle purchase price synchronization
+                      if (!wasConstruction && willBeConstruction) {
+                        // Switching TO construction: Set purchase price = land + construction
+                        const totalValue = propertyData.landValue + propertyData.constructionValue;
+                        if (totalValue > 0) {
+                          updateField('purchasePrice', totalValue);
+                        }
+                      } else if (wasConstruction && !willBeConstruction) {
+                        // Switching FROM construction: Keep current purchase price
+                        // No action needed - preserve user's purchase price
+                      }
                     }}
                   >
                     <SelectTrigger className="min-h-[44px] md:min-h-10">
