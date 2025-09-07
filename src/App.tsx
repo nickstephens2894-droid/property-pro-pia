@@ -7,6 +7,7 @@ import { PropertyDataProvider } from "./contexts/PropertyDataContext";
 import { InstancesProvider } from "./contexts/InstancesContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import AppNav from "./components/AppNav";
+import PublicNav from "./components/PublicNav";
 import Index from "./pages/Index";
 // import Projections from "./pages/Projections"; // Commented out - functionality integrated into instances
 import NotFound from "./pages/NotFound";
@@ -23,21 +24,32 @@ import EditProperty from "./pages/EditProperty";
 import Auth from "./pages/Auth";
 import SpecPage from "./pages/SpecPage";
 import HowTo from "./pages/HowTo";
+import HowItWorks from "./pages/HowItWorks";
+import Pricing from "./pages/Pricing";
 import ProjectionDashboard from "./pages/ProjectionDashboard";
 import { RepositoryProvider } from "./services/repository";
 import { PropertiesProvider } from "./contexts/PropertiesContext";
 import RequireAuth from "./components/RequireAuth";
+import { useAuth } from "./contexts/AuthContext";
 
 const queryClient = new QueryClient();
 
 function AppLayout() {
   const location = useLocation();
-  const hideNav = location.pathname.startsWith("/auth") || location.pathname === "/";
+  const { user } = useAuth();
+  
+  // Show public nav for non-authenticated users on public pages
+  const publicPages = ["/", "/how-it-works", "/pricing"];
+  const isPublicPage = publicPages.includes(location.pathname);
+  const showPublicNav = !user && isPublicPage;
+  const showAppNav = user && !location.pathname.startsWith("/auth");
+  const hideAllNav = location.pathname.startsWith("/auth");
 
   return (
     <div className="min-h-screen">
-      {!hideNav && <AppNav />}
-      <main className={hideNav ? "" : "pt-4"}>
+      {showPublicNav && <PublicNav />}
+      {showAppNav && <AppNav />}
+      <main className={showPublicNav || showAppNav ? "pt-4" : ""}>
         <Routes>
           <Route path="/auth" element={<Auth />} />
           <Route path="/" element={<Index />} />
@@ -54,6 +66,8 @@ function AppLayout() {
           <Route path="/properties/create" element={<RequireAuth><CreateProperty /></RequireAuth>} />
           <Route path="/properties/:propertyId/edit" element={<RequireAuth><EditProperty /></RequireAuth>} />
           <Route path="/how-to" element={<RequireAuth><HowTo /></RequireAuth>} />
+          <Route path="/how-it-works" element={<HowItWorks />} />
+          <Route path="/pricing" element={<Pricing />} />
           <Route path="/spec" element={<SpecPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
