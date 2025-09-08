@@ -25,7 +25,9 @@ import Auth from "./pages/Auth";
 import SpecPage from "./pages/SpecPage";
 import HowTo from "./pages/HowTo";
 import HowItWorks from "./pages/HowItWorks";
-import Pricing from "./pages/Pricing";
+import Individual from "./pages/Individual";
+import Advisors from "./pages/Advisors";
+import Enterprise from "./pages/Enterprise";
 import SignUp from "./pages/SignUp";
 import ProjectionDashboard from "./pages/ProjectionDashboard";
 import { RepositoryProvider } from "./services/repository";
@@ -40,7 +42,7 @@ function AppLayout() {
   const { user } = useAuth();
   
   // Show public nav for non-authenticated users on public pages
-  const publicPages = ["/", "/how-it-works", "/pricing", "/signup"];
+  const publicPages = ["/", "/how-it-works", "/individual", "/advisors", "/enterprise", "/signup"];
   const isPublicPage = publicPages.includes(location.pathname);
   const showPublicNav = !user && isPublicPage;
   const showAppNav = user && !location.pathname.startsWith("/auth");
@@ -68,7 +70,9 @@ function AppLayout() {
           <Route path="/properties/:propertyId/edit" element={<RequireAuth><EditProperty /></RequireAuth>} />
           <Route path="/how-to" element={<RequireAuth><HowTo /></RequireAuth>} />
           <Route path="/how-it-works" element={<HowItWorks />} />
-          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/individual" element={<Individual />} />
+          <Route path="/advisors" element={<Advisors />} />
+          <Route path="/enterprise" element={<Enterprise />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/spec" element={<SpecPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
