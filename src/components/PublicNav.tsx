@@ -18,6 +18,9 @@ const PublicNav = () => {
   const navigationItems = [
     { label: "Home", path: "/" },
     { label: "How It Works", path: "/how-it-works" },
+    { label: "For Individuals", path: "/individual" },
+    { label: "For Advisors", path: "/advisors" },
+    { label: "For Businesses", path: "/enterprise" },
   ];
 
   const handleSignUp = () => {
