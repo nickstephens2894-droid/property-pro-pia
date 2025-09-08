@@ -26,6 +26,7 @@ import SpecPage from "./pages/SpecPage";
 import HowTo from "./pages/HowTo";
 import HowItWorks from "./pages/HowItWorks";
 import Pricing from "./pages/Pricing";
+import SignUp from "./pages/SignUp";
 import ProjectionDashboard from "./pages/ProjectionDashboard";
 import { RepositoryProvider } from "./services/repository";
 import { PropertiesProvider } from "./contexts/PropertiesContext";
@@ -39,7 +40,7 @@ function AppLayout() {
   const { user } = useAuth();
   
   // Show public nav for non-authenticated users on public pages
-  const publicPages = ["/", "/how-it-works", "/pricing"];
+  const publicPages = ["/", "/how-it-works", "/pricing", "/signup"];
   const isPublicPage = publicPages.includes(location.pathname);
   const showPublicNav = !user && isPublicPage;
   const showAppNav = user && !location.pathname.startsWith("/auth");
@@ -68,6 +69,7 @@ function AppLayout() {
           <Route path="/how-to" element={<RequireAuth><HowTo /></RequireAuth>} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/signup" element={<SignUp />} />
           <Route path="/spec" element={<SpecPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

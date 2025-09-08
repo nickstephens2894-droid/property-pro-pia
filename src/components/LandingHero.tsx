@@ -33,7 +33,7 @@ const LandingHero = () => {
             ) : (
               <>
                 <Button size="lg" asChild className="min-w-[200px]">
-                  <Link to="/auth">Start Free Analysis</Link>
+                  <Link to="/signup">Start Free Analysis</Link>
                 </Button>
                 <Button size="lg" variant="outline" asChild className="min-w-[200px]">
                   <Link to="/auth">

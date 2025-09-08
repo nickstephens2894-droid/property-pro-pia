@@ -42,13 +42,13 @@ const LandingCTA = () => {
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <Button size="lg" asChild className="min-w-[220px] group">
-                  <Link to="/auth" className="flex items-center gap-2">
+                  <Link to="/signup" className="flex items-center gap-2">
                     Start Your Free Analysis
                     <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </Button>
                 <Button variant="outline" size="lg" asChild className="min-w-[220px]">
-                  <Link to="/auth">Book Enterprise Demo</Link>
+                  <Link to="/signup">Book Enterprise Demo</Link>
                 </Button>
               </div>
               

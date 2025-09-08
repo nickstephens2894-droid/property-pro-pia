@@ -22,7 +22,7 @@ const PublicNav = () => {
   ];
 
   const handleSignUp = () => {
-    navigate("/auth");
+    navigate("/signup");
     setIsOpen(false);
   };
 
