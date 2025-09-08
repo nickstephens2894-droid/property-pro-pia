@@ -189,4 +189,18 @@ export class PropertyModelsService {
 
     return (data || []) as PropertyModel[];
   }
+
+  static async createBatch(models: CreatePropertyModelRequest[]): Promise<PropertyModel[]> {
+    const { data, error } = await supabase
+      .from('property_models')
+      .insert(models)
+      .select();
+
+    if (error) {
+      console.error('Error creating property models batch:', error);
+      throw new Error('Failed to create property models');
+    }
+
+    return (data || []) as PropertyModel[];
+  }
 }
