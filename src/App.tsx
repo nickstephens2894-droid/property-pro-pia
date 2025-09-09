@@ -42,11 +42,10 @@ function AppLayout() {
   const { user } = useAuth();
   
   // Show public nav for non-authenticated users on public pages
-  const publicPages = ["/", "/how-it-works", "/individual", "/advisors", "/enterprise", "/signup"];
+  const publicPages = ["/", "/how-it-works", "/individual", "/advisors", "/enterprise", "/signup", "/auth"];
   const isPublicPage = publicPages.includes(location.pathname);
   const showPublicNav = !user && isPublicPage;
   const showAppNav = user && !location.pathname.startsWith("/auth");
-  const hideAllNav = location.pathname.startsWith("/auth");
 
   return (
     <div className="min-h-screen">
