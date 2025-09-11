@@ -61,28 +61,42 @@ const features = [
 
 const LandingFeatures = () => {
   return (
-    <section className="py-20 lg:py-28 bg-muted/30">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
+    <section className="py-20 lg:py-32 relative overflow-hidden">
+      {/* Background elements */}
+      <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/20 to-background" />
+      <div className="absolute top-0 left-1/2 w-96 h-96 bg-primary/5 rounded-full blur-3xl transform -translate-x-1/2 -translate-y-1/2" />
+      
+      <div className="container relative mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-20 animate-fade-in-up">
+          <h2 className="text-3xl md:text-4xl lg:text-6xl font-bold mb-8 gradient-text">
             Professional-Grade Features
           </h2>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
+          <p className="text-xl md:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
             Everything you need to analyze Australian property investments with precision and confidence.
           </p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-10">
           {features.map((feature, index) => (
-            <Card key={index} className="h-full hover:shadow-lg transition-shadow duration-300">
-              <CardHeader>
-                <div className="mb-4">
-                  <feature.icon className="h-12 w-12 text-primary" />
+            <Card 
+              key={index} 
+              className="h-full group magnetic-hover glass border-2 border-primary/10 hover:border-primary/30 transition-all duration-500"
+              style={{ 
+                animationDelay: `${index * 100}ms` 
+              }}
+            >
+              <CardHeader className="pb-6">
+                <div className="mb-6 relative">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-chart-4/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                    <feature.icon className="h-8 w-8 text-primary group-hover:animate-bounce-subtle" />
+                  </div>
                 </div>
-                <CardTitle className="text-xl mb-2">{feature.title}</CardTitle>
+                <CardTitle className="text-xl mb-3 group-hover:gradient-text transition-all duration-300">
+                  {feature.title}
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground leading-relaxed">
+                <p className="text-muted-foreground leading-relaxed text-base">
                   {feature.description}
                 </p>
               </CardContent>
