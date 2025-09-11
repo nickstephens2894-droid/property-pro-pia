@@ -61,7 +61,7 @@ const LandingFeatures = () => {
           </p>
         </div>
         
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-10">
           {features.map((feature, index) => (
             <Card 
               key={index} 
@@ -70,18 +70,18 @@ const LandingFeatures = () => {
                 animationDelay: `${index * 100}ms` 
               }}
             >
-              <CardHeader className="pb-6">
-                <div className="mb-6 relative">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-chart-4/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                    <feature.icon className="h-8 w-8 text-primary group-hover:animate-bounce-subtle" />
+              <CardHeader className="p-4 sm:p-6 pb-3 sm:pb-6">
+                <div className="mb-4 sm:mb-6 relative">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-xl sm:rounded-2xl bg-gradient-to-br from-primary/20 to-chart-4/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                    <feature.icon className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-primary group-hover:animate-bounce-subtle" />
                   </div>
                 </div>
-                <CardTitle className="text-xl mb-3 group-hover:gradient-text transition-all duration-300">
+                <CardTitle className="text-lg sm:text-xl mb-2 sm:mb-3 group-hover:gradient-text transition-all duration-300 leading-tight">
                   {feature.title}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground leading-relaxed text-base">
+              <CardContent className="p-4 sm:p-6 pt-0">
+                <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
                   {feature.description}
                 </p>
               </CardContent>

@@ -59,23 +59,23 @@ const LandingHero = () => {
             )}
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-24 max-w-4xl mx-auto animate-scale-in animation-delay-900">
-            <div className="group flex flex-col items-center p-10 rounded-3xl glass magnetic-hover border-2 border-primary/30 hover:border-primary/50 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/20">
-              <div className="p-4 bg-primary/10 rounded-2xl mb-6 group-hover:bg-primary/20 transition-all duration-300">
-                <Calculator className="h-16 w-16 text-primary group-hover:animate-bounce-subtle group-hover:scale-110 transition-transform duration-300" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mt-16 sm:mt-20 lg:mt-24 max-w-4xl mx-auto animate-scale-in animation-delay-900">
+            <div className="group flex flex-col items-center p-6 sm:p-8 lg:p-10 rounded-2xl sm:rounded-3xl glass magnetic-hover border-2 border-primary/30 hover:border-primary/50 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/20">
+              <div className="p-3 sm:p-4 bg-primary/10 rounded-xl sm:rounded-2xl mb-4 sm:mb-6 group-hover:bg-primary/20 transition-all duration-300">
+                <Calculator className="h-10 w-10 sm:h-12 sm:w-12 lg:h-16 lg:w-16 text-primary group-hover:animate-bounce-subtle group-hover:scale-110 transition-transform duration-300" />
               </div>
-              <h3 className="text-2xl font-bold mb-4 gradient-text">Australian Tax Engine</h3>
-              <p className="text-muted-foreground text-center leading-relaxed text-base">
+              <h3 className="text-lg sm:text-xl lg:text-2xl font-bold mb-3 sm:mb-4 gradient-text text-center">Australian Tax Engine</h3>
+              <p className="text-muted-foreground text-center leading-relaxed text-sm sm:text-base">
                 Accurate Div 40/43 depreciation, stamp duty, and Medicare levy calculations
               </p>
             </div>
             
-            <div className="group flex flex-col items-center p-10 rounded-3xl glass magnetic-hover border-2 border-success/30 hover:border-success/50 transition-all duration-500 hover:shadow-2xl hover:shadow-success/20">
-              <div className="p-4 bg-success/10 rounded-2xl mb-6 group-hover:bg-success/20 transition-all duration-300">
-                <TrendingUp className="h-16 w-16 text-success group-hover:animate-bounce-subtle group-hover:scale-110 transition-transform duration-300" />
+            <div className="group flex flex-col items-center p-6 sm:p-8 lg:p-10 rounded-2xl sm:rounded-3xl glass magnetic-hover border-2 border-success/30 hover:border-success/50 transition-all duration-500 hover:shadow-2xl hover:shadow-success/20">
+              <div className="p-3 sm:p-4 bg-success/10 rounded-xl sm:rounded-2xl mb-4 sm:mb-6 group-hover:bg-success/20 transition-all duration-300">
+                <TrendingUp className="h-10 w-10 sm:h-12 sm:w-12 lg:h-16 lg:w-16 text-success group-hover:animate-bounce-subtle group-hover:scale-110 transition-transform duration-300" />
               </div>
-              <h3 className="text-2xl font-bold mb-4 gradient-text">40-Year Projections</h3>
-              <p className="text-muted-foreground text-center leading-relaxed text-base">
+              <h3 className="text-lg sm:text-xl lg:text-2xl font-bold mb-3 sm:mb-4 gradient-text text-center">40-Year Projections</h3>
+              <p className="text-muted-foreground text-center leading-relaxed text-sm sm:text-base">
                 Long-term analysis with inflation, CPI adjustments, and market cycles
               </p>
             </div>
