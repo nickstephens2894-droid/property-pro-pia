@@ -80,8 +80,8 @@ const Index = () => {
   return (
     <main className="min-h-screen">
       <LandingHero />
-      <LandingFeatures />
       <LandingSocialProof />
+      <LandingFeatures />
       <LandingCTA />
       <LandingFooter />
     </main>
