@@ -5,12 +5,15 @@ import { Badge } from "@/components/ui/badge";
 import { 
   ArrowRight, 
   Calculator, 
+  FileText, 
   BarChart3, 
   CheckCircle2,
+  TrendingUp,
   Check,
   Star,
   DollarSign,
-  Target
+  Target,
+  Clock
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -43,17 +46,80 @@ const Individual = () => {
     {
       icon: Calculator,
       title: "Enter Property Details",
-      description: "Input basic property information and your tax situation."
+      description: "Input basic property information, purchase price, and your personal tax situation.",
+      features: [
+        "Simple property data entry",
+        "Personal tax profile setup",
+        "Loan structure configuration"
+      ]
+    },
+    {
+      icon: TrendingUp,
+      title: "Personal Tax Analysis",
+      description: "Our engine calculates your specific tax benefits including negative gearing and depreciation.",
+      features: [
+        "Personal tax bracket optimization",
+        "Negative gearing calculations",
+        "Depreciation schedules"
+      ]
     },
     {
       icon: BarChart3,
-      title: "Get Analysis",
-      description: "Receive comprehensive 40-year projections and tax optimization."
+      title: "Long-term Projections",
+      description: "See 40-year projections showing rental growth, capital gains, and your wealth accumulation.",
+      features: [
+        "Rental income forecasts",
+        "Capital growth scenarios",
+        "Wealth accumulation tracking"
+      ]
+    },
+    {
+      icon: FileText,
+      title: "Investment Report",
+      description: "Receive a comprehensive report you can use for loan applications and investment decisions.",
+      features: [
+        "Bank-ready documentation",
+        "Investment summary",
+        "Exit strategy planning"
+      ]
+    }
+  ];
+
+  const features = [
+    {
+      icon: DollarSign,
+      title: "Personal Tax Optimization",
+      description: "Maximize your tax benefits with calculations specific to your income and situation."
+    },
+    {
+      icon: Target,
+      title: "Investment Goal Tracking",
+      description: "Set and track your property investment goals with clear milestone planning."
+    },
+    {
+      icon: Clock,
+      title: "Quick Analysis",
+      description: "Get comprehensive analysis in minutes, not hours of manual calculations."
     },
     {
       icon: CheckCircle2,
-      title: "Make Decision",
-      description: "Use professional reports for confident investment decisions."
+      title: "Simple Decision Making",
+      description: "Clear recommendations help you make confident investment decisions."
+    }
+  ];
+
+  const testimonials = [
+    {
+      name: "Sarah Chen",
+      role: "First-time Property Investor",
+      content: "Property Pro helped me understand the real costs and benefits of my first investment property. The tax calculations saved me thousands.",
+      rating: 5
+    },
+    {
+      name: "Michael Thompson",
+      role: "Property Investor",
+      content: "I've analyzed 5 properties with Property Pro. The insights helped me choose the best investment and avoid costly mistakes.",
+      rating: 5
     }
   ];
 
@@ -85,24 +151,71 @@ const Individual = () => {
         </div>
       </section>
 
-      {/* Simple Process */}
+      {/* How It Works */}
       <section className="py-16 px-4 bg-muted/30">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-2xl md:text-4xl font-bold text-foreground mb-4">
-              Simple 3-Step Process
+              How Property Pro Works for 
+              <span className="text-primary"> Individual Investors</span>
             </h2>
+            <p className="text-lg text-muted-foreground">
+              Our simple 4-step process helps you analyze any property investment opportunity.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {steps.map((step, index) => (
-              <Card key={index} className="text-center">
-                <CardHeader>
-                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
+              <Card key={index} className="relative">
+                <div className="absolute -top-4 left-6">
+                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-sm">
+                    {index + 1}
+                  </div>
+                </div>
+                
+                <CardHeader className="pt-8">
+                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
                     <step.icon className="h-6 w-6 text-primary" />
                   </div>
                   <CardTitle className="text-lg">{step.title}</CardTitle>
                   <CardDescription>{step.description}</CardDescription>
+                </CardHeader>
+
+                <CardContent>
+                  <ul className="space-y-2">
+                    {step.features.map((feature, idx) => (
+                      <li key={idx} className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Check className="h-3 w-3 text-primary" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="py-16 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-2xl md:text-4xl font-bold text-foreground mb-4">
+              Features Designed for 
+              <span className="text-primary"> Individual Success</span>
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {features.map((feature, index) => (
+              <Card key={index} className="text-center hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <feature.icon className="h-6 w-6 text-primary" />
+                  </div>
+                  <CardTitle className="text-lg">{feature.title}</CardTitle>
+                  <CardDescription>{feature.description}</CardDescription>
                 </CardHeader>
               </Card>
             ))}
@@ -110,50 +223,18 @@ const Individual = () => {
         </div>
       </section>
 
-      {/* Key Benefits */}
-      <section className="py-16 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-4xl font-bold text-foreground mb-4">
-              Built for Individual Success
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                  <DollarSign className="h-6 w-6 text-primary" />
-                </div>
-                <CardTitle className="text-lg">Personal Tax Optimization</CardTitle>
-                <CardDescription>Maximize your tax benefits with calculations specific to your income and situation.</CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                  <Target className="h-6 w-6 text-primary" />
-                </div>
-                <CardTitle className="text-lg">Investment Goal Tracking</CardTitle>
-                <CardDescription>Set and track your property investment goals with clear milestone planning.</CardDescription>
-              </CardHeader>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Simple Pricing */}
+      {/* Pricing */}
       <section className="py-16 px-4 bg-muted/30">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-2xl md:text-4xl font-bold text-foreground mb-4">
-              Start Free, Upgrade When Ready
+              Start Free, Upgrade When 
+              <span className="text-primary"> You're Ready</span>
             </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <Card>
+            <Card className="relative">
               <CardHeader className="text-center">
                 <CardTitle className="text-2xl">Free</CardTitle>
                 <div className="text-4xl font-bold text-foreground">$0</div>
@@ -161,7 +242,7 @@ const Individual = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <ul className="space-y-3">
-                  {["1 property analysis", "Basic projections", "Australian tax calculations"].map((feature, idx) => (
+                  {["1 property analysis", "Basic 10-year projections", "Australian tax calculations", "Standard reporting"].map((feature, idx) => (
                     <li key={idx} className="flex items-center gap-3">
                       <Check className="h-4 w-4 text-primary" />
                       <span className="text-sm">{feature}</span>
@@ -174,7 +255,7 @@ const Individual = () => {
               </CardContent>
             </Card>
 
-            <Card className="border-primary shadow-lg">
+            <Card className="relative border-primary shadow-lg">
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                 <Badge className="bg-primary text-primary-foreground">
                   <Star className="w-3 h-3 mr-1" />
@@ -190,7 +271,7 @@ const Individual = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <ul className="space-y-3">
-                  {["Unlimited properties", "40-year projections", "Professional reports"].map((feature, idx) => (
+                  {["Unlimited properties", "40-year detailed projections", "Advanced tax optimization", "Professional reports", "Scenario comparison"].map((feature, idx) => (
                     <li key={idx} className="flex items-center gap-3">
                       <Check className="h-4 w-4 text-primary" />
                       <span className="text-sm">{feature}</span>
@@ -207,8 +288,39 @@ const Individual = () => {
         </div>
       </section>
 
-      {/* Final CTA */}
+      {/* Testimonials */}
       <section className="py-16 px-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-2xl md:text-4xl font-bold text-foreground mb-4">
+              Success Stories from 
+              <span className="text-primary"> Individual Investors</span>
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {testimonials.map((testimonial, index) => (
+              <Card key={index}>
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-1 mb-4">
+                    {[...Array(testimonial.rating)].map((_, i) => (
+                      <Star key={i} className="h-4 w-4 fill-primary text-primary" />
+                    ))}
+                  </div>
+                  <p className="text-muted-foreground mb-4">"{testimonial.content}"</p>
+                  <div>
+                    <div className="font-semibold">{testimonial.name}</div>
+                    <div className="text-sm text-muted-foreground">{testimonial.role}</div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="py-16 px-4 bg-muted/30">
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-2xl md:text-4xl font-bold text-foreground mb-4">
             Start Your Property Investment 

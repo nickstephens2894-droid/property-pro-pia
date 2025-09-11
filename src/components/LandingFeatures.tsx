@@ -14,48 +14,33 @@ import {
 const features = [
   {
     icon: Calculator,
-    title: "Advanced Tax Calculations",
-    description: "Australian-compliant calculations including Div 40/43 depreciation, stamp duty, and Medicare levy across all states."
-  },
-  {
-    icon: Building,
-    title: "Property Comparison Engine",
-    description: "Compare established vs construction properties with detailed cost-benefit analysis and risk assessment."
+    title: "Australian Tax Engine",
+    description: "Precise negative gearing, depreciation, and CGT calculations specific to Australian tax law with up-to-date rates"
   },
   {
     icon: BarChart3,
-    title: "40-Year Cash Flow Projections",
-    description: "Comprehensive projections with CPI adjustments, rental growth, and capital appreciation scenarios."
+    title: "40-Year Projections",
+    description: "Comprehensive long-term analysis including rental growth, market cycles, and wealth accumulation tracking"
   },
   {
     icon: Users2,
-    title: "Multi-Investor Modeling",
-    description: "Complex ownership structures, trust entities, and investor-specific tax treatment analysis."
-  },
-  {
-    icon: PieChart,
-    title: "Scenario Management",
-    description: "Create and compare multiple investment scenarios with different variables and assumptions."
+    title: "Multi-Investor Support",
+    description: "Analyze complex ownership structures with multiple investors, varying tax rates, and optimal splits"
   },
   {
     icon: FileText,
     title: "Professional Reports",
-    description: "Generate detailed investment reports for clients, lenders, and stakeholders with executive summaries."
+    description: "Generate bank-ready documentation and detailed analysis reports for confident investment decisions"
   },
   {
-    icon: DollarSign,
-    title: "Construction Period Analysis",
-    description: "Specialized calculations for construction loans, progress payments, and pre-settlement costs."
-  },
-  {
-    icon: Calendar,
-    title: "Real-Time Updates",
-    description: "Automatic updates to interest rates, tax brackets, and market data for accurate projections."
+    icon: Building,
+    title: "Construction Modeling", 
+    description: "Model off-the-plan purchases with progressive payments, timing analysis, and holding costs"
   },
   {
     icon: Zap,
-    title: "Instant Calculations",
-    description: "Lightning-fast processing of complex scenarios with real-time results as you adjust parameters."
+    title: "Real-Time Updates",
+    description: "Instant recalculations as you modify scenarios, saving hours of manual spreadsheet work"
   }
 ];
 
