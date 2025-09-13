@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { PropertyDataProvider } from "./contexts/PropertyDataContext";
 import { InstancesProvider } from "./contexts/InstancesContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { FundingProvider } from "./contexts/FundingContext";
 import AppNav from "./components/AppNav";
 import Index from "./pages/Index";
 // import Projections from "./pages/Projections"; // Commented out - functionality integrated into instances
@@ -32,7 +33,8 @@ const queryClient = new QueryClient();
 
 function AppLayout() {
   const location = useLocation();
-  const hideNav = location.pathname.startsWith("/auth") || location.pathname === "/";
+  const hideNav =
+    location.pathname.startsWith("/auth") || location.pathname === "/";
 
   return (
     <div className="min-h-screen">
@@ -42,18 +44,102 @@ function AppLayout() {
           <Route path="/auth" element={<Auth />} />
           <Route path="/" element={<Index />} />
           {/* <Route path="/projections" element={<RequireAuth><Projections /></RequireAuth>} /> */}
-          <Route path="/investors" element={<RequireAuth><Investors /></RequireAuth>} />
-          <Route path="/investors/:id" element={<RequireAuth><InvestorDetail /></RequireAuth>} />
-          <Route path="/properties" element={<RequireAuth><Properties /></RequireAuth>} />
-          <Route path="/funds" element={<RequireAuth><Funds /></RequireAuth>} />
-          <Route path="/scenarios" element={<RequireAuth><Scenarios /></RequireAuth>} />
-          <Route path="/instances" element={<RequireAuth><Instances /></RequireAuth>} />
-          <Route path="/instances/add" element={<RequireAuth><AddInstance /></RequireAuth>} />
-          <Route path="/instances/:id" element={<RequireAuth><InstanceDetail /></RequireAuth>} />
-          <Route path="/projection-dashboard" element={<RequireAuth><ProjectionDashboard /></RequireAuth>} />
-          <Route path="/properties/create" element={<RequireAuth><CreateProperty /></RequireAuth>} />
-          <Route path="/properties/:propertyId/edit" element={<RequireAuth><EditProperty /></RequireAuth>} />
-          <Route path="/how-to" element={<RequireAuth><HowTo /></RequireAuth>} />
+          <Route
+            path="/investors"
+            element={
+              <RequireAuth>
+                <Investors />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/investors/:id"
+            element={
+              <RequireAuth>
+                <InvestorDetail />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/properties"
+            element={
+              <RequireAuth>
+                <Properties />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/funds"
+            element={
+              <RequireAuth>
+                <Funds />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/scenarios"
+            element={
+              <RequireAuth>
+                <Scenarios />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/instances"
+            element={
+              <RequireAuth>
+                <Instances />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/instances/add"
+            element={
+              <RequireAuth>
+                <AddInstance />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/instances/:id"
+            element={
+              <RequireAuth>
+                <InstanceDetail />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/projection-dashboard"
+            element={
+              <RequireAuth>
+                <ProjectionDashboard />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/properties/create"
+            element={
+              <RequireAuth>
+                <CreateProperty />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/properties/:propertyId/edit"
+            element={
+              <RequireAuth>
+                <EditProperty />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/how-to"
+            element={
+              <RequireAuth>
+                <HowTo />
+              </RequireAuth>
+            }
+          />
           <Route path="/spec" element={<SpecPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
@@ -71,13 +157,15 @@ const App = () => (
         <QueryClientProvider client={queryClient}>
           <PropertyDataProvider>
             <InstancesProvider>
-              <TooltipProvider>
-                <Toaster />
-                <Sonner />
-                <BrowserRouter>
-                  <AppLayout />
-                </BrowserRouter>
-              </TooltipProvider>
+              <FundingProvider>
+                <TooltipProvider>
+                  <Toaster />
+                  <Sonner />
+                  <BrowserRouter>
+                    <AppLayout />
+                  </BrowserRouter>
+                </TooltipProvider>
+              </FundingProvider>
             </InstancesProvider>
           </PropertyDataProvider>
         </QueryClientProvider>
