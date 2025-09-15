@@ -7,11 +7,9 @@ import {
 } from '@/types/propertyModels';
 
 export class PropertyModelsService {
-  private static TABLE_NAME = 'property_models';
-
   static async getAll(): Promise<PropertyModel[]> {
     const { data, error } = await supabase
-      .from(this.TABLE_NAME)
+      .from('property_models')
       .select('*')
       .order('created_at', { ascending: false });
 
@@ -20,26 +18,26 @@ export class PropertyModelsService {
       throw new Error('Failed to fetch property models');
     }
 
-    return data || [];
+    return (data || []) as PropertyModel[];
   }
 
   static async getWithFilters(filters: PropertyModelFilters): Promise<PropertyModel[]> {
-    let query = supabase.from(this.TABLE_NAME).select('*');
+    let query = supabase.from('property_models').select('*');
 
-    if (filters.propertyType) {
-      query = query.eq('property_type', filters.propertyType);
+    if (filters.property_type) {
+      query = query.eq('property_type', filters.property_type);
     }
 
-    if (filters.propertyMethod) {
-      query = query.eq('property_method', filters.propertyMethod);
+    if (filters.property_method) {
+      query = query.eq('property_method', filters.property_method);
     }
 
     if (filters.location) {
       query = query.eq('location', filters.location);
     }
 
-    if (filters.searchTerm) {
-      query = query.or(`name.ilike.%${filters.searchTerm}%,description.ilike.%${filters.searchTerm}%`);
+    if (filters.search) {
+      query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
     }
 
     const { data, error } = await query.order('created_at', { ascending: false });
@@ -49,12 +47,12 @@ export class PropertyModelsService {
       throw new Error('Failed to fetch property models');
     }
 
-    return data || [];
+    return (data || []) as PropertyModel[];
   }
 
   static async getById(id: string): Promise<PropertyModel | null> {
     const { data, error } = await supabase
-      .from(this.TABLE_NAME)
+      .from('property_models')
       .select('*')
       .eq('id', id)
       .single();
@@ -67,13 +65,13 @@ export class PropertyModelsService {
       throw new Error('Failed to fetch property model');
     }
 
-    return data;
+    return data as PropertyModel;
   }
 
   static async create(model: CreatePropertyModelRequest): Promise<PropertyModel> {
     const { data, error } = await supabase
-      .from(this.TABLE_NAME)
-      .insert([model])
+      .from('property_models')
+      .insert(model)
       .select()
       .single();
 
@@ -82,12 +80,12 @@ export class PropertyModelsService {
       throw new Error('Failed to create property model');
     }
 
-    return data;
+    return data as PropertyModel;
   }
 
   static async update(id: string, updates: UpdatePropertyModelRequest): Promise<PropertyModel> {
     const { data, error } = await supabase
-      .from(this.TABLE_NAME)
+      .from('property_models')
       .update(updates)
       .eq('id', id)
       .select()
@@ -98,12 +96,12 @@ export class PropertyModelsService {
       throw new Error('Failed to update property model');
     }
 
-    return data;
+    return data as PropertyModel;
   }
 
   static async delete(id: string): Promise<void> {
     const { error } = await supabase
-      .from(this.TABLE_NAME)
+      .from('property_models')
       .delete()
       .eq('id', id);
 
@@ -134,7 +132,7 @@ export class PropertyModelsService {
 
   static async getByLocation(location: string): Promise<PropertyModel[]> {
     const { data, error } = await supabase
-      .from(this.TABLE_NAME)
+      .from('property_models')
       .select('*')
       .eq('location', location)
       .order('created_at', { ascending: false });
@@ -144,12 +142,12 @@ export class PropertyModelsService {
       throw new Error('Failed to fetch property models');
     }
 
-    return data || [];
+    return (data || []) as PropertyModel[];
   }
 
   static async getByPropertyType(propertyType: string): Promise<PropertyModel[]> {
     const { data, error } = await supabase
-      .from(this.TABLE_NAME)
+      .from('property_models')
       .select('*')
       .eq('property_type', propertyType)
       .order('created_at', { ascending: false });
@@ -159,12 +157,12 @@ export class PropertyModelsService {
       throw new Error('Failed to fetch property models');
     }
 
-    return data || [];
+    return (data || []) as PropertyModel[];
   }
 
   static async getByPropertyMethod(propertyMethod: string): Promise<PropertyModel[]> {
     const { data, error } = await supabase
-      .from(this.TABLE_NAME)
+      .from('property_models')
       .select('*')
       .eq('property_method', propertyMethod)
       .order('created_at', { ascending: false });
@@ -174,12 +172,12 @@ export class PropertyModelsService {
       throw new Error('Failed to fetch property models');
     }
 
-    return data || [];
+    return (data || []) as PropertyModel[];
   }
 
   static async search(searchTerm: string): Promise<PropertyModel[]> {
     const { data, error } = await supabase
-      .from(this.TABLE_NAME)
+      .from('property_models')
       .select('*')
       .or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`)
       .order('created_at', { ascending: false });
@@ -189,6 +187,20 @@ export class PropertyModelsService {
       throw new Error('Failed to search property models');
     }
 
-    return data || [];
+    return (data || []) as PropertyModel[];
+  }
+
+  static async createBatch(models: CreatePropertyModelRequest[]): Promise<PropertyModel[]> {
+    const { data, error } = await supabase
+      .from('property_models')
+      .insert(models)
+      .select();
+
+    if (error) {
+      console.error('Error creating property models batch:', error);
+      throw new Error('Failed to create property models');
+    }
+
+    return (data || []) as PropertyModel[];
   }
 }

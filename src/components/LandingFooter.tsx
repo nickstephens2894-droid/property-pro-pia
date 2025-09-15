@@ -30,32 +30,32 @@ const LandingFooter = () => {
             </div>
           </div>
 
-          {/* Features */}
+          {/* Platform */}
           <div>
-            <h4 className="text-lg font-semibold text-white mb-4">Features</h4>
+            <h4 className="text-lg font-semibold text-white mb-4">Platform</h4>
             <ul className="space-y-3">
               <li>
-                <Link to="/auth" className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
-                  <Calculator className="h-4 w-4" />
-                  <span>Tax Calculations</span>
+                <Link to="/how-it-works" className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
+                  <ArrowRight className="h-4 w-4" />
+                  <span>How It Works</span>
                 </Link>
               </li>
               <li>
-                <Link to="/auth" className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
+                <Link to="/pricing" className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
+                  <Calculator className="h-4 w-4" />
+                  <span>Pricing</span>
+                </Link>
+              </li>
+              <li>
+                <Link to="/how-it-works" className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
                   <Building2 className="h-4 w-4" />
-                  <span>40-Year Projections</span>
+                  <span>Features</span>
                 </Link>
               </li>
               <li>
                 <Link to="/auth" className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
                   <Users className="h-4 w-4" />
-                  <span>Multi-Investor Modeling</span>
-                </Link>
-              </li>
-              <li>
-                <Link to="/auth" className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
-                  <ArrowRight className="h-4 w-4" />
-                  <span>Professional Reports</span>
+                  <span>Sign Up</span>
                 </Link>
               </li>
             </ul>
@@ -93,15 +93,15 @@ const LandingFooter = () => {
             <div className="text-sm text-gray-400">
               © 2024 Property Pro. All rights reserved. Professional property investment analysis platform.
             </div>
-            <div className="flex items-center gap-6 text-sm">
-              <Link to="/auth" className="text-gray-400 hover:text-white transition-colors">
+            <div className="flex flex-wrap justify-center md:justify-end gap-4 md:gap-6 text-sm">
+              <Link to="/privacy" className="text-gray-400 hover:text-white transition-colors">
                 Privacy Policy
               </Link>
-              <Link to="/auth" className="text-gray-400 hover:text-white transition-colors">
+              <Link to="/terms" className="text-gray-400 hover:text-white transition-colors">
                 Terms of Service
               </Link>
-              <Link to="/auth" className="text-gray-400 hover:text-white transition-colors">
-                Cookie Policy
+              <Link to="/how-it-works" className="text-gray-400 hover:text-white transition-colors">
+                Help
               </Link>
             </div>
           </div>

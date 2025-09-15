@@ -306,6 +306,18 @@ export const PropertyInputForm = ({
         }
       }
       
+      // Sync purchase price for construction projects when land or construction values change
+      if (propertyData.isConstructionProject && (field === 'landValue' || field === 'constructionValue')) {
+        const newLandValue = field === 'landValue' ? value : propertyData.landValue;
+        const newConstructionValue = field === 'constructionValue' ? value : propertyData.constructionValue;
+        const newPurchasePrice = newLandValue + newConstructionValue;
+        
+        // Only update if significantly different to avoid micro-adjustments
+        if (Math.abs(propertyData.purchasePrice - newPurchasePrice) > 10) {
+          updateField('purchasePrice', newPurchasePrice);
+        }
+      }
+      
       // Update holding costs when construction parameters change
       if (['landValue', 'constructionValue', 'constructionPeriod', 'constructionInterestRate'].includes(field)) {
         const costs = calculateHoldingCosts();
@@ -690,8 +702,25 @@ export const PropertyInputForm = ({
                   <Select
                     value={propertyData.currentPropertyMethod}
                     onValueChange={(value) => {
-                      updateField('currentPropertyMethod', value as PropertyMethod);
-                      updateField('isConstructionProject', value === 'house-land-construction');
+                      const newMethod = value as PropertyMethod;
+                      const wasConstruction = propertyData.isConstructionProject;
+                      const willBeConstruction = newMethod === 'house-land-construction';
+                      
+                      // Update the property method and construction flag
+                      updateField('currentPropertyMethod', newMethod);
+                      updateField('isConstructionProject', willBeConstruction);
+                      
+                      // Handle purchase price synchronization
+                      if (!wasConstruction && willBeConstruction) {
+                        // Switching TO construction: Set purchase price = land + construction
+                        const totalValue = propertyData.landValue + propertyData.constructionValue;
+                        if (totalValue > 0) {
+                          updateField('purchasePrice', totalValue);
+                        }
+                      } else if (wasConstruction && !willBeConstruction) {
+                        // Switching FROM construction: Keep current purchase price
+                        // No action needed - preserve user's purchase price
+                      }
                     }}
                   >
                     <SelectTrigger className="min-h-[44px] md:min-h-10">
@@ -1013,7 +1042,7 @@ export const PropertyInputForm = ({
                 Add Payment
               </Button>
             </div>
-            <div className="space-y-3 max-h-60 overflow-y-auto">
+            <div className="space-y-3">
               {propertyData.constructionProgressPayments?.map((payment, index) => (
                 <div key={payment.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-2 items-end bg-muted/30 p-3 rounded">
                   <div className="md:col-span-4">
@@ -1810,13 +1839,13 @@ export const PropertyInputForm = ({
 
           {/* 7. Ongoing Income & Expenses */}
           <AccordionItem value="ongoing-income-expenses" className="border-b">
-            <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
-              <div className="flex items-center gap-2 w-full">
-                <DollarSign className="h-4 w-4 text-primary" />
-                <span className="font-medium">Ongoing Income & Expenses</span>
-                <div className="ml-auto">
-                  <AccordionCompletionIndicator status={annualExpensesStatus} />
+            <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50">
+              <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <DollarSign className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
+                  <span className="font-medium text-sm md:text-base truncate">Ongoing Income & Expenses</span>
                 </div>
+                <AccordionCompletionIndicator status={annualExpensesStatus} />
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-6 pb-6">
@@ -1914,13 +1943,13 @@ export const PropertyInputForm = ({
 
           {/* 8. Tax Optimization */}
           <AccordionItem value="tax-optimization" className="border-b">
-            <AccordionTrigger className="px-6 py-4 hover:bg-muted/50">
-              <div className="flex items-center gap-2 w-full">
-                <Calculator className="h-4 w-4 text-primary" />
-                <span className="font-medium">Tax Optimization & Depreciation</span>
-                <div className="ml-auto">
-                  <AccordionCompletionIndicator status={taxOptimizationStatus} />
+            <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50">
+              <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <Calculator className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
+                  <span className="font-medium text-sm md:text-base truncate">Tax Optimization & Depreciation</span>
                 </div>
+                <AccordionCompletionIndicator status={taxOptimizationStatus} />
               </div>
             </AccordionTrigger>
            <AccordionContent className="px-6 pb-6">
@@ -2178,9 +2207,7 @@ export const PropertyInputForm = ({
                     <div className="flex-1">
                       <div className="font-medium">{investor.name}</div>
                       <div className="text-sm text-muted-foreground">
-                        Annual: ${investor.annualIncome.toLocaleString()} | 
-                        Other: ${investor.otherIncome.toLocaleString()} | 
-                        Medicare: {investor.hasMedicareLevy ? 'Yes' : 'No'}
+                        Total Income: {formatCurrency((investor.annualIncome || 0) + (investor.otherIncome || 0))}
                       </div>
                     </div>
                     <Button size="sm" variant="outline">

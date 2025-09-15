@@ -92,9 +92,36 @@ export default function EquityLoanCalculator({
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Primary Property Details */}
+          {/* Investment Project Summary */}
           <div className="space-y-4">
-            <h4 className="font-medium text-sm">Primary Property Details</h4>
+            <h4 className="font-medium text-sm">Investment Project Funding Requirement</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div className="space-y-1">
+                <span className="text-muted-foreground">Total Project Cost:</span>
+                <div className="font-medium">{formatCurrency(calculations.totalProjectCost)}</div>
+              </div>
+              <div className="space-y-1">
+                <span className="text-muted-foreground">Main Loan:</span>
+                <div className="font-medium">{formatCurrency(calculations.mainLoanAmount)}</div>
+              </div>
+              <div className="space-y-1">
+                <span className="text-muted-foreground">Cash Deposit:</span>
+                <div className="font-medium">{formatCurrency(calculations.cashDeposit)}</div>
+              </div>
+              <div className="space-y-1">
+                <span className="text-muted-foreground">Funding Gap:</span>
+                <div className={`font-medium ${calculations.fundingShortfall > 0 ? 'text-warning' : 'text-success'}`}>
+                  {formatCurrency(calculations.fundingShortfall)}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Equity Loan Security Property Details */}
+          <div className="space-y-4">
+            <h4 className="font-medium text-sm">Equity Loan Security Property Details</h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="calc-property-value" className="text-sm font-medium">
@@ -130,33 +157,6 @@ export default function EquityLoanCalculator({
                   min={0}
                   max={100}
                 />
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Investment Project Summary */}
-          <div className="space-y-4">
-            <h4 className="font-medium text-sm">Investment Project Funding Requirement</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div className="space-y-1">
-                <span className="text-muted-foreground">Total Project Cost:</span>
-                <div className="font-medium">{formatCurrency(calculations.totalProjectCost)}</div>
-              </div>
-              <div className="space-y-1">
-                <span className="text-muted-foreground">Main Loan:</span>
-                <div className="font-medium">{formatCurrency(calculations.mainLoanAmount)}</div>
-              </div>
-              <div className="space-y-1">
-                <span className="text-muted-foreground">Cash Deposit:</span>
-                <div className="font-medium">{formatCurrency(calculations.cashDeposit)}</div>
-              </div>
-              <div className="space-y-1">
-                <span className="text-muted-foreground">Funding Gap:</span>
-                <div className={`font-medium ${calculations.fundingShortfall > 0 ? 'text-warning' : 'text-success'}`}>
-                  {formatCurrency(calculations.fundingShortfall)}
-                </div>
               </div>
             </div>
           </div>

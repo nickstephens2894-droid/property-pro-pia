@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Building2, Edit, Trash2, Copy, Search } from "lucide-react";
+import { Plus, Building2, Edit, Trash2, Copy, Search, Upload, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -13,6 +13,8 @@ import { useProperties } from "@/contexts/PropertiesContext";
 import { type PropertyModel } from "@/types/propertyModels";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { useToast } from "@/components/ui/use-toast";
+import { PropertyImportDialog } from "@/components/PropertyImportDialog";
+import { CsvImportService } from "@/utils/csvImport";
 
 
 
@@ -26,11 +28,20 @@ const Properties = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [propertyToDelete, setPropertyToDelete] = useState<string | null>(null);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
 
 
   const handleCreateProperty = () => {
     navigate('/properties/create');
+  };
+
+  const handleImportProperties = () => {
+    setImportDialogOpen(true);
+  };
+
+  const handleDownloadTemplate = () => {
+    CsvImportService.downloadCsvTemplate();
   };
 
   const handleEditProperty = (propertyId: string) => {
@@ -134,10 +145,20 @@ const Properties = () => {
               Create and manage property templates for quick instance setup
             </p>
           </div>
-          <Button onClick={handleCreateProperty} size="lg">
-            <Plus className="h-4 w-4 mr-2" />
-            Create Property
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleDownloadTemplate} size="lg">
+              <Download className="h-4 w-4 mr-2" />
+              CSV Template
+            </Button>
+            <Button variant="outline" onClick={handleImportProperties} size="lg">
+              <Upload className="h-4 w-4 mr-2" />
+              Import Properties
+            </Button>
+            <Button onClick={handleCreateProperty} size="lg">
+              <Plus className="h-4 w-4 mr-2" />
+              Create Property
+            </Button>
+          </div>
         </div>
 
 
@@ -256,6 +277,15 @@ const Properties = () => {
         variant="destructive"
         onConfirm={confirmDelete}
         onCancel={deletingProperty ? undefined : () => setPropertyToDelete(null)}
+      />
+
+      {/* Import Dialog */}
+      <PropertyImportDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onImportComplete={() => {
+          // Properties will be refreshed automatically via the context
+        }}
       />
     </div>
   );

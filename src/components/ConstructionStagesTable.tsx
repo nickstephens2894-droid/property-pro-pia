@@ -107,7 +107,7 @@ export const ConstructionStagesTable = ({
           </Button>
         </div>
 
-        <div className="space-y-3 max-h-80 overflow-y-auto">
+        <div className="space-y-3">
           {stages.map((stage, index) => (
             <div key={stage.id} className="grid grid-cols-12 gap-3 items-end bg-muted/30 p-3 rounded-lg">
               <div className="col-span-5">

@@ -201,7 +201,8 @@ const InstanceDetail = () => {
               depreciationMethod: instanceData.depreciation_method as "prime-cost" | "diminishing-value",
               isNewProperty: instanceData.is_new_property,
               currentPropertyMethod: instanceData.property_method as any,
-              currentFundingMethod: instanceData.funding_method as any
+              currentFundingMethod: instanceData.funding_method as any,
+              propertyState: instanceData.property_state as any
             }, instanceData.property_method as any, instanceData.funding_method as any);
             setIsDataLoaded(true);
             console.log('✅ Instance data loaded and applied');
@@ -1363,115 +1364,40 @@ const InstanceDetail = () => {
 
         {/* Main Content with Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className={`grid w-full grid-cols-2 ${isMobile ? 'h-12' : ''}`}>
+          <TabsList className={`grid w-full grid-cols-3 ${isMobile ? 'h-12' : ''}`}>
             <TabsTrigger value="analysis" className={isMobile ? 'text-sm' : ''}>Analysis</TabsTrigger>
             <TabsTrigger value="projections" className={isMobile ? 'text-sm' : ''}>Projections</TabsTrigger>
+            <TabsTrigger value="summary" className={isMobile ? 'text-sm' : ''}>Summary</TabsTrigger>
           </TabsList>
 
           {/* Analysis Tab */}
           <TabsContent value="analysis" className="space-y-6">
-            <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-12'}`}>
-              {/* Property Investment Details - Left Side */}
-              <div className={isMobile ? 'col-span-1' : 'col-span-7'}>
-                <div className="sticky top-4">
-                  <PropertyInputForm
-                    propertyData={propertyData}
-                    updateField={enhancedUpdateField}
-                    investorTaxResults={investorTaxResults}
-                    totalTaxableIncome={0} // Will be calculated
-                    marginalTaxRate={0.3} // Will be calculated
-                    isEditMode={isEditMode}
-                  />
-                </div>
-              </div>
-              
-              {/* Right Side - Summaries */}
-              <div className={isMobile ? 'col-span-1' : 'col-span-5'}>
-                <div className="space-y-6">
-                  <FundingSummaryPanel />
-                    <PropertyCalculationDetails
-                      monthlyRepayment={monthlyPayments.total}
-                      annualRepayment={monthlyPayments.total * 12}
-                      annualRent={investmentSummary.annualRentFromProjections}
-                      propertyManagementCost={investmentSummary.annualRentFromProjections * (propertyData.propertyManagement || 0.07) / 100}
-                     councilRates={propertyData.councilRates || 0}
-                     insurance={propertyData.insurance || 0}
-                     repairs={propertyData.repairs || 0}
-                      totalDeductibleExpenses={totalDeductibleExpenses}
-                     cashDeductionsSubtotal={cashDeductions}
-                     paperDeductionsSubtotal={paperDeductions}
-                     depreciation={{
-                       capitalWorks: depreciation.capitalWorks,
-                       plantEquipment: depreciation.plantEquipment,
-                       total: depreciation.total,
-                       capitalWorksAvailable: propertyData.constructionYear >= 1987,
-                       plantEquipmentRestricted: !propertyData.isNewProperty
-                     }}
-                     investorTaxResults={investorTaxResults}
-                     totalTaxWithProperty={investorTaxResults.reduce((sum, result) => sum + (result.taxWithProperty || 0), 0)}
-                     totalTaxWithoutProperty={investorTaxResults.reduce((sum, result) => sum + (result.taxWithoutProperty || 0), 0)}
-                     marginalTaxRate={investmentSummary.marginalTaxRateSummary}
-                     purchasePrice={propertyData.purchasePrice || 0}
-                     constructionYear={propertyData.constructionYear || 2020}
-                     depreciationMethod={propertyData.depreciationMethod || 'prime-cost'}
-                     isConstructionProject={propertyData.isConstructionProject || false}
-                     totalProjectCost={totalProjectCost}
-                     holdingCosts={{
-                       landInterest: holdingCosts.landInterest,
-                       constructionInterest: holdingCosts.constructionInterest,
-                       total: holdingCosts.total
-                     }}
-                     funding={{
-                       totalRequired: totalProjectCost,
-                       equityUsed: funding.equityLoanAmount,
-                       cashRequired: totalProjectCost - funding.mainLoanAmount - funding.equityLoanAmount,
-                       availableEquity: 0, // Will be calculated
-                       loanAmount: funding.mainLoanAmount
-                     }}
-                     outOfPocketHoldingCosts={0} // Will be calculated
-                     capitalizedHoldingCosts={0} // Will be calculated
-                     actualCashInvested={0} // Will be calculated
-                     constructionPeriod={propertyData.constructionPeriod || 0}
-                     holdingCostFunding={propertyData.holdingCostFunding || 'cash'}
-                     mainLoanPayments={{
-                       ioPayment: loanPaymentDetails.mainLoanDetails.ioPayment,
-                       piPayment: loanPaymentDetails.mainLoanDetails.piPayment,
-                       ioTermYears: loanPaymentDetails.mainLoanDetails.ioTermYears,
-                       remainingTerm: (propertyData.loanTerm || 30) - loanPaymentDetails.mainLoanDetails.ioTermYears,
-                       totalInterest: (propertyData.loanAmount || 0) * (propertyData.interestRate || 6) / 100,
-                       currentPayment: loanPaymentDetails.mainLoanDetails.isIO && loanPaymentDetails.mainLoanDetails.ioTermYears > 0 ? loanPaymentDetails.mainLoanDetails.ioPayment : loanPaymentDetails.mainLoanDetails.piPayment,
-                       futurePayment: loanPaymentDetails.mainLoanDetails.isIO && loanPaymentDetails.mainLoanDetails.ioTermYears > 0 ? loanPaymentDetails.mainLoanDetails.piPayment : 0
-                     }}
-                     equityLoanPayments={loanPaymentDetails.equityLoanDetails ? {
-                       ioPayment: loanPaymentDetails.equityLoanDetails.ioPayment,
-                       piPayment: loanPaymentDetails.equityLoanDetails.piPayment,
-                       ioTermYears: loanPaymentDetails.equityLoanDetails.ioTermYears,
-                       remainingTerm: (propertyData.equityLoanTerm || 30) - loanPaymentDetails.equityLoanDetails.ioTermYears,
-                       totalInterest: (equityLoanAmount || 0) * (propertyData.equityLoanInterestRate || 7.2) / 100,
-                       currentPayment: loanPaymentDetails.equityLoanDetails.isIO && loanPaymentDetails.equityLoanDetails.ioTermYears > 0 ? loanPaymentDetails.equityLoanDetails.ioPayment : loanPaymentDetails.equityLoanDetails.piPayment,
-                       futurePayment: loanPaymentDetails.equityLoanDetails.isIO && loanPaymentDetails.equityLoanDetails.ioTermYears > 0 ? loanPaymentDetails.equityLoanDetails.piPayment : 0
-                      } : null}
-                      totalAnnualInterest={annualInterest}
-                      taxRefundOrLiability={totalTaxRefundOrLiability}
-                      netOfTaxCostIncome={netOfTaxCostIncome}
-                    />
-                </div>
-              </div>
+            {/* Single Column Layout */}
+            <div className="space-y-6">
+              {/* Investment Details - First */}
+              <PropertyInputForm
+                propertyData={propertyData}
+                updateField={enhancedUpdateField}
+                investorTaxResults={investorTaxResults}
+                totalTaxableIncome={0} // Will be calculated
+                marginalTaxRate={0.3} // Will be calculated
+                isEditMode={isEditMode}
+              />
+
+              {/* Investment Summary Dashboard - Second */}
+              <PropertySummaryDashboard
+                weeklyCashflowYear1={investmentSummary.weeklyAfterTaxCashFlowSummary}
+                taxSavingsYear1={investmentSummary.taxBenefitFromProjections}
+                taxSavingsTotal={investmentSummary.taxSavingsTotal}
+                netEquityAtYearTo={investmentSummary.equityAtYearTo}
+                roiAtYearTo={investmentSummary.roiAtYearTo}
+                yearTo={yearRange[1]}
+              />
             </div>
           </TabsContent>
 
           {/* Projections Tab */}
           <TabsContent value="projections" className="space-y-6">
-            {/* Investment Summary Dashboard */}
-            <PropertySummaryDashboard
-              weeklyCashflowYear1={investmentSummary.weeklyAfterTaxCashFlowSummary}
-              taxSavingsYear1={investmentSummary.taxBenefitFromProjections}
-              taxSavingsTotal={investmentSummary.taxSavingsTotal}
-              netEquityAtYearTo={investmentSummary.equityAtYearTo}
-              roiAtYearTo={investmentSummary.roiAtYearTo}
-              yearTo={yearRange[1]}
-            />
-
             {/* Projections Table */}
             <Card>
               <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -1533,6 +1459,83 @@ const InstanceDetail = () => {
                 />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Summary Tab */}
+          <TabsContent value="summary" className="space-y-6">
+            {/* Single Column Layout */}
+            <div className="space-y-6">
+              {/* Funding & Finance Structure - First */}
+              <FundingSummaryPanel />
+
+              {/* Financial Analysis - Second */}
+              <PropertyCalculationDetails
+                monthlyRepayment={monthlyPayments.total}
+                annualRepayment={monthlyPayments.total * 12}
+                annualRent={investmentSummary.annualRentFromProjections}
+                propertyManagementCost={investmentSummary.annualRentFromProjections * (propertyData.propertyManagement || 0.07) / 100}
+                councilRates={propertyData.councilRates || 0}
+                insurance={propertyData.insurance || 0}
+                repairs={propertyData.repairs || 0}
+                totalDeductibleExpenses={totalDeductibleExpenses}
+                cashDeductionsSubtotal={cashDeductions}
+                paperDeductionsSubtotal={paperDeductions}
+                depreciation={{
+                  capitalWorks: depreciation.capitalWorks,
+                  plantEquipment: depreciation.plantEquipment,
+                  total: depreciation.total,
+                  capitalWorksAvailable: propertyData.constructionYear >= 1987,
+                  plantEquipmentRestricted: !propertyData.isNewProperty
+                }}
+                investorTaxResults={investorTaxResults}
+                totalTaxWithProperty={investorTaxResults.reduce((sum, result) => sum + (result.taxWithProperty || 0), 0)}
+                totalTaxWithoutProperty={investorTaxResults.reduce((sum, result) => sum + (result.taxWithoutProperty || 0), 0)}
+                marginalTaxRate={investmentSummary.marginalTaxRateSummary}
+                purchasePrice={propertyData.purchasePrice || 0}
+                constructionYear={propertyData.constructionYear || 2020}
+                depreciationMethod={propertyData.depreciationMethod || 'prime-cost'}
+                isConstructionProject={propertyData.isConstructionProject || false}
+                totalProjectCost={totalProjectCost}
+                holdingCosts={{
+                  landInterest: holdingCosts.landInterest,
+                  constructionInterest: holdingCosts.constructionInterest,
+                  total: holdingCosts.total
+                }}
+                funding={{
+                  totalRequired: totalProjectCost,
+                  equityUsed: funding.equityLoanAmount,
+                  cashRequired: totalProjectCost - funding.mainLoanAmount - funding.equityLoanAmount,
+                  availableEquity: 0, // Will be calculated
+                  loanAmount: funding.mainLoanAmount
+                }}
+                outOfPocketHoldingCosts={0} // Will be calculated
+                capitalizedHoldingCosts={0} // Will be calculated
+                actualCashInvested={0} // Will be calculated
+                constructionPeriod={propertyData.constructionPeriod || 0}
+                holdingCostFunding={propertyData.holdingCostFunding || 'cash'}
+                mainLoanPayments={{
+                  ioPayment: loanPaymentDetails.mainLoanDetails.ioPayment,
+                  piPayment: loanPaymentDetails.mainLoanDetails.piPayment,
+                  ioTermYears: loanPaymentDetails.mainLoanDetails.ioTermYears,
+                  remainingTerm: (propertyData.loanTerm || 30) - loanPaymentDetails.mainLoanDetails.ioTermYears,
+                  totalInterest: (propertyData.loanAmount || 0) * (propertyData.interestRate || 6) / 100,
+                  currentPayment: loanPaymentDetails.mainLoanDetails.isIO && loanPaymentDetails.mainLoanDetails.ioTermYears > 0 ? loanPaymentDetails.mainLoanDetails.ioPayment : loanPaymentDetails.mainLoanDetails.piPayment,
+                  futurePayment: loanPaymentDetails.mainLoanDetails.isIO && loanPaymentDetails.mainLoanDetails.ioTermYears > 0 ? loanPaymentDetails.mainLoanDetails.piPayment : 0
+                }}
+                equityLoanPayments={loanPaymentDetails.equityLoanDetails ? {
+                  ioPayment: loanPaymentDetails.equityLoanDetails.ioPayment,
+                  piPayment: loanPaymentDetails.equityLoanDetails.piPayment,
+                  ioTermYears: loanPaymentDetails.equityLoanDetails.ioTermYears,
+                  remainingTerm: (propertyData.equityLoanTerm || 30) - loanPaymentDetails.equityLoanDetails.ioTermYears,
+                  totalInterest: (equityLoanAmount || 0) * (propertyData.equityLoanInterestRate || 7.2) / 100,
+                  currentPayment: loanPaymentDetails.equityLoanDetails.isIO && loanPaymentDetails.equityLoanDetails.ioTermYears > 0 ? loanPaymentDetails.equityLoanDetails.ioPayment : loanPaymentDetails.equityLoanDetails.piPayment,
+                  futurePayment: loanPaymentDetails.equityLoanDetails.isIO && loanPaymentDetails.equityLoanDetails.ioTermYears > 0 ? loanPaymentDetails.equityLoanDetails.piPayment : 0
+                 } : null}
+                totalAnnualInterest={annualInterest}
+                taxRefundOrLiability={totalTaxRefundOrLiability}
+                netOfTaxCostIncome={netOfTaxCostIncome}
+              />
+            </div>
           </TabsContent>
         </Tabs>
         
