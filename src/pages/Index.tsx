@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import LandingHero from "@/components/LandingHero";
-import LandingScenarios from "@/components/LandingScenarios";
+import LandingFeatures from "@/components/LandingFeatures";
+import LandingSocialProof from "@/components/LandingSocialProof";
 import LandingCTA from "@/components/LandingCTA";
 import LandingFooter from "@/components/LandingFooter";
 
@@ -75,11 +76,12 @@ const Index = () => {
     );
   }
 
-  // Home page for all users (authenticated and unauthenticated)
+  // Streamlined home page with 4 focused sections
   return (
     <main className="min-h-screen">
       <LandingHero />
-      <LandingScenarios />
+      <LandingSocialProof />
+      <LandingFeatures />
       <LandingCTA />
       <LandingFooter />
     </main>

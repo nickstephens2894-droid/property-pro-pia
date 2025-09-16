@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { calculateStampDuty, formatCurrencyAUD, type Jurisdiction } from "@/utils/stampDuty";
 import { usePropertyData } from "@/contexts/PropertyDataContext";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,14 @@ export default function StampDutyCalculator({
   isConstructionProject: overrideIsConstructionProject 
 }: StampDutyCalculatorProps) {
   const { propertyData, updateField } = usePropertyData();
-  const [jurisdiction, setJurisdiction] = useState<Jurisdiction>((propertyData as any).PropertyState || "VIC");
+  const [jurisdiction, setJurisdiction] = useState<Jurisdiction>(propertyData.propertyState || "VIC");
+
+  // Sync jurisdiction with property data state
+  useEffect(() => {
+    if (propertyData.propertyState) {
+      setJurisdiction(propertyData.propertyState as Jurisdiction);
+    }
+  }, [propertyData.propertyState]);
 
   // Use override values if provided, otherwise fall back to context
   const isConstructionProject = overrideIsConstructionProject ?? propertyData.isConstructionProject;
@@ -40,7 +47,7 @@ export default function StampDutyCalculator({
     } else {
       // Context mode - update PropertyDataContext
       updateField("stampDuty", duty);
-      updateField("PropertyState" as any, jurisdiction);
+      updateField("propertyState", jurisdiction);
     }
     onOpenChange(false);
   };

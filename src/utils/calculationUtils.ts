@@ -61,8 +61,9 @@ export const validatePropertyValues = (propertyData: PropertyData): {
   // Construction project validations
   if (propertyData.isConstructionProject) {
     const totalConstructionValue = propertyData.landValue + propertyData.constructionValue;
-    if (Math.abs(totalConstructionValue - propertyData.purchasePrice) > PROPERTY_CONSTANTS.VALUE_TOLERANCE) {
-      errors.push(`Land value (${propertyData.landValue}) + Construction value (${propertyData.constructionValue}) should equal Purchase price (${propertyData.purchasePrice})`);
+    const priceDifference = Math.abs(totalConstructionValue - propertyData.purchasePrice);
+    if (priceDifference > PROPERTY_CONSTANTS.VALUE_TOLERANCE) {
+      errors.push(`Land + Construction values (${formatFinancialValue(totalConstructionValue)}) should equal Purchase price (${formatFinancialValue(propertyData.purchasePrice)}). Difference: ${formatFinancialValue(priceDifference)}. This may occur when switching property methods - values will auto-sync.`);
     }
     
     const totalBuildingValue = propertyData.buildingValue + propertyData.plantEquipmentValue;

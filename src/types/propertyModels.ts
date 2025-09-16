@@ -25,13 +25,6 @@ export interface PropertyModel {
   building_value: number;
   plant_equipment_value: number;
   
-  // Construction Progress Payments
-  construction_progress_payments: Array<{
-    id: string;
-    percentage: number;
-    month: number;
-    description: string;
-  }>;
   
   // Transaction Costs
   stamp_duty: number;
@@ -56,7 +49,7 @@ export interface PropertyModel {
   updated_at: string;
 }
 
-export interface CreatePropertyModelRequest {
+export interface CreatePropertyFormData {
   name: string;
   description?: string;
   property_type: PropertyModel['property_type'];
@@ -74,12 +67,6 @@ export interface CreatePropertyModelRequest {
   construction_interest_rate: number;
   building_value: number;
   plant_equipment_value: number;
-  construction_progress_payments: Array<{
-    id: string;
-    percentage: number;
-    month: number;
-    description: string;
-  }>;
   stamp_duty: number;
   legal_fees: number;
   inspection_fees: number;
@@ -92,6 +79,10 @@ export interface CreatePropertyModelRequest {
   repairs: number;
   depreciation_method: PropertyModel['depreciation_method'];
   is_new_property: boolean;
+}
+
+export interface CreatePropertyModelRequest extends CreatePropertyFormData {
+  owner_user_id: string;
 }
 
 export interface UpdatePropertyModelRequest extends Partial<CreatePropertyModelRequest> {
