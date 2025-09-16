@@ -3,17 +3,36 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from "@/components/ui/collapsible";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { NumberInput } from "@/components/ui/number-input";
 import { FieldUpdateConfirmDialog } from "@/components/FieldUpdateConfirmDialog";
 import { AccordionCompletionIndicator } from "@/components/AccordionCompletionIndicator";
 import { FundingSummaryPanel } from "@/components/FundingSummaryPanel";
+import { AddFundingDialog } from "@/components/AddFundingDialog";
+import { FundingCard } from "@/components/FundingCard";
+import { useFunding } from "@/contexts/FundingContext";
+import { InstanceFunding } from "@/types/funding";
 
 import { ValidationWarnings } from "@/components/ValidationWarnings";
 import StampDutyCalculator from "@/components/StampDutyCalculator";
@@ -23,25 +42,71 @@ import { useInputProtection } from "@/hooks/useInputProtection";
 import { usePropertyData, PropertyData } from "@/contexts/PropertyDataContext";
 import { useRepo, type Investor } from "@/services/repository";
 import { formatCurrency } from "@/utils/formatters";
-import { 
-  validatePersonalProfile, 
-  validatePropertyBasics, 
-  validateFinancing, 
-  validatePurchaseCosts, 
+import {
+  validatePersonalProfile,
+  validatePropertyBasics,
+  validateFinancing,
+  validatePurchaseCosts,
   validateAnnualExpenses,
   validateConstruction,
-  validateTaxOptimization
+  validateTaxOptimization,
 } from "@/utils/validationUtils";
-import { Users, Home, Receipt, Calculator, Building2, Hammer, CreditCard, Clock, DollarSign, TrendingUp, Percent, X, Plus, AlertTriangle, Info, Search, Check, ChevronDown, Wrench } from "lucide-react";
+import {
+  Users,
+  Home,
+  Receipt,
+  Calculator,
+  Building2,
+  Hammer,
+  CreditCard,
+  Clock,
+  DollarSign,
+  TrendingUp,
+  Percent,
+  X,
+  Plus,
+  AlertTriangle,
+  Info,
+  Search,
+  Check,
+  ChevronDown,
+  Wrench,
+} from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { formatFinancialValue } from "@/utils/calculationUtils";
-import { PROPERTY_METHODS, FUNDING_METHODS, type PropertyMethod, type FundingMethod, getFundingMethodData } from "@/types/presets";
+import {
+  PROPERTY_METHODS,
+  FUNDING_METHODS,
+  type PropertyMethod,
+  type FundingMethod,
+  getFundingMethodData,
+} from "@/types/presets";
 import { calculateStampDuty, type Jurisdiction } from "@/utils/stampDuty";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
-const JURISDICTIONS: Jurisdiction[] = ["ACT", "NSW", "NT", "QLD", "SA", "TAS", "VIC", "WA"];
+const JURISDICTIONS: Jurisdiction[] = [
+  "ACT",
+  "NSW",
+  "NT",
+  "QLD",
+  "SA",
+  "TAS",
+  "VIC",
+  "WA",
+];
 
 interface InvestorData {
   id: string;
@@ -55,7 +120,6 @@ interface OwnershipAllocation {
   investorId: string;
   ownershipPercentage: number;
 }
-
 
 interface InvestorTaxResult {
   investor: Investor;
@@ -75,16 +139,16 @@ interface PropertyInputFormProps {
   marginalTaxRate: number;
   selectedModel?: any; // Optional prop for selected model
   isEditMode?: boolean; // Add edit mode prop
+  instanceId?: string; // Instance ID for funding functionality
 }
 
-
-const PercentageInput = ({ 
-  id, 
-  value, 
-  onChange, 
+const PercentageInput = ({
+  id,
+  value,
+  onChange,
   step = "0.1",
   placeholder = "0",
-  className = ""
+  className = "",
 }: {
   id: string;
   value: number;
@@ -93,7 +157,9 @@ const PercentageInput = ({
   placeholder?: string;
   className?: string;
 }) => {
-  const [displayValue, setDisplayValue] = useState<string>(value?.toFixed(1) || '');
+  const [displayValue, setDisplayValue] = useState<string>(
+    value?.toFixed(1) || ""
+  );
   const [isFocused, setIsFocused] = useState(false);
   const [lastExternalValue, setLastExternalValue] = useState(value);
 
@@ -119,9 +185,9 @@ const PercentageInput = ({
     const inputValue = e.target.value;
     // Allow any input while typing - we'll validate and format on blur
     setDisplayValue(inputValue);
-    
+
     // Protect this field from external updates while editing
-    if (typeof onChange === 'function') {
+    if (typeof onChange === "function") {
       // Get field protection if available through context
       const protectField = (window as any).__protectField;
       if (protectField) {
@@ -133,17 +199,21 @@ const PercentageInput = ({
   const handleBlur = () => {
     setIsFocused(false);
     const raw = displayValue.trim();
-    
+
     // Clean the input to only allow numbers and decimal points
-    const cleanedInput = raw.replace(/[^\d.]/g, '');
-    
+    const cleanedInput = raw.replace(/[^\d.]/g, "");
+
     // Handle multiple decimal points by keeping only the first one
-    const parts = cleanedInput.split('.');
-    const validInput = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : cleanedInput;
-    
+    const parts = cleanedInput.split(".");
+    const validInput =
+      parts.length > 2
+        ? parts[0] + "." + parts.slice(1).join("")
+        : cleanedInput;
+
     // Convert to number, defaulting to 0 if invalid
-    const numericValue = validInput === "" || validInput === "." ? 0 : parseFloat(validInput);
-    
+    const numericValue =
+      validInput === "" || validInput === "." ? 0 : parseFloat(validInput);
+
     setLastExternalValue(numericValue);
     onChange(numericValue);
     // Re-apply formatting after editing (keep empty if user cleared)
@@ -162,30 +232,33 @@ const PercentageInput = ({
         placeholder={placeholder}
         className={`pr-8 ${className}`}
       />
-      <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">%</span>
+      <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+        %
+      </span>
     </div>
   );
 };
 
-export const PropertyInputForm = ({ 
-  propertyData, 
-  updateField, 
+export const PropertyInputForm = ({
+  propertyData,
+  updateField,
   investorTaxResults,
-  totalTaxableIncome, 
+  totalTaxableIncome,
   marginalTaxRate,
   selectedModel,
-  isEditMode = false 
+  isEditMode = false,
+  instanceId: propInstanceId,
 }: PropertyInputFormProps) => {
   const isMobile = useIsMobile();
   const [openSections, setOpenSections] = useState<string[]>([]);
-  
+
   // Ensure sections are collapsed on initial load
   useEffect(() => {
     setOpenSections([]);
   }, []);
   const { confirmations, updateConfirmation } = useFieldConfirmations();
   const { protectField, isFieldProtected } = useInputProtection();
-  
+
   // Make protectField available globally for input components
   useEffect(() => {
     (window as any).__protectField = protectField;
@@ -193,22 +266,70 @@ export const PropertyInputForm = ({
       delete (window as any).__protectField;
     };
   }, [protectField]);
-  const { applyPreset, calculateEquityLoanAmount, calculateAvailableEquity, calculateHoldingCosts: ctxCalculateHoldingCosts, calculateFundingAnalysis } = usePropertyData();
+  const {
+    applyPreset,
+    calculateEquityLoanAmount,
+    calculateAvailableEquity,
+    calculateHoldingCosts: ctxCalculateHoldingCosts,
+    calculateFundingAnalysis,
+  } = usePropertyData();
   const [pendingUpdate, setPendingUpdate] = useState<{
     field: keyof PropertyData;
     value: any;
-    confirmationType: 'construction' | 'building';
+    confirmationType: "construction" | "building";
   } | null>(null);
   const [dutyCalcOpen, setDutyCalcOpen] = useState(false);
   const [showEquityCalculator, setShowEquityCalculator] = useState(false);
-  
+
   // Investor selection dialog state
   const [isInvestorDialogOpen, setIsInvestorDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const { investors } = useRepo();
 
+  // Funding dialog state
+  const [showAddFundingDialog, setShowAddFundingDialog] = useState(false);
+  const [editingFunding, setEditingFunding] = useState<InstanceFunding | null>(
+    null
+  );
+
+  // Funding context
+  const {
+    instanceFundings: allInstanceFundings,
+    addInstanceFunding,
+    updateInstanceFunding,
+    removeInstanceFunding,
+    loading: fundingLoading,
+  } = useFunding();
+
+  // Get instance ID from props or use temp instance
+  const instanceId = propInstanceId || "temp-instance";
+
+  // Filter fundings for this specific instance
+  const instanceFundings = allInstanceFundings.filter(
+    (f) => f.instance_id === instanceId
+  );
+
+  // Funding handlers
+  const handleFundingAdded = (funding: InstanceFunding) => {
+    setShowAddFundingDialog(false);
+  };
+
+  const handleEditFunding = (funding: InstanceFunding) => {
+    setEditingFunding(funding);
+    setShowAddFundingDialog(true);
+  };
+
+  const handleRemoveFunding = async (fundingId: string) => {
+    await removeInstanceFunding(fundingId);
+  };
+
+  const handleUpdateAmount = async (fundingId: string, amount: number) => {
+    await updateInstanceFunding(fundingId, { amount_allocated: amount });
+  };
+
   // Calculate total construction value
-  const totalConstructionValue = propertyData.buildingValue + propertyData.plantEquipmentValue;
+  const totalConstructionValue =
+    propertyData.buildingValue + propertyData.plantEquipmentValue;
 
   // Calculate holding costs during construction
   const calculateHoldingCosts = () => {
@@ -216,132 +337,197 @@ export const PropertyInputForm = ({
     return {
       landHoldingInterest: costs.landInterest,
       constructionHoldingInterest: costs.constructionInterest,
-      totalHoldingCosts: costs.total
+      totalHoldingCosts: costs.total,
     };
   };
 
-  const holdingCosts = propertyData.isConstructionProject ? calculateHoldingCosts() : {
-    landHoldingInterest: 0,
-    constructionHoldingInterest: 0,
-    totalHoldingCosts: 0
-  };
+  const holdingCosts = propertyData.isConstructionProject
+    ? calculateHoldingCosts()
+    : {
+        landHoldingInterest: 0,
+        constructionHoldingInterest: 0,
+        totalHoldingCosts: 0,
+      };
 
   // State to prevent cascade loops
   const [isUpdatingCascade, setIsUpdatingCascade] = useState(false);
 
   // Enhanced updateField with cascading updates and confirmations
-  const updateFieldWithCascade = useCallback((field: keyof PropertyData, value: any) => {
-    console.log('🔄 updateFieldWithCascade:', field, value, 'isUpdatingCascade:', isUpdatingCascade);
-    
-    // Protect the field being updated
-    protectField(field as string, 2000);
-    
-    // Prevent cascading updates during cascade execution
-    if (isUpdatingCascade) {
+  const updateFieldWithCascade = useCallback(
+    (field: keyof PropertyData, value: any) => {
+      console.log(
+        "🔄 updateFieldWithCascade:",
+        field,
+        value,
+        "isUpdatingCascade:",
+        isUpdatingCascade
+      );
+
+      // Protect the field being updated
+      protectField(field as string, 2000);
+
+      // Prevent cascading updates during cascade execution
+      if (isUpdatingCascade) {
+        updateField(field, value);
+        return;
+      }
+
+      // Handle construction contract value with confirmation
+      if (
+        field === "constructionValue" &&
+        !confirmations.hasShownConstructionWarning
+      ) {
+        setPendingUpdate({ field, value, confirmationType: "construction" });
+        return;
+      }
+
+      // Handle building/equipment values with confirmation
+      if (
+        (field === "buildingValue" || field === "plantEquipmentValue") &&
+        !confirmations.hasShownBuildingWarning
+      ) {
+        setPendingUpdate({ field, value, confirmationType: "building" });
+        return;
+      }
+
+      // Execute the update
+      executeFieldUpdate(field, value);
+    },
+    [propertyData, updateField, confirmations, isUpdatingCascade, protectField]
+  );
+
+  const executeFieldUpdate = useCallback(
+    (field: keyof PropertyData, value: any) => {
+      console.log(
+        "⚡ executeFieldUpdate:",
+        field,
+        value,
+        "current:",
+        propertyData[field]
+      );
+
+      // Update the field first
       updateField(field, value);
-      return;
-    }
 
-    // Handle construction contract value with confirmation
-    if (field === 'constructionValue' && !confirmations.hasShownConstructionWarning) {
-      setPendingUpdate({ field, value, confirmationType: 'construction' });
-      return;
-    }
-    
-    // Handle building/equipment values with confirmation
-    if ((field === 'buildingValue' || field === 'plantEquipmentValue') && !confirmations.hasShownBuildingWarning) {
-      setPendingUpdate({ field, value, confirmationType: 'building' });
-      return;
-    }
-    
-    // Execute the update
-    executeFieldUpdate(field, value);
-  }, [propertyData, updateField, confirmations, isUpdatingCascade, protectField]);
+      // Prevent infinite loops during cascade updates
+      if (isUpdatingCascade) return;
 
-  const executeFieldUpdate = useCallback((field: keyof PropertyData, value: any) => {
-    console.log('⚡ executeFieldUpdate:', field, value, 'current:', propertyData[field]);
-    
-    // Update the field first
-    updateField(field, value);
-    
-    // Prevent infinite loops during cascade updates
-    if (isUpdatingCascade) return;
-    
-    setIsUpdatingCascade(true);
-    
-    // Handle cascading updates with debouncing - aligned with protection timeout
-    setTimeout(() => {
-      console.log('🔄 Cascade timeout executing for field:', field);
-      
-      if (field === 'constructionValue' && !isFieldProtected('buildingValue') && !isFieldProtected('plantEquipmentValue')) {
-        // Only split if the value actually changed and target fields aren't protected
-        const currentTotal = propertyData.buildingValue + propertyData.plantEquipmentValue;
-        console.log('🏗️ Construction value split check:', { value, currentTotal, diff: Math.abs(currentTotal - value) });
-        
-        if (Math.abs(currentTotal - value) > 100) {
-          const buildingValue = Math.round(value * 0.9);
-          const plantEquipmentValue = Math.round(value * 0.1);
-          console.log('🏗️ Splitting construction value:', { buildingValue, plantEquipmentValue });
-          updateField('buildingValue', buildingValue);
-          updateField('plantEquipmentValue', plantEquipmentValue);
-        }
-      } else if ((field === 'buildingValue' || field === 'plantEquipmentValue') && !isFieldProtected('constructionValue')) {
-        // Update construction contract value when building/equipment changes, if not protected
-        const newBuildingValue = field === 'buildingValue' ? value : propertyData.buildingValue;
-        const newPlantEquipmentValue = field === 'plantEquipmentValue' ? value : propertyData.plantEquipmentValue;
-        const newTotal = newBuildingValue + newPlantEquipmentValue;
-        
-        console.log('🏗️ Building/equipment update:', { 
-          field, 
-          value, 
-          newTotal, 
-          currentConstructionValue: propertyData.constructionValue,
-          diff: Math.abs(propertyData.constructionValue - newTotal)
-        });
-        
-        // Only update if the total actually differs
-        if (Math.abs(propertyData.constructionValue - newTotal) > 10) {
-          console.log('🏗️ Updating construction value to:', newTotal);
-          updateField('constructionValue', newTotal);
-        }
-      }
-      
-      // Sync purchase price for construction projects when land or construction values change
-      if (propertyData.isConstructionProject && (field === 'landValue' || field === 'constructionValue')) {
-        const newLandValue = field === 'landValue' ? value : propertyData.landValue;
-        const newConstructionValue = field === 'constructionValue' ? value : propertyData.constructionValue;
-        const newPurchasePrice = newLandValue + newConstructionValue;
-        
-        // Only update if significantly different to avoid micro-adjustments
-        if (Math.abs(propertyData.purchasePrice - newPurchasePrice) > 10) {
-          updateField('purchasePrice', newPurchasePrice);
-        }
-      }
-      
-      // Update holding costs when construction parameters change
-      if (['landValue', 'constructionValue', 'constructionPeriod', 'constructionInterestRate'].includes(field)) {
-        const costs = calculateHoldingCosts();
-        updateField('landHoldingInterest', costs.landHoldingInterest);
-        updateField('constructionHoldingInterest', costs.constructionHoldingInterest);
-        updateField('totalHoldingCosts', costs.totalHoldingCosts);
-      }
-      
-      setIsUpdatingCascade(false);
-    }, 500); // Increased timeout to allow protection to fully establish
-  }, [propertyData, updateField, isUpdatingCascade, isFieldProtected]);
+      setIsUpdatingCascade(true);
 
-  const handleConfirmUpdate = useCallback((dontShowAgain: boolean) => {
-    if (!pendingUpdate) return;
-    
-    if (pendingUpdate.confirmationType === 'construction') {
-      updateConfirmation('hasShownConstructionWarning', dontShowAgain);
-    } else {
-      updateConfirmation('hasShownBuildingWarning', dontShowAgain);
-    }
-    
-    executeFieldUpdate(pendingUpdate.field, pendingUpdate.value);
-    setPendingUpdate(null);
-  }, [pendingUpdate, updateConfirmation, executeFieldUpdate]);
+      // Handle cascading updates with debouncing - aligned with protection timeout
+      setTimeout(() => {
+        console.log("🔄 Cascade timeout executing for field:", field);
+
+        if (
+          field === "constructionValue" &&
+          !isFieldProtected("buildingValue") &&
+          !isFieldProtected("plantEquipmentValue")
+        ) {
+          // Only split if the value actually changed and target fields aren't protected
+          const currentTotal =
+            propertyData.buildingValue + propertyData.plantEquipmentValue;
+          console.log("🏗️ Construction value split check:", {
+            value,
+            currentTotal,
+            diff: Math.abs(currentTotal - value),
+          });
+
+          if (Math.abs(currentTotal - value) > 100) {
+            const buildingValue = Math.round(value * 0.9);
+            const plantEquipmentValue = Math.round(value * 0.1);
+            console.log("🏗️ Splitting construction value:", {
+              buildingValue,
+              plantEquipmentValue,
+            });
+            updateField("buildingValue", buildingValue);
+            updateField("plantEquipmentValue", plantEquipmentValue);
+          }
+        } else if (
+          (field === "buildingValue" || field === "plantEquipmentValue") &&
+          !isFieldProtected("constructionValue")
+        ) {
+          // Update construction contract value when building/equipment changes, if not protected
+          const newBuildingValue =
+            field === "buildingValue" ? value : propertyData.buildingValue;
+          const newPlantEquipmentValue =
+            field === "plantEquipmentValue"
+              ? value
+              : propertyData.plantEquipmentValue;
+          const newTotal = newBuildingValue + newPlantEquipmentValue;
+
+          console.log("🏗️ Building/equipment update:", {
+            field,
+            value,
+            newTotal,
+            currentConstructionValue: propertyData.constructionValue,
+            diff: Math.abs(propertyData.constructionValue - newTotal),
+          });
+
+          // Only update if the total actually differs
+          if (Math.abs(propertyData.constructionValue - newTotal) > 10) {
+            console.log("🏗️ Updating construction value to:", newTotal);
+            updateField("constructionValue", newTotal);
+          }
+        }
+
+        // Sync purchase price for construction projects when land or construction values change
+        if (
+          propertyData.isConstructionProject &&
+          (field === "landValue" || field === "constructionValue")
+        ) {
+          const newLandValue =
+            field === "landValue" ? value : propertyData.landValue;
+          const newConstructionValue =
+            field === "constructionValue"
+              ? value
+              : propertyData.constructionValue;
+          const newPurchasePrice = newLandValue + newConstructionValue;
+
+          // Only update if significantly different to avoid micro-adjustments
+          if (Math.abs(propertyData.purchasePrice - newPurchasePrice) > 10) {
+            updateField("purchasePrice", newPurchasePrice);
+          }
+        }
+
+        // Update holding costs when construction parameters change
+        if (
+          [
+            "landValue",
+            "constructionValue",
+            "constructionPeriod",
+            "constructionInterestRate",
+          ].includes(field)
+        ) {
+          const costs = calculateHoldingCosts();
+          updateField("landHoldingInterest", costs.landHoldingInterest);
+          updateField(
+            "constructionHoldingInterest",
+            costs.constructionHoldingInterest
+          );
+          updateField("totalHoldingCosts", costs.totalHoldingCosts);
+        }
+
+        setIsUpdatingCascade(false);
+      }, 500); // Increased timeout to allow protection to fully establish
+    },
+    [propertyData, updateField, isUpdatingCascade, isFieldProtected]
+  );
+
+  const handleConfirmUpdate = useCallback(
+    (dontShowAgain: boolean) => {
+      if (!pendingUpdate) return;
+
+      if (pendingUpdate.confirmationType === "construction") {
+        updateConfirmation("hasShownConstructionWarning", dontShowAgain);
+      } else {
+        updateConfirmation("hasShownBuildingWarning", dontShowAgain);
+      }
+
+      executeFieldUpdate(pendingUpdate.field, pendingUpdate.value);
+      setPendingUpdate(null);
+    },
+    [pendingUpdate, updateConfirmation, executeFieldUpdate]
+  );
 
   // Helper function to show model selection prompt
   const showModelPrompt = (fieldValue: number, fieldName: string) => {
@@ -366,28 +552,30 @@ export const PropertyInputForm = ({
   const taxOptimizationStatus = validateTaxOptimization(propertyData);
 
   // Helper function to calculate ownership percentages
-  const calculateOwnershipPercentages = (investors: InvestorData[]): OwnershipAllocation[] => {
+  const calculateOwnershipPercentages = (
+    investors: InvestorData[]
+  ): OwnershipAllocation[] => {
     const totalInvestors = investors.length;
-    
+
     if (totalInvestors === 1) {
       return [{ investorId: investors[0].id, ownershipPercentage: 100 }];
     } else if (totalInvestors === 2) {
       return [
         { investorId: investors[0].id, ownershipPercentage: 50 },
-        { investorId: investors[1].id, ownershipPercentage: 50 }
+        { investorId: investors[1].id, ownershipPercentage: 50 },
       ];
     } else if (totalInvestors === 3) {
       return [
         { investorId: investors[0].id, ownershipPercentage: 33.33 },
         { investorId: investors[1].id, ownershipPercentage: 33.33 },
-        { investorId: investors[2].id, ownershipPercentage: 33.34 }
+        { investorId: investors[2].id, ownershipPercentage: 33.34 },
       ];
     } else {
       return [
         { investorId: investors[0].id, ownershipPercentage: 25 },
         { investorId: investors[1].id, ownershipPercentage: 25 },
         { investorId: investors[2].id, ownershipPercentage: 25 },
-        { investorId: investors[3].id, ownershipPercentage: 25 }
+        { investorId: investors[3].id, ownershipPercentage: 25 },
       ];
     }
   };
@@ -404,71 +592,92 @@ export const PropertyInputForm = ({
       otherIncome: investor.otherIncome,
       hasMedicareLevy: investor.hasMedicareLevy,
     };
-    
+
     // Add the new investor
     const updatedInvestors = [...propertyData.investors, newInvestor];
-    
+
     // Calculate ownership percentages automatically
     const updatedAllocations = calculateOwnershipPercentages(updatedInvestors);
 
-    updateField('investors', updatedInvestors);
-    updateField('ownershipAllocations', updatedAllocations);
+    updateField("investors", updatedInvestors);
+    updateField("ownershipAllocations", updatedAllocations);
     setIsInvestorDialogOpen(false);
     setSearchTerm("");
   };
 
   const removeInvestor = (investorId: string) => {
     if (propertyData.investors.length <= 1) return; // Keep at least one investor
-    
-    const updatedInvestors = propertyData.investors.filter(c => c.id !== investorId);
-    
+
+    const updatedInvestors = propertyData.investors.filter(
+      (c) => c.id !== investorId
+    );
+
     // Recalculate ownership percentages after removal
     const updatedAllocations = calculateOwnershipPercentages(updatedInvestors);
-    
-    updateField('investors', updatedInvestors);
-    updateField('ownershipAllocations', updatedAllocations);
+
+    updateField("investors", updatedInvestors);
+    updateField("ownershipAllocations", updatedAllocations);
   };
 
-  const updateInvestor = (investorId: string, field: keyof Investor, value: any) => {
-    const updatedInvestors = propertyData.investors.map(investor =>
+  const updateInvestor = (
+    investorId: string,
+    field: keyof Investor,
+    value: any
+  ) => {
+    const updatedInvestors = propertyData.investors.map((investor) =>
       investor.id === investorId ? { ...investor, [field]: value } : investor
     );
-    updateField('investors', updatedInvestors);
+    updateField("investors", updatedInvestors);
   };
 
-  const updateOwnershipAllocation = (investorId: string, percentage: number) => {
+  const updateOwnershipAllocation = (
+    investorId: string,
+    percentage: number
+  ) => {
     // Ensure percentage is within valid range
     const validPercentage = Math.max(0, Math.min(100, percentage));
-    
+
     // Auto-balance for two investors
     if (propertyData.investors.length === 2) {
-      const otherInvestor = propertyData.investors.find(inv => inv.id !== investorId);
+      const otherInvestor = propertyData.investors.find(
+        (inv) => inv.id !== investorId
+      );
       if (otherInvestor) {
         const remainingPercentage = 100 - validPercentage;
-        
-        const updatedAllocations = propertyData.ownershipAllocations.map(allocation => {
-          if (allocation.investorId === investorId) {
-            return { ...allocation, ownershipPercentage: validPercentage };
-          } else if (allocation.investorId === otherInvestor.id) {
-            return { ...allocation, ownershipPercentage: remainingPercentage };
+
+        const updatedAllocations = propertyData.ownershipAllocations.map(
+          (allocation) => {
+            if (allocation.investorId === investorId) {
+              return { ...allocation, ownershipPercentage: validPercentage };
+            } else if (allocation.investorId === otherInvestor.id) {
+              return {
+                ...allocation,
+                ownershipPercentage: remainingPercentage,
+              };
+            }
+            return allocation;
           }
-          return allocation;
-        });
-        
-        updateField('ownershipAllocations', updatedAllocations);
+        );
+
+        updateField("ownershipAllocations", updatedAllocations);
         return;
       }
     }
-    
+
     // Default behavior for non-two-investor scenarios
-    const updatedAllocations = propertyData.ownershipAllocations.map(allocation =>
-      allocation.investorId === investorId ? { ...allocation, ownershipPercentage: validPercentage } : allocation
+    const updatedAllocations = propertyData.ownershipAllocations.map(
+      (allocation) =>
+        allocation.investorId === investorId
+          ? { ...allocation, ownershipPercentage: validPercentage }
+          : allocation
     );
-    updateField('ownershipAllocations', updatedAllocations);
+    updateField("ownershipAllocations", updatedAllocations);
   };
 
-  const totalOwnership = propertyData.ownershipAllocations.reduce((sum, allocation) => 
-    sum + allocation.ownershipPercentage, 0);
+  const totalOwnership = propertyData.ownershipAllocations.reduce(
+    (sum, allocation) => sum + allocation.ownershipPercentage,
+    0
+  );
 
   const handleApplyPreset = (presetData: any) => {
     // Extract the PropertyMethod and FundingMethod if they exist in the preset data
@@ -478,16 +687,27 @@ export const PropertyInputForm = ({
 
   // Create completion summary for mobile
   const completionSummary = [
-    { key: 'personal', status: personalProfileStatus, label: 'Personal Profile' },
-    { key: 'property', status: propertyBasicsStatus, label: 'Property Basics' },
-    { key: 'construction', status: constructionStatus, label: 'Construction', show: propertyData.isConstructionProject },
-    { key: 'financing', status: financingStatus, label: 'Financing' },
-    { key: 'purchase', status: purchaseCostsStatus, label: 'Purchase Costs' },
-    { key: 'expenses', status: annualExpensesStatus, label: 'Annual Expenses' },
-    { key: 'tax', status: taxOptimizationStatus, label: 'Tax Optimization' }
-  ].filter(item => item.show !== false);
+    {
+      key: "personal",
+      status: personalProfileStatus,
+      label: "Personal Profile",
+    },
+    { key: "property", status: propertyBasicsStatus, label: "Property Basics" },
+    {
+      key: "construction",
+      status: constructionStatus,
+      label: "Construction",
+      show: propertyData.isConstructionProject,
+    },
+    { key: "financing", status: financingStatus, label: "Financing" },
+    { key: "purchase", status: purchaseCostsStatus, label: "Purchase Costs" },
+    { key: "expenses", status: annualExpensesStatus, label: "Annual Expenses" },
+    { key: "tax", status: taxOptimizationStatus, label: "Tax Optimization" },
+  ].filter((item) => item.show !== false);
 
-  const completedSections = completionSummary.filter(s => s.status === 'complete').length;
+  const completedSections = completionSummary.filter(
+    (s) => s.status === "complete"
+  ).length;
   const totalSections = completionSummary.length;
 
   return (
@@ -497,14 +717,17 @@ export const PropertyInputForm = ({
         <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 md:p-4">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-orange-500 flex-shrink-0"></div>
-            <h3 className="font-medium text-orange-800 text-sm md:text-base">Edit Mode Active</h3>
+            <h3 className="font-medium text-orange-800 text-sm md:text-base">
+              Edit Mode Active
+            </h3>
           </div>
           <p className="text-xs md:text-sm text-orange-700 mt-1">
-            You can now modify the investment parameters. Changes will be saved to this instance only.
+            You can now modify the investment parameters. Changes will be saved
+            to this instance only.
           </p>
         </div>
       )}
-      
+
       {/* Mobile Progress Summary */}
       {isMobile && (
         <Card className="border-primary/20">
@@ -516,35 +739,46 @@ export const PropertyInputForm = ({
               </span>
             </div>
             <div className="w-full bg-muted rounded-full h-2 mb-3">
-              <div 
+              <div
                 className="bg-primary h-2 rounded-full transition-all duration-300"
-                style={{ width: `${(completedSections / totalSections) * 100}%` }}
+                style={{
+                  width: `${(completedSections / totalSections) * 100}%`,
+                }}
               />
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs">
               {completionSummary.map((item) => (
                 <div key={item.key} className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                    item.status === 'complete' ? 'bg-green-500' : 
-                    item.status === 'warning' ? 'bg-yellow-500' : 'bg-muted-foreground'
-                  }`} />
-                  <span className="text-muted-foreground truncate">{item.label}</span>
+                  <div
+                    className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                      item.status === "complete"
+                        ? "bg-green-500"
+                        : item.status === "warning"
+                        ? "bg-yellow-500"
+                        : "bg-muted-foreground"
+                    }`}
+                  />
+                  <span className="text-muted-foreground truncate">
+                    {item.label}
+                  </span>
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
       )}
-      
+
       {/* Validation Warnings */}
       <ValidationWarnings />
-      
+
       <Card className="w-full border-2 border-primary/20 shadow-lg">
         <CardHeader className="bg-gradient-to-r from-primary/10 to-accent/10 border-b-2 border-primary/20 p-4 md:p-6">
           <CardTitle className="flex items-center gap-3 text-primary">
             <Home className="h-5 w-5 md:h-6 md:w-6 flex-shrink-0" />
             <div className="min-w-0">
-              <div className="text-lg md:text-xl font-semibold">Investment Details</div>
+              <div className="text-lg md:text-xl font-semibold">
+                Investment Details
+              </div>
               <div className="text-xs md:text-sm font-normal text-muted-foreground mt-1">
                 Configure your property investment parameters
               </div>
@@ -552,9 +786,9 @@ export const PropertyInputForm = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <Accordion 
-            type="multiple" 
-            value={openSections} 
+          <Accordion
+            type="multiple"
+            value={openSections}
             onValueChange={(newOpenSections) => {
               if (isMobile) {
                 // On mobile, only allow one section open at a time
@@ -565,1265 +799,1460 @@ export const PropertyInputForm = ({
             }}
             className="w-full"
           >
-          {/* 1. Personal Financial Profile */}
-          <AccordionItem value="personal-profile" className="border-b">
-            <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50">
-              <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <Users className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
-                  <span className="font-medium text-sm md:text-base truncate">Personal Financial Profile</span>
+            {/* 1. Personal Financial Profile */}
+            <AccordionItem value="personal-profile" className="border-b">
+              <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50">
+                <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <Users className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
+                    <span className="font-medium text-sm md:text-base truncate">
+                      Personal Financial Profile
+                    </span>
+                  </div>
+                  <AccordionCompletionIndicator
+                    status={personalProfileStatus}
+                    sectionKey="personal-profile"
+                  />
                 </div>
-                <AccordionCompletionIndicator status={personalProfileStatus} sectionKey="personal-profile" />
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
-              <div className="space-y-4 md:space-y-6">
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <h4 className="font-medium text-sm md:text-base">Investors</h4>
-                  <Button 
-                    onClick={addInvestor}
-                    size={isMobile ? "default" : "sm"}
-                    variant="outline"
-                    disabled={propertyData.investors.length >= 4}
-                    className="w-full md:w-auto min-h-[44px] md:min-h-0"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Investor
-                  </Button>
-                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
+                <div className="space-y-4 md:space-y-6">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <h4 className="font-medium text-sm md:text-base">
+                      Investors
+                    </h4>
+                    <Button
+                      onClick={addInvestor}
+                      size={isMobile ? "default" : "sm"}
+                      variant="outline"
+                      disabled={propertyData.investors.length >= 4}
+                      className="w-full md:w-auto min-h-[44px] md:min-h-0"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Investor
+                    </Button>
+                  </div>
 
-                {propertyData.investors.map((investor) => (
-                  <div key={investor.id} className="border rounded-lg p-3 md:p-4 space-y-4">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                      <Input
-                        value={investor.name}
-                        onChange={(e) => updateInvestor(investor.id, 'name', e.target.value)}
-                        placeholder="Investor name"
-                        className="w-full md:max-w-[200px] font-medium min-h-[44px] md:min-h-10"
-                      />
-                      {propertyData.investors.length > 1 && (
-                        <Button
-                          onClick={() => removeInvestor(investor.id)}
-                          size={isMobile ? "default" : "sm"}
-                          variant="ghost"
-                          className="w-full md:w-auto min-h-[44px] md:min-h-0"
-                        >
-                          <X className="h-4 w-4 mr-2 md:mr-0" />
-                          <span className="md:hidden">Remove Investor</span>
-                        </Button>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor={`income-${investor.id}`} className="text-sm md:text-sm font-medium">
-                          Annual Income
-                        </Label>
-                        <CurrencyInput
-                          id={`income-${investor.id}`}
-                          value={investor.annualIncome}
-                          onChange={(value) => updateInvestor(investor.id, 'annualIncome', value)}
-                          className="min-h-[44px] md:min-h-10"
-                          placeholder="Enter annual income"
+                  {propertyData.investors.map((investor) => (
+                    <div
+                      key={investor.id}
+                      className="border rounded-lg p-3 md:p-4 space-y-4"
+                    >
+                      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <Input
+                          value={investor.name}
+                          onChange={(e) =>
+                            updateInvestor(investor.id, "name", e.target.value)
+                          }
+                          placeholder="Investor name"
+                          className="w-full md:max-w-[200px] font-medium min-h-[44px] md:min-h-10"
                         />
+                        {propertyData.investors.length > 1 && (
+                          <Button
+                            onClick={() => removeInvestor(investor.id)}
+                            size={isMobile ? "default" : "sm"}
+                            variant="ghost"
+                            className="w-full md:w-auto min-h-[44px] md:min-h-0"
+                          >
+                            <X className="h-4 w-4 mr-2 md:mr-0" />
+                            <span className="md:hidden">Remove Investor</span>
+                          </Button>
+                        )}
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor={`other-income-${investor.id}`} className="text-sm md:text-sm font-medium">
-                          Other Income
-                        </Label>
-                        <CurrencyInput
-                          id={`other-income-${investor.id}`}
-                          value={investor.otherIncome}
-                          onChange={(value) => updateInvestor(investor.id, 'otherIncome', value)}
-                          className="min-h-[44px] md:min-h-10"
-                          placeholder="Enter other income"
-                        />
-                      </div>
-                    </div>
 
-                    <div className="flex items-center space-x-3 py-2">
-                      <input
-                        type="checkbox"
-                        id={`medicare-${investor.id}`}
-                        checked={investor.hasMedicareLevy}
-                        onChange={(e) => updateInvestor(investor.id, 'hasMedicareLevy', e.target.checked)}
-                        className="rounded border-border w-4 h-4 md:w-3 md:h-3"
-                      />
-                      <Label htmlFor={`medicare-${investor.id}`} className="text-sm cursor-pointer">
-                        Subject to Medicare Levy
-                      </Label>
-                    </div>
-
-                    {/* Display tax summary for this investor */}
-                    {investorTaxResults.find(r => r.investor.id === investor.id) && (
-                      <div className="bg-muted/30 rounded-lg p-3 space-y-2">
-                        <div className="text-sm font-medium">Tax Summary</div>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div>
-                            <span className="text-muted-foreground">Marginal Rate:</span>
-                            <span className="ml-1 font-medium">
-                              {(investorTaxResults.find(r => r.investor.id === investor.id)?.marginalTaxRate * 100).toFixed(0)}%
-                              {investor.hasMedicareLevy && (
-                                <span className="text-muted-foreground"> +2% Medicare</span>
-                              )}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Current Tax:</span>
-                            <span className="ml-1 font-medium">
-                              ${investorTaxResults.find(r => r.investor.id === investor.id)?.taxWithoutProperty.toLocaleString()}
-                            </span>
-                          </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor={`income-${investor.id}`}
+                            className="text-sm md:text-sm font-medium"
+                          >
+                            Annual Income
+                          </Label>
+                          <CurrencyInput
+                            id={`income-${investor.id}`}
+                            value={investor.annualIncome}
+                            onChange={(value) =>
+                              updateInvestor(investor.id, "annualIncome", value)
+                            }
+                            className="min-h-[44px] md:min-h-10"
+                            placeholder="Enter annual income"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor={`other-income-${investor.id}`}
+                            className="text-sm md:text-sm font-medium"
+                          >
+                            Other Income
+                          </Label>
+                          <CurrencyInput
+                            id={`other-income-${investor.id}`}
+                            value={investor.otherIncome}
+                            onChange={(value) =>
+                              updateInvestor(investor.id, "otherIncome", value)
+                            }
+                            className="min-h-[44px] md:min-h-10"
+                            placeholder="Enter other income"
+                          />
                         </div>
                       </div>
-                    )}
+
+                      <div className="flex items-center space-x-3 py-2">
+                        <input
+                          type="checkbox"
+                          id={`medicare-${investor.id}`}
+                          checked={investor.hasMedicareLevy}
+                          onChange={(e) =>
+                            updateInvestor(
+                              investor.id,
+                              "hasMedicareLevy",
+                              e.target.checked
+                            )
+                          }
+                          className="rounded border-border w-4 h-4 md:w-3 md:h-3"
+                        />
+                        <Label
+                          htmlFor={`medicare-${investor.id}`}
+                          className="text-sm cursor-pointer"
+                        >
+                          Subject to Medicare Levy
+                        </Label>
+                      </div>
+
+                      {/* Display tax summary for this investor */}
+                      {investorTaxResults.find(
+                        (r) => r.investor.id === investor.id
+                      ) && (
+                        <div className="bg-muted/30 rounded-lg p-3 space-y-2">
+                          <div className="text-sm font-medium">Tax Summary</div>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                              <span className="text-muted-foreground">
+                                Marginal Rate:
+                              </span>
+                              <span className="ml-1 font-medium">
+                                {(
+                                  investorTaxResults.find(
+                                    (r) => r.investor.id === investor.id
+                                  )?.marginalTaxRate * 100
+                                ).toFixed(0)}
+                                %
+                                {investor.hasMedicareLevy && (
+                                  <span className="text-muted-foreground">
+                                    {" "}
+                                    +2% Medicare
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">
+                                Current Tax:
+                              </span>
+                              <span className="ml-1 font-medium">
+                                $
+                                {investorTaxResults
+                                  .find((r) => r.investor.id === investor.id)
+                                  ?.taxWithoutProperty.toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* 2. Property Basics */}
+            <AccordionItem value="property-basics" className="border-b">
+              <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50">
+                <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <Building2 className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
+                    <span className="font-medium text-sm md:text-base truncate">
+                      Property Basics
+                    </span>
                   </div>
-                ))}
-
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* 2. Property Basics */}
-          <AccordionItem value="property-basics" className="border-b">
-            <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50">
-              <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <Building2 className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
-                  <span className="font-medium text-sm md:text-base truncate">Property Basics</span>
+                  <AccordionCompletionIndicator status={propertyBasicsStatus} />
                 </div>
-                <AccordionCompletionIndicator status={propertyBasicsStatus} />
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
-              <div className="space-y-4 md:space-y-6">
-                <div className="space-y-3">
-                  <Label className="text-sm md:text-sm font-medium">Property Method</Label>
-                  <Select
-                    value={propertyData.currentPropertyMethod}
-                    onValueChange={(value) => {
-                      const newMethod = value as PropertyMethod;
-                      const wasConstruction = propertyData.isConstructionProject;
-                      const willBeConstruction = newMethod === 'house-land-construction';
-                      
-                      // Update the property method and construction flag
-                      updateField('currentPropertyMethod', newMethod);
-                      updateField('isConstructionProject', willBeConstruction);
-                      
-                      // Handle purchase price synchronization
-                      if (!wasConstruction && willBeConstruction) {
-                        // Switching TO construction: Set purchase price = land + construction
-                        const totalValue = propertyData.landValue + propertyData.constructionValue;
-                        if (totalValue > 0) {
-                          updateField('purchasePrice', totalValue);
+              </AccordionTrigger>
+              <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
+                <div className="space-y-4 md:space-y-6">
+                  <div className="space-y-3">
+                    <Label className="text-sm md:text-sm font-medium">
+                      Property Method
+                    </Label>
+                    <Select
+                      value={propertyData.currentPropertyMethod}
+                      onValueChange={(value) => {
+                        const newMethod = value as PropertyMethod;
+                        const wasConstruction =
+                          propertyData.isConstructionProject;
+                        const willBeConstruction =
+                          newMethod === "house-land-construction";
+
+                        // Update the property method and construction flag
+                        updateField("currentPropertyMethod", newMethod);
+                        updateField(
+                          "isConstructionProject",
+                          willBeConstruction
+                        );
+
+                        // Handle purchase price synchronization
+                        if (!wasConstruction && willBeConstruction) {
+                          // Switching TO construction: Set purchase price = land + construction
+                          const totalValue =
+                            propertyData.landValue +
+                            propertyData.constructionValue;
+                          if (totalValue > 0) {
+                            updateField("purchasePrice", totalValue);
+                          }
+                        } else if (wasConstruction && !willBeConstruction) {
+                          // Switching FROM construction: Keep current purchase price
+                          // No action needed - preserve user's purchase price
                         }
-                      } else if (wasConstruction && !willBeConstruction) {
-                        // Switching FROM construction: Keep current purchase price
-                        // No action needed - preserve user's purchase price
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="min-h-[44px] md:min-h-10">
-                      <SelectValue placeholder="Select property method..." />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background border border-border z-50">
-                      {Object.entries(PROPERTY_METHODS).map(([key, method]) => (
-                        <SelectItem key={key} value={key} className="min-h-[44px] md:min-h-auto">
-                          {method.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                      }}
+                    >
+                      <SelectTrigger className="min-h-[44px] md:min-h-10">
+                        <SelectValue placeholder="Select property method..." />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background border border-border z-50">
+                        {Object.entries(PROPERTY_METHODS).map(
+                          ([key, method]) => (
+                            <SelectItem
+                              key={key}
+                              value={key}
+                              className="min-h-[44px] md:min-h-auto"
+                            >
+                              {method.name}
+                            </SelectItem>
+                          )
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <div className="space-y-3">
-                  <Label className="text-sm md:text-sm font-medium">State</Label>
-                  <Select
-                    value={propertyData.propertyState ?? 'VIC'}
-                    onValueChange={(value) => {
-                      const v = value as Jurisdiction;
-                      updateField('propertyState', v);
-                      const dutiableValue = propertyData.isConstructionProject ? propertyData.landValue : propertyData.purchasePrice;
-                      const duty = calculateStampDuty(dutiableValue, v);
-                      updateFieldWithCascade('stampDuty', duty);
-                    }}
-                  >
-                    <SelectTrigger className="min-h-[44px] md:min-h-10">
-                      <SelectValue placeholder="Select state" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background border border-border z-50">
-                      {JURISDICTIONS.map((j) => (
-                        <SelectItem key={j} value={j} className="min-h-[44px] md:min-h-auto">{j}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <div className="text-xs text-muted-foreground">Used for stamp duty calculations</div>
-                </div>
+                  <div className="space-y-3">
+                    <Label className="text-sm md:text-sm font-medium">
+                      State
+                    </Label>
+                    <Select
+                      value={propertyData.propertyState ?? "VIC"}
+                      onValueChange={(value) => {
+                        const v = value as Jurisdiction;
+                        updateField("propertyState", v);
+                        const dutiableValue = propertyData.isConstructionProject
+                          ? propertyData.landValue
+                          : propertyData.purchasePrice;
+                        const duty = calculateStampDuty(dutiableValue, v);
+                        updateFieldWithCascade("stampDuty", duty);
+                      }}
+                    >
+                      <SelectTrigger className="min-h-[44px] md:min-h-10">
+                        <SelectValue placeholder="Select state" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background border border-border z-50">
+                        {JURISDICTIONS.map((j) => (
+                          <SelectItem
+                            key={j}
+                            value={j}
+                            className="min-h-[44px] md:min-h-auto"
+                          >
+                            {j}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="text-xs text-muted-foreground">
+                      Used for stamp duty calculations
+                    </div>
+                  </div>
 
-                {propertyData.isConstructionProject ? (
-                  <div className="space-y-4">
-                    {/* Total Property Value */}
-                    <div className="bg-primary/10 rounded-lg p-4 border-l-4 border-primary">
-                      <h4 className="text-sm md:text-sm font-medium mb-2 flex items-center gap-2">
+                  {propertyData.isConstructionProject ? (
+                    <div className="space-y-4">
+                      {/* Total Property Value */}
+                      <div className="bg-primary/10 rounded-lg p-4 border-l-4 border-primary">
+                        <h4 className="text-sm md:text-sm font-medium mb-2 flex items-center gap-2">
+                          <Home className="h-4 w-4 flex-shrink-0" />
+                          Total Property Value
+                        </h4>
+                        <div className="text-xl md:text-2xl font-bold text-primary">
+                          $
+                          {(
+                            propertyData.landValue +
+                            propertyData.constructionValue
+                          ).toLocaleString()}
+                        </div>
+                        <div className="text-xs md:text-sm text-muted-foreground mt-1">
+                          Land: ${propertyData.landValue.toLocaleString()} +
+                          Construction: $
+                          {propertyData.constructionValue.toLocaleString()}
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <Label
+                          htmlFor="landValue"
+                          className="text-sm md:text-sm font-medium"
+                        >
+                          Land Value
+                        </Label>
+                        <CurrencyInput
+                          id="landValue"
+                          value={propertyData.landValue}
+                          onChange={(value) =>
+                            updateFieldWithCascade("landValue", value)
+                          }
+                          className="min-h-[44px] md:min-h-10"
+                          placeholder="Enter land value"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Set construction amount and details in the
+                          Construction section.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="purchasePrice"
+                        className="text-sm md:text-sm font-medium"
+                      >
+                        Purchase Price
+                      </Label>
+                      <CurrencyInput
+                        id="purchasePrice"
+                        value={propertyData.purchasePrice}
+                        onChange={(value) =>
+                          updateFieldWithCascade("purchasePrice", value)
+                        }
+                        className="min-h-[44px] md:min-h-10"
+                        placeholder="Enter purchase price"
+                      />
+                    </div>
+                  )}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* 3. Construction Costs */}
+            {propertyData.isConstructionProject && (
+              <AccordionItem value="construction" className="border-b">
+                <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50">
+                  <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <Hammer className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
+                      <span className="font-medium text-sm md:text-base truncate">
+                        Construction Costs
+                      </span>
+                    </div>
+                    <AccordionCompletionIndicator
+                      status={constructionStatus}
+                      sectionKey="construction"
+                    />
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
+                  <div className="space-y-4 md:space-y-6">
+                    {/* Total Property Value Summary */}
+                    <div className="bg-primary/10 rounded-lg p-3 md:p-4 border-l-4 border-primary">
+                      <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
                         <Home className="h-4 w-4 flex-shrink-0" />
                         Total Property Value
                       </h4>
                       <div className="text-xl md:text-2xl font-bold text-primary">
-                        ${(propertyData.landValue + propertyData.constructionValue).toLocaleString()}
+                        $
+                        {(
+                          propertyData.landValue +
+                          propertyData.constructionValue
+                        ).toLocaleString()}
                       </div>
                       <div className="text-xs md:text-sm text-muted-foreground mt-1">
-                        Land: ${propertyData.landValue.toLocaleString()} + Construction: ${propertyData.constructionValue.toLocaleString()}
+                        Land: ${propertyData.landValue.toLocaleString()} +
+                        Construction: $
+                        {propertyData.constructionValue.toLocaleString()}
                       </div>
                     </div>
 
-                    <div className="space-y-3">
-                      <Label htmlFor="landValue" className="text-sm md:text-sm font-medium">Land Value</Label>
-                      <CurrencyInput
-                        id="landValue"
-                        value={propertyData.landValue}
-                        onChange={(value) => updateFieldWithCascade('landValue', value)}
-                        className="min-h-[44px] md:min-h-10"
-                        placeholder="Enter land value"
-                      />
-                      <p className="text-xs text-muted-foreground">Set construction amount and details in the Construction section.</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <Label htmlFor="purchasePrice" className="text-sm md:text-sm font-medium">Purchase Price</Label>
-                    <CurrencyInput
-                      id="purchasePrice"
-                      value={propertyData.purchasePrice}
-                      onChange={(value) => updateFieldWithCascade('purchasePrice', value)}
-                      className="min-h-[44px] md:min-h-10"
-                      placeholder="Enter purchase price"
-                    />
-                  </div>
-                )}
-
-
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-
-{/* 3. Construction Costs */}
-{propertyData.isConstructionProject && (
-  <AccordionItem value="construction" className="border-b">
-    <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50">
-      <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <Hammer className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
-          <span className="font-medium text-sm md:text-base truncate">Construction Costs</span>
-        </div>
-        <AccordionCompletionIndicator status={constructionStatus} sectionKey="construction" />
-      </div>
-    </AccordionTrigger>
-    <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
-      <div className="space-y-4 md:space-y-6">
-        {/* Total Property Value Summary */}
-        <div className="bg-primary/10 rounded-lg p-3 md:p-4 border-l-4 border-primary">
-          <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
-            <Home className="h-4 w-4 flex-shrink-0" />
-            Total Property Value
-          </h4>
-          <div className="text-xl md:text-2xl font-bold text-primary">
-            ${(propertyData.landValue + propertyData.constructionValue).toLocaleString()}
-          </div>
-          <div className="text-xs md:text-sm text-muted-foreground mt-1">
-            Land: ${propertyData.landValue.toLocaleString()} + Construction: ${propertyData.constructionValue.toLocaleString()}
-          </div>
-        </div>
-
-        {/* Total Construction Value */}
-        <div className="bg-accent/30 rounded-lg p-3 md:p-4 border border-accent/50">
-          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-3">
-            <h4 className="text-sm font-medium flex items-center gap-2">
-              <DollarSign className="h-4 w-4 flex-shrink-0" />
-              Total Construction Value
-            </h4>
-            {totalConstructionValue !== propertyData.constructionValue && (
-              <span className="text-muted-foreground text-xs">
-                (Calculated: ${totalConstructionValue.toLocaleString()})
-              </span>
-            )}
-          </div>
-          <CurrencyInput
-            id="constructionValue"
-            value={propertyData.constructionValue}
-            onChange={(value) => {
-              protectField('constructionValue', 2000);
-              updateFieldWithCascade('constructionValue', value);
-            }}
-            className="min-h-[44px] md:min-h-10"
-            placeholder="Enter total construction value"
-          />
-        </div>
-
-        {/* Building Values */}
-        <div className="bg-muted/20 rounded-lg p-3 md:p-4">
-          <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-            <Receipt className="h-4 w-4 flex-shrink-0" />
-            Construction Value Breakdown
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="buildingValue" className="text-sm font-medium">Building Value (excl. land)</Label>
-              <CurrencyInput
-                id="buildingValue"
-                value={propertyData.buildingValue}
-                onChange={(value) => {
-                  protectField('buildingValue', 2000);
-                  updateFieldWithCascade('buildingValue', value);
-                }}
-                className="min-h-[44px] md:min-h-10"
-                placeholder="Enter building value"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="plantEquipmentValue" className="text-sm font-medium">Plant & Equipment Value</Label>
-              <CurrencyInput
-                id="plantEquipmentValue"
-                value={propertyData.plantEquipmentValue}
-                onChange={(value) => {
-                  protectField('plantEquipmentValue', 2000);
-                  updateFieldWithCascade('plantEquipmentValue', value);
-                }}
-                className="min-h-[44px] md:min-h-10"
-                placeholder="Enter equipment value"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="constructionYear" className="text-sm font-medium">Construction Year</Label>
-              <NumberInput
-                id="constructionYear"
-                value={propertyData.constructionYear}
-                onChange={(value) => updateField('constructionYear', value)}
-                className="min-h-[44px] md:min-h-10"
-                placeholder="2020"
-                min={1900}
-                max={new Date().getFullYear() + 10}
-                formatThousands={false}
-              />
-            </div>
-          </div>
-          <div className="mt-4">
-            <div className="bg-accent/30 rounded-lg p-3">
-              <div className="text-sm font-medium text-accent-foreground">
-                Total Construction Value: ${totalConstructionValue.toLocaleString()}
-              </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                Building Value + Plant & Equipment Value
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Development Costs */}
-        <div className="space-y-4">
-          <h4 className="font-medium text-sm md:text-base">Development Costs</h4>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="councilFees" className="text-sm font-medium">Council Fees & Approvals</Label>
-              <CurrencyInput
-                id="councilFees"
-                value={propertyData.councilFees}
-                onChange={(value) => updateFieldWithCascade('councilFees', value)}
-                className="min-h-[44px] md:min-h-10"
-                placeholder="Enter council fees"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="architectFees" className="text-sm font-medium">Architect/Design Fees</Label>
-              <CurrencyInput
-                id="architectFees"
-                value={propertyData.architectFees}
-                onChange={(value) => updateFieldWithCascade('architectFees', value)}
-                className="min-h-[44px] md:min-h-10"
-                placeholder="Enter architect fees"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="siteCosts" className="text-sm font-medium">Site Costs & Utilities</Label>
-              <CurrencyInput
-                id="siteCosts"
-                value={propertyData.siteCosts}
-                onChange={(value) => updateFieldWithCascade('siteCosts', value)}
-                className="min-h-[44px] md:min-h-10"
-                placeholder="Enter site costs"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    </AccordionContent>
-  </AccordionItem>
-)}
-
-{/* 4. Construction Timeline */}
-{propertyData.isConstructionProject && (
-  <AccordionItem value="construction-timeline" className="border-b">
-    <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50">
-      <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <Clock className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
-          <span className="font-medium text-sm md:text-base truncate">Construction Timeline</span>
-        </div>
-        <AccordionCompletionIndicator status={constructionStatus} sectionKey="construction-timeline" />
-      </div>
-    </AccordionTrigger>
-    <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
-      <div className="space-y-4 md:space-y-6">
-        {/* Construction Timeline & Financing */}
-        <div className="bg-accent/20 rounded-lg p-3 md:p-4">
-          <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-            <Clock className="h-4 w-4 flex-shrink-0" />
-            Construction Timeline & Loan Structure
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div className="space-y-2">
-              <Label htmlFor="constructionPeriod" className="text-sm font-medium">Construction Period (months)</Label>
-              <NumberInput
-                id="constructionPeriod"
-                value={propertyData.constructionPeriod || 0}
-                onChange={(value) => updateField('constructionPeriod', value)}
-                className="min-h-[44px] md:min-h-10"
-                placeholder="e.g., 12"
-                min={1}
-                max={60}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="constructionInterestRate" className="text-sm font-medium">Main Loan Rate (Construction Period)</Label>
-              <PercentageInput
-                id="constructionInterestRate"
-                value={propertyData.constructionInterestRate}
-                onChange={(value) => updateField('constructionInterestRate', value)}
-                className="min-h-[44px] md:min-h-10"
-                placeholder="Enter rate"
-              />
-              <div className="text-xs text-muted-foreground">
-                Interest rate during construction
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="postConstructionRateReduction" className="text-sm font-medium">Rate Reduction After Construction</Label>
-              <PercentageInput
-                id="postConstructionRateReduction"
-                value={propertyData.postConstructionRateReduction}
-                onChange={(value) => updateField('postConstructionRateReduction', value)}
-                className="min-h-[44px] md:min-h-10"
-                placeholder="0.5"
-              />
-              <div className="text-xs text-muted-foreground">
-                Ongoing rate: {(propertyData.constructionInterestRate - propertyData.postConstructionRateReduction).toFixed(2)}%
-              </div>
-            </div>
-          </div>
-
-          {/* Construction Progress Payments */}
-          <div className="space-y-3">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <Label className="text-sm font-medium">Construction Progress Payments</Label>
-              <Button
-                type="button"
-                variant="outline"
-                size={isMobile ? "default" : "sm"}
-                className="w-full md:w-auto min-h-[44px] md:min-h-0"
-                onClick={() => {
-                  const newPayment = {
-                    id: Date.now().toString(),
-                    percentage: 0,
-                    month: 1,
-                    description: 'New payment'
-                  };
-                  updateField('constructionProgressPayments', [...(propertyData.constructionProgressPayments || []), newPayment]);
-                }}
-              >
-                Add Payment
-              </Button>
-            </div>
-            <div className="space-y-3">
-              {propertyData.constructionProgressPayments?.map((payment, index) => (
-                <div key={payment.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-2 items-end bg-muted/30 p-3 rounded">
-                  <div className="md:col-span-4">
-                    <Label className="text-xs font-medium">Description</Label>
-                    <Input
-                      value={payment.description}
-                      onChange={(e) => {
-                        const updated = [...(propertyData.constructionProgressPayments || [])];
-                        updated[index] = { ...payment, description: e.target.value };
-                        updateField('constructionProgressPayments', updated);
-                      }}
-                      className="mt-1 text-sm min-h-[44px] md:min-h-9"
-                      placeholder="Payment description"
-                    />
-                  </div>
-                  <div className="md:col-span-3">
-                    <Label className="text-xs font-medium">Percentage (%)</Label>
-                    <NumberInput
-                      value={payment.percentage}
-                      onChange={(value) => {
-                        const updated = [...(propertyData.constructionProgressPayments || [])];
-                        updated[index] = { ...payment, percentage: value };
-                        updateField('constructionProgressPayments', updated);
-                      }}
-                      className="mt-1 text-sm min-h-[44px] md:min-h-9"
-                      placeholder="0"
-                      min={0}
-                      max={100}
-                      id={`percentage-${payment.id}`}
-                    />
-                  </div>
-                  <div className="md:col-span-3">
-                    <Label className="text-xs font-medium">Month</Label>
-                    <NumberInput
-                      value={payment.month}
-                      onChange={(value) => {
-                        const updated = [...(propertyData.constructionProgressPayments || [])];
-                        updated[index] = { ...payment, month: value };
-                        updateField('constructionProgressPayments', updated);
-                      }}
-                      className="mt-1 text-sm min-h-[44px] md:min-h-9"
-                      placeholder="1"
-                      min={1}
-                      max={60}
-                      id={`month-${payment.id}`}
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size={isMobile ? "default" : "sm"}
-                      className="w-full md:w-auto min-h-[44px] md:min-h-0 text-destructive hover:bg-destructive/10"
-                      onClick={() => {
-                        const updated = (propertyData.constructionProgressPayments || []).filter((_, i) => i !== index);
-                        updateField('constructionProgressPayments', updated);
-                      }}
-                    >
-                      <X className="h-4 w-4 mr-2 md:mr-0" />
-                      <span className="md:hidden">Remove</span>
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {propertyData.constructionProgressPayments?.length > 0 && (
-              <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
-                <div className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                  Total: {propertyData.constructionProgressPayments.reduce((sum, p) => sum + p.percentage, 0)}% 
-                  {propertyData.constructionProgressPayments.reduce((sum, p) => sum + p.percentage, 0) !== 100 && (
-                    <span className="text-warning ml-2">⚠️ Should total 100%</span>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Holding Cost Estimates */}
-          <div className="bg-orange-50/50 dark:bg-orange-950/20 rounded-lg p-4 border border-orange-200 dark:border-orange-800 mt-4">
-            <h5 className="text-sm font-medium mb-3 flex items-center gap-2 text-orange-700 dark:text-orange-300">
-              <DollarSign className="h-4 w-4" />
-              Enhanced Holding Cost Estimates ({propertyData.constructionPeriod || 12} months) - Monthly Compounding
-            </h5>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-              <div className="bg-red-50 dark:bg-red-950/30 rounded-lg p-3 border border-red-200 dark:border-red-800">
-                <div className="text-xs text-red-600 dark:text-red-400 font-medium mb-1">
-                  Land Interest (Non-deductible, from settlement)
-                </div>
-                <div className="text-lg font-bold text-red-700 dark:text-red-300">
-                  ${holdingCosts.landHoldingInterest.toLocaleString()}
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  On ${propertyData.landValue.toLocaleString()} + stamp duty
-                </div>
-              </div>
-              <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3 border border-green-200 dark:border-green-800">
-                <div className="text-xs text-green-600 dark:text-green-400 font-medium mb-1">
-                  Construction Interest (Deductible, progressive drawdown)
-                </div>
-                <div className="text-lg font-bold text-green-700 dark:text-green-300">
-                  ${holdingCosts.constructionHoldingInterest.toLocaleString()}
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  Based on payment schedule timing
-                </div>
-              </div>
-              <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
-                <div className="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">
-                  Total Holding Costs
-                </div>
-                <div className="text-lg font-bold text-blue-700 dark:text-blue-300">
-                  ${holdingCosts.totalHoldingCosts.toLocaleString()}
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  Avg: ${Math.round(holdingCosts.totalHoldingCosts / (propertyData.constructionPeriod || 12)).toLocaleString()}/month
-                </div>
-              </div>
-            </div>
-            <div className="bg-muted/30 rounded-lg p-3">
-              <div className="text-xs text-muted-foreground mb-2">
-                <AlertTriangle className="h-3 w-3 inline mr-1" />
-                Tax Implications:
-              </div>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <div>• <strong>Land Interest:</strong> Non-deductible, calculated from settlement date using monthly compounding</div>
-                <div>• <strong>Construction Interest:</strong> Deductible, calculated from each drawdown date based on payment schedule</div>
-                <div>• <strong>Enhanced calculation:</strong> Uses monthly compound interest for accuracy vs simplified annual calculations</div>
-                <div>• <strong>Total deductible amount:</strong> ${holdingCosts.constructionHoldingInterest.toLocaleString()}</div>
-              </div>
-            </div>
-          </div>
-          
-        </div>
-      </div>
-    </AccordionContent>
-  </AccordionItem>
-)}
-
-{/* 5. Transaction & Setup Costs */}
-<AccordionItem value="transaction-costs" className="border-b">
-  <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50">
-    <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
-      <div className="flex items-center gap-3 flex-1 min-w-0">
-        <Receipt className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
-        <span className="font-medium text-sm md:text-base truncate">Transaction & Setup Costs</span>
-      </div>
-      <AccordionCompletionIndicator status={purchaseCostsStatus} />
-    </div>
-  </AccordionTrigger>
-  <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
-              <div className="space-y-4 md:space-y-6">
-                <div className="space-y-4">
-                  <h4 className="font-medium text-sm md:text-base">Purchase Costs</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                        <Label htmlFor="stampDuty" className="text-sm font-medium">Stamp Duty</Label>
-                        <Button 
-                          type="button" 
-                          size={isMobile ? "default" : "sm"} 
-                          variant="outline" 
-                          className="w-full md:w-auto min-h-[44px] md:min-h-0"
-                          onClick={() => setDutyCalcOpen(true)}
-                        >
-                          Calculate
-                        </Button>
+                    {/* Total Construction Value */}
+                    <div className="bg-accent/30 rounded-lg p-3 md:p-4 border border-accent/50">
+                      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-3">
+                        <h4 className="text-sm font-medium flex items-center gap-2">
+                          <DollarSign className="h-4 w-4 flex-shrink-0" />
+                          Total Construction Value
+                        </h4>
+                        {totalConstructionValue !==
+                          propertyData.constructionValue && (
+                          <span className="text-muted-foreground text-xs">
+                            (Calculated: $
+                            {totalConstructionValue.toLocaleString()})
+                          </span>
+                        )}
                       </div>
                       <CurrencyInput
-                        id="stampDuty"
-                        value={propertyData.stampDuty}
-                        onChange={(value) => updateFieldWithCascade('stampDuty', value)}
+                        id="constructionValue"
+                        value={propertyData.constructionValue}
+                        onChange={(value) => {
+                          protectField("constructionValue", 2000);
+                          updateFieldWithCascade("constructionValue", value);
+                        }}
                         className="min-h-[44px] md:min-h-10"
-                        placeholder="Enter stamp duty"
+                        placeholder="Enter total construction value"
                       />
-                      {showModelPrompt(propertyData.stampDuty, 'Stamp Duty')}
-                      <StampDutyCalculator open={dutyCalcOpen} onOpenChange={setDutyCalcOpen} />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="legalFees" className="text-sm font-medium">Legal Fees</Label>
-                      <CurrencyInput
-                        id="legalFees"
-                        value={propertyData.legalFees}
-                        onChange={(value) => updateFieldWithCascade('legalFees', value)}
-                        className="min-h-[44px] md:min-h-10"
-                        placeholder="Enter legal fees"
-                      />
-                      {showModelPrompt(propertyData.legalFees, 'Legal Fees')}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="inspectionFees" className="text-sm font-medium">Inspection Fees</Label>
-                      <CurrencyInput
-                        id="inspectionFees"
-                        value={propertyData.inspectionFees}
-                        onChange={(value) => updateFieldWithCascade('inspectionFees', value)}
-                        className="min-h-[44px] md:min-h-10"
-                        placeholder="Enter inspection fees"
-                      />
-                      {showModelPrompt(propertyData.inspectionFees, 'Inspection Fees')}
-                    </div>
-                  </div>
-                </div>
 
-                {propertyData.isConstructionProject && (
-                  <div className="space-y-4">
-                    <h4 className="font-medium text-sm md:text-base">Development Costs</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="councilFees" className="text-sm font-medium">Council Fees & Approvals</Label>
-                        <CurrencyInput
-                          id="councilFees"
-                          value={propertyData.councilFees}
-                          onChange={(value) => updateFieldWithCascade('councilFees', value)}
-                          className="min-h-[44px] md:min-h-10"
-                          placeholder="Enter council fees"
-                        />
+                    {/* Building Values */}
+                    <div className="bg-muted/20 rounded-lg p-3 md:p-4">
+                      <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                        <Receipt className="h-4 w-4 flex-shrink-0" />
+                        Construction Value Breakdown
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor="buildingValue"
+                            className="text-sm font-medium"
+                          >
+                            Building Value (excl. land)
+                          </Label>
+                          <CurrencyInput
+                            id="buildingValue"
+                            value={propertyData.buildingValue}
+                            onChange={(value) => {
+                              protectField("buildingValue", 2000);
+                              updateFieldWithCascade("buildingValue", value);
+                            }}
+                            className="min-h-[44px] md:min-h-10"
+                            placeholder="Enter building value"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor="plantEquipmentValue"
+                            className="text-sm font-medium"
+                          >
+                            Plant & Equipment Value
+                          </Label>
+                          <CurrencyInput
+                            id="plantEquipmentValue"
+                            value={propertyData.plantEquipmentValue}
+                            onChange={(value) => {
+                              protectField("plantEquipmentValue", 2000);
+                              updateFieldWithCascade(
+                                "plantEquipmentValue",
+                                value
+                              );
+                            }}
+                            className="min-h-[44px] md:min-h-10"
+                            placeholder="Enter equipment value"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor="constructionYear"
+                            className="text-sm font-medium"
+                          >
+                            Construction Year
+                          </Label>
+                          <NumberInput
+                            id="constructionYear"
+                            value={propertyData.constructionYear}
+                            onChange={(value) =>
+                              updateField("constructionYear", value)
+                            }
+                            className="min-h-[44px] md:min-h-10"
+                            placeholder="2020"
+                            min={1900}
+                            max={new Date().getFullYear() + 10}
+                            formatThousands={false}
+                          />
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="architectFees" className="text-sm font-medium">Architect/Design Fees</Label>
-                        <CurrencyInput
-                          id="architectFees"
-                          value={propertyData.architectFees}
-                          onChange={(value) => updateFieldWithCascade('architectFees', value)}
-                          className="min-h-[44px] md:min-h-10"
-                          placeholder="Enter architect fees"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="siteCosts" className="text-sm font-medium">Site Costs & Utilities</Label>
-                        <CurrencyInput
-                          id="siteCosts"
-                          value={propertyData.siteCosts}
-                          onChange={(value) => updateFieldWithCascade('siteCosts', value)}
-                          className="min-h-[44px] md:min-h-10"
-                          placeholder="Enter site costs"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* 6. Funding & Finance Structure */}
-          <AccordionItem value="funding-finance" className="border-b">
-            <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50">
-              <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <CreditCard className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
-                  <span className="font-medium text-sm md:text-base truncate">Funding & Finance Structure</span>
-                </div>
-                <AccordionCompletionIndicator status={financingStatus} sectionKey="funding-finance" />
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
-              <div className="space-y-6">
-                {/* Quick Funding Status - Mobile Priority */}
-                {(() => {
-                  const fundingAnalysis = calculateFundingAnalysis();
-                  const fundingGap = fundingAnalysis.fundingShortfall;
-                  
-                  return (
-                    <Card className="bg-muted/30 border-0">
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2">
-                            <CreditCard className="h-4 w-4 text-primary" />
-                            <span className="text-sm font-medium">Funding Status</span>
+                      <div className="mt-4">
+                        <div className="bg-accent/30 rounded-lg p-3">
+                          <div className="text-sm font-medium text-accent-foreground">
+                            Total Construction Value: $
+                            {totalConstructionValue.toLocaleString()}
                           </div>
-                          <div className={`text-xs px-2 py-1 rounded-full ${
-                            fundingGap === 0 ? 'bg-success/20 text-success' : 
-                            fundingGap > 0 ? 'bg-destructive/20 text-destructive' : 
-                            'bg-warning/20 text-warning'
-                          }`}>
-                            {fundingGap === 0 ? '✓ Complete' : fundingGap > 0 ? '⚠ Shortfall' : '⚠ Excess'}
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Building Value + Plant & Equipment Value
                           </div>
                         </div>
-                        
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <div className="text-xs text-muted-foreground">Project Cost:</div>
-                            <div className="font-medium">{formatCurrency(fundingAnalysis.totalProjectCost)}</div>
+                      </div>
+                    </div>
+
+                    {/* Development Costs */}
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-sm md:text-base">
+                        Development Costs
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor="councilFees"
+                            className="text-sm font-medium"
+                          >
+                            Council Fees & Approvals
+                          </Label>
+                          <CurrencyInput
+                            id="councilFees"
+                            value={propertyData.councilFees}
+                            onChange={(value) =>
+                              updateFieldWithCascade("councilFees", value)
+                            }
+                            className="min-h-[44px] md:min-h-10"
+                            placeholder="Enter council fees"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor="architectFees"
+                            className="text-sm font-medium"
+                          >
+                            Architect/Design Fees
+                          </Label>
+                          <CurrencyInput
+                            id="architectFees"
+                            value={propertyData.architectFees}
+                            onChange={(value) =>
+                              updateFieldWithCascade("architectFees", value)
+                            }
+                            className="min-h-[44px] md:min-h-10"
+                            placeholder="Enter architect fees"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor="siteCosts"
+                            className="text-sm font-medium"
+                          >
+                            Site Costs & Utilities
+                          </Label>
+                          <CurrencyInput
+                            id="siteCosts"
+                            value={propertyData.siteCosts}
+                            onChange={(value) =>
+                              updateFieldWithCascade("siteCosts", value)
+                            }
+                            className="min-h-[44px] md:min-h-10"
+                            placeholder="Enter site costs"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            )}
+
+            {/* 4. Construction Timeline */}
+            {propertyData.isConstructionProject && (
+              <AccordionItem value="construction-timeline" className="border-b">
+                <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50">
+                  <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <Clock className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
+                      <span className="font-medium text-sm md:text-base truncate">
+                        Construction Timeline
+                      </span>
+                    </div>
+                    <AccordionCompletionIndicator
+                      status={constructionStatus}
+                      sectionKey="construction-timeline"
+                    />
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
+                  <div className="space-y-4 md:space-y-6">
+                    {/* Construction Timeline & Financing */}
+                    <div className="bg-accent/20 rounded-lg p-3 md:p-4">
+                      <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                        <Clock className="h-4 w-4 flex-shrink-0" />
+                        Construction Timeline & Loan Structure
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor="constructionPeriod"
+                            className="text-sm font-medium"
+                          >
+                            Construction Period (months)
+                          </Label>
+                          <NumberInput
+                            id="constructionPeriod"
+                            value={propertyData.constructionPeriod || 0}
+                            onChange={(value) =>
+                              updateField("constructionPeriod", value)
+                            }
+                            className="min-h-[44px] md:min-h-10"
+                            placeholder="e.g., 12"
+                            min={1}
+                            max={60}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor="constructionInterestRate"
+                            className="text-sm font-medium"
+                          >
+                            Main Loan Rate (Construction Period)
+                          </Label>
+                          <PercentageInput
+                            id="constructionInterestRate"
+                            value={propertyData.constructionInterestRate}
+                            onChange={(value) =>
+                              updateField("constructionInterestRate", value)
+                            }
+                            className="min-h-[44px] md:min-h-10"
+                            placeholder="Enter rate"
+                          />
+                          <div className="text-xs text-muted-foreground">
+                            Interest rate during construction
                           </div>
-                          <div>
-                            <div className="text-xs text-muted-foreground">Total Funding:</div>
-                            <div className="font-medium">{formatCurrency(fundingAnalysis.mainLoanAmount + fundingAnalysis.equityLoanAmount + fundingAnalysis.actualCashDeposit)}</div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor="postConstructionRateReduction"
+                            className="text-sm font-medium"
+                          >
+                            Rate Reduction After Construction
+                          </Label>
+                          <PercentageInput
+                            id="postConstructionRateReduction"
+                            value={propertyData.postConstructionRateReduction}
+                            onChange={(value) =>
+                              updateField(
+                                "postConstructionRateReduction",
+                                value
+                              )
+                            }
+                            className="min-h-[44px] md:min-h-10"
+                            placeholder="0.5"
+                          />
+                          <div className="text-xs text-muted-foreground">
+                            Ongoing rate:{" "}
+                            {(
+                              propertyData.constructionInterestRate -
+                              propertyData.postConstructionRateReduction
+                            ).toFixed(2)}
+                            %
                           </div>
-                          {fundingGap !== 0 && (
-                            <div className="col-span-2">
-                              <div className="text-xs text-muted-foreground">
-                                {fundingGap > 0 ? 'Additional Needed:' : 'Excess Funds:'}
+                        </div>
+                      </div>
+
+                      {/* Construction Progress Payments */}
+                      <div className="space-y-3">
+                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                          <Label className="text-sm font-medium">
+                            Construction Progress Payments
+                          </Label>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size={isMobile ? "default" : "sm"}
+                            className="w-full md:w-auto min-h-[44px] md:min-h-0"
+                            onClick={() => {
+                              const newPayment = {
+                                id: Date.now().toString(),
+                                percentage: 0,
+                                month: 1,
+                                description: "New payment",
+                              };
+                              updateField("constructionProgressPayments", [
+                                ...(propertyData.constructionProgressPayments ||
+                                  []),
+                                newPayment,
+                              ]);
+                            }}
+                          >
+                            Add Payment
+                          </Button>
+                        </div>
+                        <div className="space-y-3">
+                          {propertyData.constructionProgressPayments?.map(
+                            (payment, index) => (
+                              <div
+                                key={payment.id}
+                                className="grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-2 items-end bg-muted/30 p-3 rounded"
+                              >
+                                <div className="md:col-span-4">
+                                  <Label className="text-xs font-medium">
+                                    Description
+                                  </Label>
+                                  <Input
+                                    value={payment.description}
+                                    onChange={(e) => {
+                                      const updated = [
+                                        ...(propertyData.constructionProgressPayments ||
+                                          []),
+                                      ];
+                                      updated[index] = {
+                                        ...payment,
+                                        description: e.target.value,
+                                      };
+                                      updateField(
+                                        "constructionProgressPayments",
+                                        updated
+                                      );
+                                    }}
+                                    className="mt-1 text-sm min-h-[44px] md:min-h-9"
+                                    placeholder="Payment description"
+                                  />
+                                </div>
+                                <div className="md:col-span-3">
+                                  <Label className="text-xs font-medium">
+                                    Percentage (%)
+                                  </Label>
+                                  <NumberInput
+                                    value={payment.percentage}
+                                    onChange={(value) => {
+                                      const updated = [
+                                        ...(propertyData.constructionProgressPayments ||
+                                          []),
+                                      ];
+                                      updated[index] = {
+                                        ...payment,
+                                        percentage: value,
+                                      };
+                                      updateField(
+                                        "constructionProgressPayments",
+                                        updated
+                                      );
+                                    }}
+                                    className="mt-1 text-sm min-h-[44px] md:min-h-9"
+                                    placeholder="0"
+                                    min={0}
+                                    max={100}
+                                    id={`percentage-${payment.id}`}
+                                  />
+                                </div>
+                                <div className="md:col-span-3">
+                                  <Label className="text-xs font-medium">
+                                    Month
+                                  </Label>
+                                  <NumberInput
+                                    value={payment.month}
+                                    onChange={(value) => {
+                                      const updated = [
+                                        ...(propertyData.constructionProgressPayments ||
+                                          []),
+                                      ];
+                                      updated[index] = {
+                                        ...payment,
+                                        month: value,
+                                      };
+                                      updateField(
+                                        "constructionProgressPayments",
+                                        updated
+                                      );
+                                    }}
+                                    className="mt-1 text-sm min-h-[44px] md:min-h-9"
+                                    placeholder="1"
+                                    min={1}
+                                    max={60}
+                                    id={`month-${payment.id}`}
+                                  />
+                                </div>
+                                <div className="md:col-span-2">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size={isMobile ? "default" : "sm"}
+                                    className="w-full md:w-auto min-h-[44px] md:min-h-0 text-destructive hover:bg-destructive/10"
+                                    onClick={() => {
+                                      const updated = (
+                                        propertyData.constructionProgressPayments ||
+                                        []
+                                      ).filter((_, i) => i !== index);
+                                      updateField(
+                                        "constructionProgressPayments",
+                                        updated
+                                      );
+                                    }}
+                                  >
+                                    <X className="h-4 w-4 mr-2 md:mr-0" />
+                                    <span className="md:hidden">Remove</span>
+                                  </Button>
+                                </div>
                               </div>
-                              <div className={`font-medium ${fundingGap > 0 ? 'text-destructive' : 'text-warning'}`}>
-                                {formatCurrency(Math.abs(fundingGap))}
-                              </div>
-                            </div>
+                            )
                           )}
                         </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })()}
-
-                {/* Essential Funding Inputs - Card Layout */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base">Essential Funding</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* Cash Deposit */}
-                    <div className="space-y-2">
-                      <Label htmlFor="depositAmount" className="text-sm font-medium">Cash Deposit</Label>
-                      <CurrencyInput
-                        id="depositAmount"
-                        value={propertyData.depositAmount}
-                        onChange={(value) => updateFieldWithCascade('depositAmount', value)}
-                        className="min-h-[48px]"
-                        placeholder="Enter deposit amount"
-                      />
-                    </div>
-
-                    {/* Equity Toggle */}
-                    <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                      <div className="flex-1">
-                        <Label htmlFor="useEquityFunding" className="text-sm font-medium cursor-pointer">
-                          Use Equity Funding
-                        </Label>
-                        <div className="text-xs text-muted-foreground">Access property equity</div>
-                      </div>
-                      <Switch
-                        id="useEquityFunding"
-                        checked={propertyData.useEquityFunding}
-                        onCheckedChange={(checked) => updateField('useEquityFunding', checked)}
-                      />
-                    </div>
-
-                    {/* Quick Funding Method Selection */}
-                    <div className="space-y-3">
-                      <Label className="text-sm font-medium">Funding Strategy</Label>
-                      <div className="grid grid-cols-1 gap-2">
-                        {Object.entries(FUNDING_METHODS).map(([key, method]) => {
-                          const active = propertyData.currentFundingMethod === (key as FundingMethod);
-                          return (
-                            <Button
-                              key={key}
-                              type="button"
-                              variant={active ? "default" : "outline"}
-                              size="sm"
-                              className="justify-start h-12 text-left"
-                              onClick={() => {
-                                const fundingData = getFundingMethodData(key as FundingMethod, propertyData.purchasePrice || 0);
-                                Object.entries(fundingData).forEach(([field, value]) => {
-                                  if (value !== undefined) {
-                                    updateField(field as keyof PropertyData, value);
-                                  }
-                                });
-                                updateField('currentFundingMethod', key as FundingMethod);
-                              }}
-                            >
-                              <div className="flex items-center gap-2 w-full">
-                                <div className={`w-2 h-2 rounded-full ${active ? 'bg-primary-foreground' : 'bg-muted-foreground'}`} />
-                                <span className="text-sm">{method.name}</span>
-                              </div>
-                            </Button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Main Loan Details - Collapsible */}
-                <Collapsible defaultOpen={true}>
-                  <CollapsibleTrigger asChild>
-                    <Button variant="ghost" className="w-full justify-between p-0 h-auto">
-                      <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4" />
-                        <span className="text-sm font-medium">Main Loan Details</span>
-                      </div>
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="space-y-4 mt-4">
-                    <Card>
-                      <CardContent className="p-4 space-y-4">
-                        {/* Key Loan Terms - Mobile Optimized Grid */}
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-2">
-                              <Label htmlFor="interestRate" className="text-xs font-medium">Interest Rate</Label>
-                              <PercentageInput
-                                id="interestRate"
-                                value={propertyData.isConstructionProject ? 
-                                  (propertyData.constructionInterestRate - propertyData.postConstructionRateReduction) : 
-                                  propertyData.interestRate
-                                }
-                                onChange={(value) => {
-                                  if (propertyData.isConstructionProject) {
-                                    updateField('constructionInterestRate', value + propertyData.postConstructionRateReduction);
-                                  } else {
-                                    updateField('interestRate', value);
-                                  }
-                                }}
-                                className="min-h-[48px] text-sm"
-                              />
+                        {propertyData.constructionProgressPayments?.length >
+                          0 && (
+                          <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
+                            <div className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                              Total:{" "}
+                              {propertyData.constructionProgressPayments.reduce(
+                                (sum, p) => sum + p.percentage,
+                                0
+                              )}
+                              %
+                              {propertyData.constructionProgressPayments.reduce(
+                                (sum, p) => sum + p.percentage,
+                                0
+                              ) !== 100 && (
+                                <span className="text-warning ml-2">
+                                  ⚠️ Should total 100%
+                                </span>
+                              )}
                             </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="lvr" className="text-xs font-medium">Max LVR</Label>
-                              <PercentageInput
-                                id="lvr"
-                                value={propertyData.lvr}
-                                onChange={(value) => updateField('lvr', value)}
-                                className="min-h-[48px] text-sm"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="loanTerm" className="text-xs font-medium">Loan Term (years)</Label>
-                            <NumberInput
-                              id="loanTerm"
-                              value={propertyData.loanTerm}
-                              onChange={(value) => updateField('loanTerm', value)}
-                              className="min-h-[48px] text-sm"
-                              min={1}
-                              max={50}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Loan Type - Mobile Toggle Buttons */}
-                        <div className="space-y-3">
-                          <Label className="text-xs font-medium">Payment Type</Label>
-                          <div className="grid grid-cols-2 gap-2">
-                            <Button
-                              type="button"
-                              variant={propertyData.mainLoanType === 'pi' ? "default" : "outline"}
-                              size="sm"
-                              className="h-10"
-                              onClick={() => updateField('mainLoanType', 'pi')}
-                            >
-                              P&I
-                            </Button>
-                            <Button
-                              type="button"
-                              variant={propertyData.mainLoanType === 'io' ? "default" : "outline"}
-                              size="sm"
-                              className="h-10"
-                              onClick={() => updateField('mainLoanType', 'io')}
-                            >
-                              IO
-                            </Button>
-                          </div>
-                        </div>
-
-                        {/* IO Period */}
-                        {propertyData.mainLoanType === 'io' && (
-                          <div className="space-y-2 p-3 bg-muted/30 rounded-lg">
-                            <Label htmlFor="ioTermYears" className="text-xs font-medium">IO Period (years)</Label>
-                            <NumberInput
-                              id="ioTermYears"
-                              value={propertyData.ioTermYears}
-                              onChange={(value) => updateField('ioTermYears', value)}
-                              className="min-h-[48px]"
-                              min={1}
-                              max={40}
-                            />
-                            {propertyData.ioTermYears > 10 && (
-                              <div className="text-xs text-warning">⚠ Long IO periods increase total cost</div>
-                            )}
                           </div>
                         )}
-                      </CardContent>
-                    </Card>
-                  </CollapsibleContent>
-                </Collapsible>
+                      </div>
 
-                {/* Equity Funding - Streamlined Mobile Layout */}
-                {propertyData.useEquityFunding && (
+                      {/* Holding Cost Estimates */}
+                      <div className="bg-orange-50/50 dark:bg-orange-950/20 rounded-lg p-4 border border-orange-200 dark:border-orange-800 mt-4">
+                        <h5 className="text-sm font-medium mb-3 flex items-center gap-2 text-orange-700 dark:text-orange-300">
+                          <DollarSign className="h-4 w-4" />
+                          Enhanced Holding Cost Estimates (
+                          {propertyData.constructionPeriod || 12} months) -
+                          Monthly Compounding
+                        </h5>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                          <div className="bg-red-50 dark:bg-red-950/30 rounded-lg p-3 border border-red-200 dark:border-red-800">
+                            <div className="text-xs text-red-600 dark:text-red-400 font-medium mb-1">
+                              Land Interest (Non-deductible, from settlement)
+                            </div>
+                            <div className="text-lg font-bold text-red-700 dark:text-red-300">
+                              $
+                              {holdingCosts.landHoldingInterest.toLocaleString()}
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              On ${propertyData.landValue.toLocaleString()} +
+                              stamp duty
+                            </div>
+                          </div>
+                          <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3 border border-green-200 dark:border-green-800">
+                            <div className="text-xs text-green-600 dark:text-green-400 font-medium mb-1">
+                              Construction Interest (Deductible, progressive
+                              drawdown)
+                            </div>
+                            <div className="text-lg font-bold text-green-700 dark:text-green-300">
+                              $
+                              {holdingCosts.constructionHoldingInterest.toLocaleString()}
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Based on payment schedule timing
+                            </div>
+                          </div>
+                          <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
+                            <div className="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">
+                              Total Holding Costs
+                            </div>
+                            <div className="text-lg font-bold text-blue-700 dark:text-blue-300">
+                              ${holdingCosts.totalHoldingCosts.toLocaleString()}
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Avg: $
+                              {Math.round(
+                                holdingCosts.totalHoldingCosts /
+                                  (propertyData.constructionPeriod || 12)
+                              ).toLocaleString()}
+                              /month
+                            </div>
+                          </div>
+                        </div>
+                        <div className="bg-muted/30 rounded-lg p-3">
+                          <div className="text-xs text-muted-foreground mb-2">
+                            <AlertTriangle className="h-3 w-3 inline mr-1" />
+                            Tax Implications:
+                          </div>
+                          <div className="text-xs text-muted-foreground space-y-1">
+                            <div>
+                              • <strong>Land Interest:</strong> Non-deductible,
+                              calculated from settlement date using monthly
+                              compounding
+                            </div>
+                            <div>
+                              • <strong>Construction Interest:</strong>{" "}
+                              Deductible, calculated from each drawdown date
+                              based on payment schedule
+                            </div>
+                            <div>
+                              • <strong>Enhanced calculation:</strong> Uses
+                              monthly compound interest for accuracy vs
+                              simplified annual calculations
+                            </div>
+                            <div>
+                              • <strong>Total deductible amount:</strong> $
+                              {holdingCosts.constructionHoldingInterest.toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            )}
+
+            {/* 5. Transaction & Setup Costs */}
+            <AccordionItem value="transaction-costs" className="border-b">
+              <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50">
+                <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <Receipt className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
+                    <span className="font-medium text-sm md:text-base truncate">
+                      Transaction & Setup Costs
+                    </span>
+                  </div>
+                  <AccordionCompletionIndicator status={purchaseCostsStatus} />
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
+                <div className="space-y-4 md:space-y-6">
+                  <div className="space-y-4">
+                    <h4 className="font-medium text-sm md:text-base">
+                      Purchase Costs
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                          <Label
+                            htmlFor="stampDuty"
+                            className="text-sm font-medium"
+                          >
+                            Stamp Duty
+                          </Label>
+                          <Button
+                            type="button"
+                            size={isMobile ? "default" : "sm"}
+                            variant="outline"
+                            className="w-full md:w-auto min-h-[44px] md:min-h-0"
+                            onClick={() => setDutyCalcOpen(true)}
+                          >
+                            Calculate
+                          </Button>
+                        </div>
+                        <CurrencyInput
+                          id="stampDuty"
+                          value={propertyData.stampDuty}
+                          onChange={(value) =>
+                            updateFieldWithCascade("stampDuty", value)
+                          }
+                          className="min-h-[44px] md:min-h-10"
+                          placeholder="Enter stamp duty"
+                        />
+                        {showModelPrompt(propertyData.stampDuty, "Stamp Duty")}
+                        <StampDutyCalculator
+                          open={dutyCalcOpen}
+                          onOpenChange={setDutyCalcOpen}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="legalFees"
+                          className="text-sm font-medium"
+                        >
+                          Legal Fees
+                        </Label>
+                        <CurrencyInput
+                          id="legalFees"
+                          value={propertyData.legalFees}
+                          onChange={(value) =>
+                            updateFieldWithCascade("legalFees", value)
+                          }
+                          className="min-h-[44px] md:min-h-10"
+                          placeholder="Enter legal fees"
+                        />
+                        {showModelPrompt(propertyData.legalFees, "Legal Fees")}
+                      </div>
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="inspectionFees"
+                          className="text-sm font-medium"
+                        >
+                          Inspection Fees
+                        </Label>
+                        <CurrencyInput
+                          id="inspectionFees"
+                          value={propertyData.inspectionFees}
+                          onChange={(value) =>
+                            updateFieldWithCascade("inspectionFees", value)
+                          }
+                          className="min-h-[44px] md:min-h-10"
+                          placeholder="Enter inspection fees"
+                        />
+                        {showModelPrompt(
+                          propertyData.inspectionFees,
+                          "Inspection Fees"
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {propertyData.isConstructionProject && (
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-sm md:text-base">
+                        Development Costs
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor="councilFees"
+                            className="text-sm font-medium"
+                          >
+                            Council Fees & Approvals
+                          </Label>
+                          <CurrencyInput
+                            id="councilFees"
+                            value={propertyData.councilFees}
+                            onChange={(value) =>
+                              updateFieldWithCascade("councilFees", value)
+                            }
+                            className="min-h-[44px] md:min-h-10"
+                            placeholder="Enter council fees"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor="architectFees"
+                            className="text-sm font-medium"
+                          >
+                            Architect/Design Fees
+                          </Label>
+                          <CurrencyInput
+                            id="architectFees"
+                            value={propertyData.architectFees}
+                            onChange={(value) =>
+                              updateFieldWithCascade("architectFees", value)
+                            }
+                            className="min-h-[44px] md:min-h-10"
+                            placeholder="Enter architect fees"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor="siteCosts"
+                            className="text-sm font-medium"
+                          >
+                            Site Costs & Utilities
+                          </Label>
+                          <CurrencyInput
+                            id="siteCosts"
+                            value={propertyData.siteCosts}
+                            onChange={(value) =>
+                              updateFieldWithCascade("siteCosts", value)
+                            }
+                            className="min-h-[44px] md:min-h-10"
+                            placeholder="Enter site costs"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* 6. Funding & Finance Structure */}
+            <AccordionItem value="funding-finance" className="border-b">
+              <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50">
+                <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <CreditCard className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
+                    <span className="font-medium text-sm md:text-base truncate">
+                      Funding & Finance Structure
+                    </span>
+                  </div>
+                  <AccordionCompletionIndicator
+                    status={financingStatus}
+                    sectionKey="funding-finance"
+                  />
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
+                <div className="space-y-6">
+                  {/* Quick Funding Status - Mobile Priority */}
+                  {(() => {
+                    const fundingAnalysis = calculateFundingAnalysis();
+                    const fundingGap = fundingAnalysis.fundingShortfall;
+
+                    return (
+                      <Card className="bg-muted/30 border-0">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <CreditCard className="h-4 w-4 text-primary" />
+                              <span className="text-sm font-medium">
+                                Funding Status
+                              </span>
+                            </div>
+                            <div
+                              className={`text-xs px-2 py-1 rounded-full ${
+                                fundingGap === 0
+                                  ? "bg-success/20 text-success"
+                                  : fundingGap > 0
+                                  ? "bg-destructive/20 text-destructive"
+                                  : "bg-warning/20 text-warning"
+                              }`}
+                            >
+                              {fundingGap === 0
+                                ? "✓ Complete"
+                                : fundingGap > 0
+                                ? "⚠ Shortfall"
+                                : "⚠ Excess"}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <div className="text-xs text-muted-foreground">
+                                Project Cost:
+                              </div>
+                              <div className="font-medium">
+                                {formatCurrency(
+                                  fundingAnalysis.totalProjectCost
+                                )}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-xs text-muted-foreground">
+                                Total Funding:
+                              </div>
+                              <div className="font-medium">
+                                {formatCurrency(
+                                  fundingAnalysis.mainLoanAmount +
+                                    fundingAnalysis.equityLoanAmount +
+                                    fundingAnalysis.actualCashDeposit
+                                )}
+                              </div>
+                            </div>
+                            {fundingGap !== 0 && (
+                              <div className="col-span-2">
+                                <div className="text-xs text-muted-foreground">
+                                  {fundingGap > 0
+                                    ? "Additional Needed:"
+                                    : "Excess Funds:"}
+                                </div>
+                                <div
+                                  className={`font-medium ${
+                                    fundingGap > 0
+                                      ? "text-destructive"
+                                      : "text-warning"
+                                  }`}
+                                >
+                                  {formatCurrency(Math.abs(fundingGap))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })()}
+
+                  {/* Essential Funding Inputs - Card Layout */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">
+                        Essential Funding
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {/* Cash Deposit */}
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="depositAmount"
+                          className="text-sm font-medium"
+                        >
+                          Cash Deposit
+                        </Label>
+                        <CurrencyInput
+                          id="depositAmount"
+                          value={propertyData.depositAmount}
+                          onChange={(value) =>
+                            updateFieldWithCascade("depositAmount", value)
+                          }
+                          className="min-h-[48px]"
+                          placeholder="Enter deposit amount"
+                        />
+                      </div>
+
+                      {/* Equity Toggle */}
+                      <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                        <div className="flex-1">
+                          <Label
+                            htmlFor="useEquityFunding"
+                            className="text-sm font-medium cursor-pointer"
+                          >
+                            Use Equity Funding
+                          </Label>
+                          <div className="text-xs text-muted-foreground">
+                            Access property equity
+                          </div>
+                        </div>
+                        <Switch
+                          id="useEquityFunding"
+                          checked={propertyData.useEquityFunding}
+                          onCheckedChange={(checked) =>
+                            updateField("useEquityFunding", checked)
+                          }
+                        />
+                      </div>
+
+                      {/* Quick Funding Method Selection */}
+                      <div className="space-y-3">
+                        <Label className="text-sm font-medium">
+                          Funding Strategy
+                        </Label>
+                        <div className="grid grid-cols-1 gap-2">
+                          {Object.entries(FUNDING_METHODS).map(
+                            ([key, method]) => {
+                              const active =
+                                propertyData.currentFundingMethod ===
+                                (key as FundingMethod);
+                              return (
+                                <Button
+                                  key={key}
+                                  type="button"
+                                  variant={active ? "default" : "outline"}
+                                  size="sm"
+                                  className="justify-start h-12 text-left"
+                                  onClick={() => {
+                                    const fundingData = getFundingMethodData(
+                                      key as FundingMethod,
+                                      propertyData.purchasePrice || 0
+                                    );
+                                    Object.entries(fundingData).forEach(
+                                      ([field, value]) => {
+                                        if (value !== undefined) {
+                                          updateField(
+                                            field as keyof PropertyData,
+                                            value
+                                          );
+                                        }
+                                      }
+                                    );
+                                    updateField(
+                                      "currentFundingMethod",
+                                      key as FundingMethod
+                                    );
+                                  }}
+                                >
+                                  <div className="flex items-center gap-2 w-full">
+                                    <div
+                                      className={`w-2 h-2 rounded-full ${
+                                        active
+                                          ? "bg-primary-foreground"
+                                          : "bg-muted-foreground"
+                                      }`}
+                                    />
+                                    <span className="text-sm">
+                                      {method.name}
+                                    </span>
+                                  </div>
+                                </Button>
+                              );
+                            }
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Allocated Funding Section */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-base">
+                          Allocated Funding
+                        </CardTitle>
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => setShowAddFundingDialog(true)}
+                          className="h-8"
+                        >
+                          Add Funding
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {fundingLoading ? (
+                        <div className="flex items-center justify-center py-4">
+                          <div className="text-sm text-muted-foreground">
+                            Loading funding data...
+                          </div>
+                        </div>
+                      ) : instanceFundings.length === 0 ? (
+                        <div className="text-center py-6 text-muted-foreground">
+                          <div className="text-sm">
+                            No funding allocated yet
+                          </div>
+                          <div className="text-xs mt-1">
+                            Click "Add Funding" to get started
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {instanceFundings.map((funding) => (
+                            <FundingCard
+                              key={funding.id}
+                              funding={funding}
+                              onEdit={handleEditFunding}
+                              onRemove={handleRemoveFunding}
+                              onUpdateAmount={handleUpdateAmount}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Main Loan Details - Collapsible */}
                   <Collapsible defaultOpen={true}>
                     <CollapsibleTrigger asChild>
-                      <Button variant="ghost" className="w-full justify-between p-0 h-auto">
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-between p-0 h-auto"
+                      >
                         <div className="flex items-center gap-2">
-                          <Home className="h-4 w-4" />
-                          <span className="text-sm font-medium">Equity Loan Setup</span>
+                          <Building2 className="h-4 w-4" />
+                          <span className="text-sm font-medium">
+                            Main Loan Details
+                          </span>
                         </div>
                         <ChevronDown className="h-4 w-4" />
                       </Button>
                     </CollapsibleTrigger>
                     <CollapsibleContent className="space-y-4 mt-4">
                       <Card>
-                        <CardHeader className="pb-3">
-                          <CardTitle className="text-base">Equity Loan Amount</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          {/* Equity Loan Input with Calculator */}
-                          <div className="flex gap-3">
-                            <div className="flex-1 space-y-2">
-                              <CurrencyInput
-                                id="equityLoanAmount"
-                                value={propertyData.equityLoanAmount || 0}
-                                onChange={(value) => updateField('equityLoanAmount', value)}
-                                className="min-h-[48px]"
-                                placeholder="Enter equity loan amount"
-                              />
-                            </div>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="min-h-[48px] px-4"
-                              onClick={() => setShowEquityCalculator(true)}
-                            >
-                              <Calculator className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          
-                          {/* Quick Funding Summary */}
-                          {(() => {
-                            const fundingAnalysis = calculateFundingAnalysis();
-                            const fundingGap = fundingAnalysis.fundingShortfall;
-                            
-                            if (fundingGap === 0) return null;
-                            
-                            return (
-                              <div className={`p-3 rounded-lg text-sm ${
-                                fundingGap > 0 ? 'bg-destructive/10 text-destructive' : 'bg-warning/10 text-warning'
-                              }`}>
-                                <div className="flex items-center gap-2 mb-1">
-                                  <AlertTriangle className="h-3 w-3" />
-                                  <span className="font-medium">
-                                    {fundingGap > 0 ? 'Funding Gap:' : 'Excess Funds:'}
-                                  </span>
-                                </div>
-                                <div className="text-xs">
-                                  {fundingGap > 0 ? 
-                                    `Need ${formatCurrency(fundingGap)} more funding` :
-                                    `${formatCurrency(Math.abs(fundingGap))} surplus to offset account`
-                                  }
-                                </div>
-                              </div>
-                            );
-                          })()}
-                        </CardContent>
-                      </Card>
-
-                      {/* Equity Property Details - Compact */}
-                      <Card>
-                        <CardHeader className="pb-3">
-                          <CardTitle className="text-base">Equity Property</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="p-4 space-y-4">
+                          {/* Key Loan Terms - Mobile Optimized Grid */}
                           <div className="space-y-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="primaryPropertyValue" className="text-xs font-medium">Property Value</Label>
-                              <CurrencyInput
-                                id="primaryPropertyValue"
-                                value={propertyData.primaryPropertyValue}
-                                onChange={(value) => updateFieldWithCascade('primaryPropertyValue', value)}
-                                className="min-h-[48px]"
-                                placeholder="Enter property value"
-                              />
-                            </div>
-                            
                             <div className="grid grid-cols-2 gap-3">
                               <div className="space-y-2">
-                                <Label htmlFor="existingDebt" className="text-xs font-medium">Existing Debt</Label>
-                                <CurrencyInput
-                                  id="existingDebt"
-                                  value={propertyData.existingDebt}
-                                  onChange={(value) => updateFieldWithCascade('existingDebt', value)}
-                                  className="min-h-[48px]"
-                                  placeholder="Existing debt"
+                                <Label
+                                  htmlFor="interestRate"
+                                  className="text-xs font-medium"
+                                >
+                                  Interest Rate
+                                </Label>
+                                <PercentageInput
+                                  id="interestRate"
+                                  value={
+                                    propertyData.isConstructionProject
+                                      ? propertyData.constructionInterestRate -
+                                        propertyData.postConstructionRateReduction
+                                      : propertyData.interestRate
+                                  }
+                                  onChange={(value) => {
+                                    if (propertyData.isConstructionProject) {
+                                      updateField(
+                                        "constructionInterestRate",
+                                        value +
+                                          propertyData.postConstructionRateReduction
+                                      );
+                                    } else {
+                                      updateField("interestRate", value);
+                                    }
+                                  }}
+                                  className="min-h-[48px] text-sm"
                                 />
                               </div>
                               <div className="space-y-2">
-                                <Label htmlFor="maxLVR" className="text-xs font-medium">Max LVR (%)</Label>
-                                <NumberInput
-                                  id="maxLVR"
-                                  value={propertyData.maxLVR}
-                                  onChange={(value) => updateField('maxLVR', value)}
-                                  className="min-h-[48px]"
-                                  min={0}
-                                  max={100}
+                                <Label
+                                  htmlFor="lvr"
+                                  className="text-xs font-medium"
+                                >
+                                  Max LVR
+                                </Label>
+                                <PercentageInput
+                                  id="lvr"
+                                  value={propertyData.lvr}
+                                  onChange={(value) =>
+                                    updateField("lvr", value)
+                                  }
+                                  className="min-h-[48px] text-sm"
                                 />
                               </div>
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
 
-                      {/* Equity Loan Terms - Simplified */}
-                      <Card>
-                        <CardHeader className="pb-3">
-                          <CardTitle className="text-base">Equity Loan Terms</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-2">
-                              <Label htmlFor="equityLoanInterestRate" className="text-xs font-medium">Interest Rate</Label>
-                              <PercentageInput
-                                id="equityLoanInterestRate"
-                                value={propertyData.equityLoanInterestRate}
-                                onChange={(value) => updateField('equityLoanInterestRate', value)}
-                                className="min-h-[48px]"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="equityLoanTerm" className="text-xs font-medium">Term (years)</Label>
+                              <Label
+                                htmlFor="loanTerm"
+                                className="text-xs font-medium"
+                              >
+                                Loan Term (years)
+                              </Label>
                               <NumberInput
-                                id="equityLoanTerm"
-                                value={propertyData.equityLoanTerm}
-                                onChange={(value) => updateField('equityLoanTerm', value)}
-                                className="min-h-[48px]"
+                                id="loanTerm"
+                                value={propertyData.loanTerm}
+                                onChange={(value) =>
+                                  updateField("loanTerm", value)
+                                }
+                                className="min-h-[48px] text-sm"
                                 min={1}
                                 max={50}
                               />
                             </div>
                           </div>
 
-                          {/* Payment Type - Toggle Buttons */}
-                          <div className="space-y-2">
-                            <Label className="text-xs font-medium">Payment Type</Label>
+                          {/* Loan Type - Mobile Toggle Buttons */}
+                          <div className="space-y-3">
+                            <Label className="text-xs font-medium">
+                              Payment Type
+                            </Label>
                             <div className="grid grid-cols-2 gap-2">
                               <Button
                                 type="button"
-                                variant={propertyData.equityLoanType === 'pi' ? "default" : "outline"}
+                                variant={
+                                  propertyData.mainLoanType === "pi"
+                                    ? "default"
+                                    : "outline"
+                                }
                                 size="sm"
                                 className="h-10"
-                                onClick={() => updateField('equityLoanType', 'pi')}
+                                onClick={() =>
+                                  updateField("mainLoanType", "pi")
+                                }
                               >
                                 P&I
                               </Button>
                               <Button
                                 type="button"
-                                variant={propertyData.equityLoanType === 'io' ? "default" : "outline"}
+                                variant={
+                                  propertyData.mainLoanType === "io"
+                                    ? "default"
+                                    : "outline"
+                                }
                                 size="sm"
                                 className="h-10"
-                                onClick={() => updateField('equityLoanType', 'io')}
+                                onClick={() =>
+                                  updateField("mainLoanType", "io")
+                                }
                               >
                                 IO
                               </Button>
                             </div>
                           </div>
 
-                          {/* IO Period for Equity Loan */}
-                          {propertyData.equityLoanType === 'io' && (
+                          {/* IO Period */}
+                          {propertyData.mainLoanType === "io" && (
                             <div className="space-y-2 p-3 bg-muted/30 rounded-lg">
-                              <Label htmlFor="equityLoanIoTermYears" className="text-xs font-medium">IO Period (years)</Label>
+                              <Label
+                                htmlFor="ioTermYears"
+                                className="text-xs font-medium"
+                              >
+                                IO Period (years)
+                              </Label>
                               <NumberInput
-                                id="equityLoanIoTermYears"
-                                value={propertyData.equityLoanIoTermYears}
-                                onChange={(value) => updateField('equityLoanIoTermYears', value)}
+                                id="ioTermYears"
+                                value={propertyData.ioTermYears}
+                                onChange={(value) =>
+                                  updateField("ioTermYears", value)
+                                }
                                 className="min-h-[48px]"
                                 min={1}
                                 max={40}
                               />
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    </CollapsibleContent>
-                  </Collapsible>
-                )}
-
-                {/* Construction Holding Costs - Only for Construction Projects */}
-                {propertyData.isConstructionProject && (
-                  <Collapsible>
-                    <CollapsibleTrigger asChild>
-                      <Button variant="ghost" className="w-full justify-between p-0 h-auto">
-                        <div className="flex items-center gap-2">
-                          <Wrench className="h-4 w-4" />
-                          <span className="text-sm font-medium">Construction Finance</span>
-                        </div>
-                        <ChevronDown className="h-4 w-4" />
-                      </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="space-y-4 mt-4">
-                      <Card>
-                        <CardHeader className="pb-3">
-                          <CardTitle className="text-base">Holding Costs During Construction</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          {/* Simple Toggle for Capitalize All */}
-                          <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                            <div className="flex-1">
-                              <Label htmlFor="capitalizeConstructionCosts" className="text-sm font-medium cursor-pointer">
-                                Capitalize All Construction Costs
-                              </Label>
-                              <div className="text-xs text-muted-foreground">Add interest & costs to loan balance</div>
-                            </div>
-                            <Switch
-                              id="capitalizeConstructionCosts"
-                              checked={propertyData.capitalizeConstructionCosts}
-                              onCheckedChange={(checked) => {
-                                updateField('capitalizeConstructionCosts', checked);
-                                if (checked) {
-                                  updateField('holdingCostFunding', 'debt');
-                                  updateField('holdingCostCashPercentage', 0);
-                                }
-                              }}
-                            />
-                          </div>
-
-                          {/* Construction Finance Type for Equity */}
-                          {propertyData.useEquityFunding && (
-                            <div className="space-y-3">
-                              <Label className="text-xs font-medium">Equity Loan During Construction</Label>
-                              <div className="grid grid-cols-2 gap-2">
-                                <Button
-                                  type="button"
-                                  variant={propertyData.constructionEquityRepaymentType === 'io' ? "default" : "outline"}
-                                  size="sm"
-                                  className="h-10"
-                                  onClick={() => updateField('constructionEquityRepaymentType', 'io')}
-                                >
-                                  IO
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant={propertyData.constructionEquityRepaymentType === 'pi' ? "default" : "outline"}
-                                  size="sm"
-                                  className="h-10"
-                                  onClick={() => updateField('constructionEquityRepaymentType', 'pi')}
-                                >
-                                  P&I
-                                </Button>
-                              </div>
-                              <div className="text-xs text-muted-foreground p-2 bg-muted/30 rounded">
-                                Main loan is always IO during construction with progressive drawdown
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Funding Method Options - Simplified for Mobile */}
-                          {!propertyData.capitalizeConstructionCosts && (
-                            <div className="space-y-3">
-                              <Label className="text-xs font-medium">Holding Cost Payment</Label>
-                              <div className="space-y-2">
-                                <Button
-                                  type="button"
-                                  variant={propertyData.holdingCostFunding === 'cash' ? "default" : "outline"}
-                                  size="sm"
-                                  className="w-full justify-start h-10"
-                                  onClick={() => {
-                                    updateField('holdingCostFunding', 'cash');
-                                    updateField('holdingCostCashPercentage', 100);
-                                  }}
-                                >
-                                  Pay in Cash
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant={propertyData.holdingCostFunding === 'debt' ? "default" : "outline"}
-                                  size="sm"
-                                  className="w-full justify-start h-10"
-                                  onClick={() => updateField('holdingCostFunding', 'debt')}
-                                >
-                                  Add to Loan
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant={propertyData.holdingCostFunding === 'hybrid' ? "default" : "outline"}
-                                  size="sm"
-                                  className="w-full justify-start h-10"
-                                  onClick={() => updateField('holdingCostFunding', 'hybrid')}
-                                >
-                                  Mixed Funding
-                                </Button>
-                              </div>
-                              
-                              {/* Hybrid Percentage */}
-                              {propertyData.holdingCostFunding === 'hybrid' && (
-                                <div className="space-y-2 p-3 bg-muted/30 rounded-lg">
-                                  <Label htmlFor="holdingCostCashPercentage" className="text-xs font-medium">Cash Percentage</Label>
-                                  <PercentageInput
-                                    id="holdingCostCashPercentage"
-                                    value={propertyData.holdingCostCashPercentage}
-                                    onChange={(value) => updateField('holdingCostCashPercentage', value)}
-                                    className="min-h-[48px]"
-                                  />
+                              {propertyData.ioTermYears > 10 && (
+                                <div className="text-xs text-warning">
+                                  ⚠ Long IO periods increase total cost
                                 </div>
                               )}
                             </div>
@@ -1832,407 +2261,1115 @@ export const PropertyInputForm = ({
                       </Card>
                     </CollapsibleContent>
                   </Collapsible>
-                )}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
 
-          {/* 7. Ongoing Income & Expenses */}
-          <AccordionItem value="ongoing-income-expenses" className="border-b">
-            <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50">
-              <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <DollarSign className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
-                  <span className="font-medium text-sm md:text-base truncate">Ongoing Income & Expenses</span>
-                </div>
-                <AccordionCompletionIndicator status={annualExpensesStatus} />
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="px-6 pb-6">
-              <div className="space-y-6">
-                {/* Rental Income Section */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-sm">Rental Income</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="weeklyRent" className="text-sm font-medium">Weekly Rent</Label>
-                      <CurrencyInput
-                        id="weeklyRent"
-                        value={propertyData.weeklyRent}
-                        onChange={(value) => updateFieldWithCascade('weeklyRent', value)}
-                        className="mt-1"
-                        placeholder="Enter weekly rent"
-                      />
-                      {showModelPrompt(propertyData.weeklyRent, 'Weekly Rent')}
-                    </div>
-                    <div>
-                      <Label htmlFor="rentalGrowthRate" className="text-sm font-medium">Rental Growth Rate</Label>
-                      <PercentageInput
-                        id="rentalGrowthRate"
-                        value={propertyData.rentalGrowthRate}
-                        onChange={(value) => updateField('rentalGrowthRate', value)}
-                        className="mt-1"
-                      />
-                      {showModelPrompt(propertyData.rentalGrowthRate, 'Rental Growth Rate')}
-                    </div>
-                    <div>
-                      <Label htmlFor="vacancyRate" className="text-sm font-medium">Vacancy Rate</Label>
-                      <PercentageInput
-                        id="vacancyRate"
-                        value={propertyData.vacancyRate}
-                        onChange={(value) => updateField('vacancyRate', value)}
-                        className="mt-1"
-                      />
-                      {showModelPrompt(propertyData.vacancyRate, 'Vacancy Rate')}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Ongoing Expenses */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-sm">Ongoing Expenses</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="propertyManagement" className="text-sm font-medium">Property Management (%)</Label>
-                      <PercentageInput
-                        id="propertyManagement"
-                        value={propertyData.propertyManagement}
-                        onChange={(value) => updateField('propertyManagement', value)}
-                        className="mt-1"
-                      />
-                      {showModelPrompt(propertyData.propertyManagement, 'Property Management')}
-                    </div>
-                    <div>
-                      <Label htmlFor="councilRates" className="text-sm font-medium">Council Rates (annual)</Label>
-                      <CurrencyInput
-                        id="councilRates"
-                        value={propertyData.councilRates}
-                        onChange={(value) => updateFieldWithCascade('councilRates', value)}
-                        className="mt-1"
-                        placeholder="Enter council rates"
-                      />
-                      {showModelPrompt(propertyData.councilRates, 'Council Rates')}
-                    </div>
-                    <div>
-                      <Label htmlFor="insurance" className="text-sm font-medium">Insurance (annual)</Label>
-                      <CurrencyInput
-                        id="insurance"
-                        value={propertyData.insurance}
-                        onChange={(value) => updateFieldWithCascade('insurance', value)}
-                        className="mt-1"
-                        placeholder="Enter insurance cost"
-                      />
-                      {showModelPrompt(propertyData.insurance, 'Insurance')}
-                    </div>
-                    <div>
-                      <Label htmlFor="repairs" className="text-sm font-medium">Repairs & Maintenance (annual)</Label>
-                      <CurrencyInput
-                        id="repairs"
-                        value={propertyData.repairs}
-                        onChange={(value) => updateFieldWithCascade('repairs', value)}
-                        className="mt-1"
-                        placeholder="Enter repair costs"
-                      />
-                      {showModelPrompt(propertyData.repairs, 'Repairs & Maintenance')}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* 8. Tax Optimization */}
-          <AccordionItem value="tax-optimization" className="border-b">
-            <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50">
-              <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <Calculator className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
-                  <span className="font-medium text-sm md:text-base truncate">Tax Optimization & Depreciation</span>
-                </div>
-                <AccordionCompletionIndicator status={taxOptimizationStatus} />
-              </div>
-            </AccordionTrigger>
-           <AccordionContent className="px-6 pb-6">
-              <div className="space-y-6">
-                {/* Depreciation Settings */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-sm">Depreciation Strategy</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="depreciationMethod" className="text-sm font-medium">Depreciation Method</Label>
-                      <Select 
-                        value={propertyData.depreciationMethod} 
-                        onValueChange={(value: 'prime-cost' | 'diminishing-value') => updateField('depreciationMethod', value)}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Select method" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="prime-cost">Prime Cost (Straight Line)</SelectItem>
-                          <SelectItem value="diminishing-value">Diminishing Value</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="flex items-center space-x-2 mt-6">
-                      <input
-                        type="checkbox"
-                        id="isNewProperty"
-                        checked={propertyData.isNewProperty}
-                        onChange={(e) => updateField('isNewProperty', e.target.checked)}
-                        className="rounded border-border"
-                      />
-                      <Label htmlFor="isNewProperty" className="text-sm">
-                        New Property (full depreciation available)
-                      </Label>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Property Ownership Allocation */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-sm">Property Ownership Allocation</h4>
-                  <div className="text-xs text-muted-foreground mb-3">
-                    Configure ownership percentages to optimize tax outcomes across multiple investors.
-                  </div>
-                                    {propertyData.investors.map((investor) => {
-                    const allocation = propertyData.ownershipAllocations.find(a => a.investorId === investor.id);
-                    return (
-                      <div key={investor.id} className="grid grid-cols-2 gap-4 items-center">
-                        <Label className="text-sm">{investor.name}</Label>
-                        <PercentageInput
-                          id={`ownership-${investor.id}`}
-                          value={allocation?.ownershipPercentage || 0}
-                          onChange={(value) => updateOwnershipAllocation(investor.id, value)}
-                          step="1"
-                        />
-                      </div>
-                    );
-                  })}
-                  <div className="text-sm text-muted-foreground">
-                    Total: {totalOwnership}% 
-                    {totalOwnership !== 100 && (
-                      <span className="text-warning ml-2">⚠️ Should total 100%</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Multi-Client Tax Summary */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium text-sm">Tax Impact by Client</h4>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">Total Tax Impact</span>
-                      <HoverCard openDelay={150}>
-                        <HoverCardTrigger asChild>
-                          <button type="button" className="inline-flex items-center text-muted-foreground hover:text-foreground">
-                            <Info className="h-4 w-4" aria-label="Ownership split helper" />
-                          </button>
-                        </HoverCardTrigger>
-                        <HoverCardContent className="w-80">
-                          <div className="space-y-2">
-                            <div className="font-medium">Ownership Split Guide</div>
-                            {propertyData.investors.length === 2 ? (
-                              (() => {
-                                const resultsByInvestor = propertyData.investors.map(c => investorTaxResults.find(r => r.investor.id === c.id));
-                                const [a, b] = resultsByInvestor;
-                                const totalPropertyTaxable = investorTaxResults.reduce((sum, r) => sum + r.propertyTaxableIncome, 0);
-                                const fmt = (n: number) => `${n < 0 ? '-' : ''}$${Math.abs(Math.round(n)).toLocaleString()}`;
-                                const estimate = (shareA: number) => {
-                                  const shareB = 1 - shareA;
-                                  const mA = a?.marginalTaxRate ?? 0;
-                                  const mB = b?.marginalTaxRate ?? 0;
-                                  return totalPropertyTaxable * (mA * shareA + mB * shareB);
-                                };
-                                const rows = [
-                                  { label: '10% / 90%', value: estimate(0.10) },
-                                  { label: '50% / 50%', value: estimate(0.50) },
-                                  { label: '90% / 10%', value: estimate(0.90) },
-                                ];
-                                return (
-                                  <div className="text-sm">
-                                    <div className="text-xs text-muted-foreground mb-2">Approximate using current marginal rates. Actual results may differ.</div>
-                                    <div className="space-y-1">
-                                      {rows.map(r => (
-                                        <div key={r.label} className="flex items-center justify-between">
-                                          <span>{r.label}</span>
-                                          <span className={r.value < 0 ? 'text-success' : 'text-destructive'}>{fmt(r.value)}</span>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                );
-                              })()
-                            ) : (
-                              <div className="text-xs text-muted-foreground">Helper available when there are exactly two investors.</div>
-                            )}
+                  {/* Equity Funding - Streamlined Mobile Layout */}
+                  {propertyData.useEquityFunding && (
+                    <Collapsible defaultOpen={true}>
+                      <CollapsibleTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-between p-0 h-auto"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Home className="h-4 w-4" />
+                            <span className="text-sm font-medium">
+                              Equity Loan Setup
+                            </span>
                           </div>
-                        </HoverCardContent>
-                      </HoverCard>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    {investorTaxResults.map((result) => (
-                      <div key={result.investor.id} className="bg-muted/30 rounded-lg p-4 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium text-sm">{result.investor.name}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {(result.ownershipPercentage * 100).toFixed(0)}% ownership
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2 text-xs">
-                          <div>
-                            <span className="text-muted-foreground">Tax Without:</span>
-                            <div className="font-medium">${result.taxWithoutProperty.toLocaleString()}</div>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Tax With:</span>
-                            <div className="font-medium">${result.taxWithProperty.toLocaleString()}</div>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Tax Difference:</span>
-                            <div className={`font-medium ${result.taxDifference > 0 ? 'text-success' : 'text-destructive'}`}>
-                              ${Math.abs(result.taxDifference).toLocaleString()}
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="space-y-4 mt-4">
+                        <Card>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-base">
+                              Equity Loan Amount
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            {/* Equity Loan Input with Calculator */}
+                            <div className="flex gap-3">
+                              <div className="flex-1 space-y-2">
+                                <CurrencyInput
+                                  id="equityLoanAmount"
+                                  value={propertyData.equityLoanAmount || 0}
+                                  onChange={(value) =>
+                                    updateField("equityLoanAmount", value)
+                                  }
+                                  className="min-h-[48px]"
+                                  placeholder="Enter equity loan amount"
+                                />
+                              </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="min-h-[48px] px-4"
+                                onClick={() => setShowEquityCalculator(true)}
+                              >
+                                <Calculator className="h-4 w-4" />
+                              </Button>
                             </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
 
-                    {/* Total Tax Impact row */}
-                    <div className="flex items-center justify-between bg-primary/5 rounded-lg p-3 text-sm">
-                      <span className="font-medium">Total Tax Impact</span>
-                      <span className={`font-semibold ${investorTaxResults.reduce((s, r) => s + r.taxDifference, 0) > 0 ? 'text-success' : 'text-destructive'}`}>
-                        ${Math.abs(investorTaxResults.reduce((s, r) => s + r.taxDifference, 0)).toLocaleString()}
-                      </span>
+                            {/* Quick Funding Summary */}
+                            {(() => {
+                              const fundingAnalysis =
+                                calculateFundingAnalysis();
+                              const fundingGap =
+                                fundingAnalysis.fundingShortfall;
+
+                              if (fundingGap === 0) return null;
+
+                              return (
+                                <div
+                                  className={`p-3 rounded-lg text-sm ${
+                                    fundingGap > 0
+                                      ? "bg-destructive/10 text-destructive"
+                                      : "bg-warning/10 text-warning"
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <AlertTriangle className="h-3 w-3" />
+                                    <span className="font-medium">
+                                      {fundingGap > 0
+                                        ? "Funding Gap:"
+                                        : "Excess Funds:"}
+                                    </span>
+                                  </div>
+                                  <div className="text-xs">
+                                    {fundingGap > 0
+                                      ? `Need ${formatCurrency(
+                                          fundingGap
+                                        )} more funding`
+                                      : `${formatCurrency(
+                                          Math.abs(fundingGap)
+                                        )} surplus to offset account`}
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </CardContent>
+                        </Card>
+
+                        {/* Equity Property Details - Compact */}
+                        <Card>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-base">
+                              Equity Property
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            <div className="space-y-4">
+                              <div className="space-y-2">
+                                <Label
+                                  htmlFor="primaryPropertyValue"
+                                  className="text-xs font-medium"
+                                >
+                                  Property Value
+                                </Label>
+                                <CurrencyInput
+                                  id="primaryPropertyValue"
+                                  value={propertyData.primaryPropertyValue}
+                                  onChange={(value) =>
+                                    updateFieldWithCascade(
+                                      "primaryPropertyValue",
+                                      value
+                                    )
+                                  }
+                                  className="min-h-[48px]"
+                                  placeholder="Enter property value"
+                                />
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-2">
+                                  <Label
+                                    htmlFor="existingDebt"
+                                    className="text-xs font-medium"
+                                  >
+                                    Existing Debt
+                                  </Label>
+                                  <CurrencyInput
+                                    id="existingDebt"
+                                    value={propertyData.existingDebt}
+                                    onChange={(value) =>
+                                      updateFieldWithCascade(
+                                        "existingDebt",
+                                        value
+                                      )
+                                    }
+                                    className="min-h-[48px]"
+                                    placeholder="Existing debt"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label
+                                    htmlFor="maxLVR"
+                                    className="text-xs font-medium"
+                                  >
+                                    Max LVR (%)
+                                  </Label>
+                                  <NumberInput
+                                    id="maxLVR"
+                                    value={propertyData.maxLVR}
+                                    onChange={(value) =>
+                                      updateField("maxLVR", value)
+                                    }
+                                    className="min-h-[48px]"
+                                    min={0}
+                                    max={100}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        {/* Equity Loan Terms - Simplified */}
+                        <Card>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-base">
+                              Equity Loan Terms
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-2">
+                                <Label
+                                  htmlFor="equityLoanInterestRate"
+                                  className="text-xs font-medium"
+                                >
+                                  Interest Rate
+                                </Label>
+                                <PercentageInput
+                                  id="equityLoanInterestRate"
+                                  value={propertyData.equityLoanInterestRate}
+                                  onChange={(value) =>
+                                    updateField("equityLoanInterestRate", value)
+                                  }
+                                  className="min-h-[48px]"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label
+                                  htmlFor="equityLoanTerm"
+                                  className="text-xs font-medium"
+                                >
+                                  Term (years)
+                                </Label>
+                                <NumberInput
+                                  id="equityLoanTerm"
+                                  value={propertyData.equityLoanTerm}
+                                  onChange={(value) =>
+                                    updateField("equityLoanTerm", value)
+                                  }
+                                  className="min-h-[48px]"
+                                  min={1}
+                                  max={50}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Payment Type - Toggle Buttons */}
+                            <div className="space-y-2">
+                              <Label className="text-xs font-medium">
+                                Payment Type
+                              </Label>
+                              <div className="grid grid-cols-2 gap-2">
+                                <Button
+                                  type="button"
+                                  variant={
+                                    propertyData.equityLoanType === "pi"
+                                      ? "default"
+                                      : "outline"
+                                  }
+                                  size="sm"
+                                  className="h-10"
+                                  onClick={() =>
+                                    updateField("equityLoanType", "pi")
+                                  }
+                                >
+                                  P&I
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant={
+                                    propertyData.equityLoanType === "io"
+                                      ? "default"
+                                      : "outline"
+                                  }
+                                  size="sm"
+                                  className="h-10"
+                                  onClick={() =>
+                                    updateField("equityLoanType", "io")
+                                  }
+                                >
+                                  IO
+                                </Button>
+                              </div>
+                            </div>
+
+                            {/* IO Period for Equity Loan */}
+                            {propertyData.equityLoanType === "io" && (
+                              <div className="space-y-2 p-3 bg-muted/30 rounded-lg">
+                                <Label
+                                  htmlFor="equityLoanIoTermYears"
+                                  className="text-xs font-medium"
+                                >
+                                  IO Period (years)
+                                </Label>
+                                <NumberInput
+                                  id="equityLoanIoTermYears"
+                                  value={propertyData.equityLoanIoTermYears}
+                                  onChange={(value) =>
+                                    updateField("equityLoanIoTermYears", value)
+                                  }
+                                  className="min-h-[48px]"
+                                  min={1}
+                                  max={40}
+                                />
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  )}
+
+                  {/* Construction Holding Costs - Only for Construction Projects */}
+                  {propertyData.isConstructionProject && (
+                    <Collapsible>
+                      <CollapsibleTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-between p-0 h-auto"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Wrench className="h-4 w-4" />
+                            <span className="text-sm font-medium">
+                              Construction Finance
+                            </span>
+                          </div>
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="space-y-4 mt-4">
+                        <Card>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-base">
+                              Holding Costs During Construction
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            {/* Simple Toggle for Capitalize All */}
+                            <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                              <div className="flex-1">
+                                <Label
+                                  htmlFor="capitalizeConstructionCosts"
+                                  className="text-sm font-medium cursor-pointer"
+                                >
+                                  Capitalize All Construction Costs
+                                </Label>
+                                <div className="text-xs text-muted-foreground">
+                                  Add interest & costs to loan balance
+                                </div>
+                              </div>
+                              <Switch
+                                id="capitalizeConstructionCosts"
+                                checked={
+                                  propertyData.capitalizeConstructionCosts
+                                }
+                                onCheckedChange={(checked) => {
+                                  updateField(
+                                    "capitalizeConstructionCosts",
+                                    checked
+                                  );
+                                  if (checked) {
+                                    updateField("holdingCostFunding", "debt");
+                                    updateField("holdingCostCashPercentage", 0);
+                                  }
+                                }}
+                              />
+                            </div>
+
+                            {/* Construction Finance Type for Equity */}
+                            {propertyData.useEquityFunding && (
+                              <div className="space-y-3">
+                                <Label className="text-xs font-medium">
+                                  Equity Loan During Construction
+                                </Label>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <Button
+                                    type="button"
+                                    variant={
+                                      propertyData.constructionEquityRepaymentType ===
+                                      "io"
+                                        ? "default"
+                                        : "outline"
+                                    }
+                                    size="sm"
+                                    className="h-10"
+                                    onClick={() =>
+                                      updateField(
+                                        "constructionEquityRepaymentType",
+                                        "io"
+                                      )
+                                    }
+                                  >
+                                    IO
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant={
+                                      propertyData.constructionEquityRepaymentType ===
+                                      "pi"
+                                        ? "default"
+                                        : "outline"
+                                    }
+                                    size="sm"
+                                    className="h-10"
+                                    onClick={() =>
+                                      updateField(
+                                        "constructionEquityRepaymentType",
+                                        "pi"
+                                      )
+                                    }
+                                  >
+                                    P&I
+                                  </Button>
+                                </div>
+                                <div className="text-xs text-muted-foreground p-2 bg-muted/30 rounded">
+                                  Main loan is always IO during construction
+                                  with progressive drawdown
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Funding Method Options - Simplified for Mobile */}
+                            {!propertyData.capitalizeConstructionCosts && (
+                              <div className="space-y-3">
+                                <Label className="text-xs font-medium">
+                                  Holding Cost Payment
+                                </Label>
+                                <div className="space-y-2">
+                                  <Button
+                                    type="button"
+                                    variant={
+                                      propertyData.holdingCostFunding === "cash"
+                                        ? "default"
+                                        : "outline"
+                                    }
+                                    size="sm"
+                                    className="w-full justify-start h-10"
+                                    onClick={() => {
+                                      updateField("holdingCostFunding", "cash");
+                                      updateField(
+                                        "holdingCostCashPercentage",
+                                        100
+                                      );
+                                    }}
+                                  >
+                                    Pay in Cash
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant={
+                                      propertyData.holdingCostFunding === "debt"
+                                        ? "default"
+                                        : "outline"
+                                    }
+                                    size="sm"
+                                    className="w-full justify-start h-10"
+                                    onClick={() =>
+                                      updateField("holdingCostFunding", "debt")
+                                    }
+                                  >
+                                    Add to Loan
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant={
+                                      propertyData.holdingCostFunding ===
+                                      "hybrid"
+                                        ? "default"
+                                        : "outline"
+                                    }
+                                    size="sm"
+                                    className="w-full justify-start h-10"
+                                    onClick={() =>
+                                      updateField(
+                                        "holdingCostFunding",
+                                        "hybrid"
+                                      )
+                                    }
+                                  >
+                                    Mixed Funding
+                                  </Button>
+                                </div>
+
+                                {/* Hybrid Percentage */}
+                                {propertyData.holdingCostFunding ===
+                                  "hybrid" && (
+                                  <div className="space-y-2 p-3 bg-muted/30 rounded-lg">
+                                    <Label
+                                      htmlFor="holdingCostCashPercentage"
+                                      className="text-xs font-medium"
+                                    >
+                                      Cash Percentage
+                                    </Label>
+                                    <PercentageInput
+                                      id="holdingCostCashPercentage"
+                                      value={
+                                        propertyData.holdingCostCashPercentage
+                                      }
+                                      onChange={(value) =>
+                                        updateField(
+                                          "holdingCostCashPercentage",
+                                          value
+                                        )
+                                      }
+                                      className="min-h-[48px]"
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  )}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* 7. Ongoing Income & Expenses */}
+            <AccordionItem value="ongoing-income-expenses" className="border-b">
+              <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50">
+                <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <DollarSign className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
+                    <span className="font-medium text-sm md:text-base truncate">
+                      Ongoing Income & Expenses
+                    </span>
+                  </div>
+                  <AccordionCompletionIndicator status={annualExpensesStatus} />
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pb-6">
+                <div className="space-y-6">
+                  {/* Rental Income Section */}
+                  <div className="space-y-4">
+                    <h4 className="font-medium text-sm">Rental Income</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
+                        <Label
+                          htmlFor="weeklyRent"
+                          className="text-sm font-medium"
+                        >
+                          Weekly Rent
+                        </Label>
+                        <CurrencyInput
+                          id="weeklyRent"
+                          value={propertyData.weeklyRent}
+                          onChange={(value) =>
+                            updateFieldWithCascade("weeklyRent", value)
+                          }
+                          className="mt-1"
+                          placeholder="Enter weekly rent"
+                        />
+                        {showModelPrompt(
+                          propertyData.weeklyRent,
+                          "Weekly Rent"
+                        )}
+                      </div>
+                      <div>
+                        <Label
+                          htmlFor="rentalGrowthRate"
+                          className="text-sm font-medium"
+                        >
+                          Rental Growth Rate
+                        </Label>
+                        <PercentageInput
+                          id="rentalGrowthRate"
+                          value={propertyData.rentalGrowthRate}
+                          onChange={(value) =>
+                            updateField("rentalGrowthRate", value)
+                          }
+                          className="mt-1"
+                        />
+                        {showModelPrompt(
+                          propertyData.rentalGrowthRate,
+                          "Rental Growth Rate"
+                        )}
+                      </div>
+                      <div>
+                        <Label
+                          htmlFor="vacancyRate"
+                          className="text-sm font-medium"
+                        >
+                          Vacancy Rate
+                        </Label>
+                        <PercentageInput
+                          id="vacancyRate"
+                          value={propertyData.vacancyRate}
+                          onChange={(value) =>
+                            updateField("vacancyRate", value)
+                          }
+                          className="mt-1"
+                        />
+                        {showModelPrompt(
+                          propertyData.vacancyRate,
+                          "Vacancy Rate"
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Overall Tax Summary */}
-                <div className="bg-primary/5 rounded-lg p-4 space-y-3">
-                  <div className="font-medium text-sm">Combined Household Summary</div>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Total Household Income:</span>
-                      <div className="font-medium">${totalTaxableIncome.toLocaleString()}</div>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Highest Marginal Rate:</span>
-                      <div className="font-medium">
-                        {(marginalTaxRate * 100).toFixed(0)}%
-                        {propertyData.investors.some(c => c.hasMedicareLevy) && (
-                          <span className="text-muted-foreground"> +2% Medicare</span>
+                  {/* Ongoing Expenses */}
+                  <div className="space-y-4">
+                    <h4 className="font-medium text-sm">Ongoing Expenses</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <Label
+                          htmlFor="propertyManagement"
+                          className="text-sm font-medium"
+                        >
+                          Property Management (%)
+                        </Label>
+                        <PercentageInput
+                          id="propertyManagement"
+                          value={propertyData.propertyManagement}
+                          onChange={(value) =>
+                            updateField("propertyManagement", value)
+                          }
+                          className="mt-1"
+                        />
+                        {showModelPrompt(
+                          propertyData.propertyManagement,
+                          "Property Management"
+                        )}
+                      </div>
+                      <div>
+                        <Label
+                          htmlFor="councilRates"
+                          className="text-sm font-medium"
+                        >
+                          Council Rates (annual)
+                        </Label>
+                        <CurrencyInput
+                          id="councilRates"
+                          value={propertyData.councilRates}
+                          onChange={(value) =>
+                            updateFieldWithCascade("councilRates", value)
+                          }
+                          className="mt-1"
+                          placeholder="Enter council rates"
+                        />
+                        {showModelPrompt(
+                          propertyData.councilRates,
+                          "Council Rates"
+                        )}
+                      </div>
+                      <div>
+                        <Label
+                          htmlFor="insurance"
+                          className="text-sm font-medium"
+                        >
+                          Insurance (annual)
+                        </Label>
+                        <CurrencyInput
+                          id="insurance"
+                          value={propertyData.insurance}
+                          onChange={(value) =>
+                            updateFieldWithCascade("insurance", value)
+                          }
+                          className="mt-1"
+                          placeholder="Enter insurance cost"
+                        />
+                        {showModelPrompt(propertyData.insurance, "Insurance")}
+                      </div>
+                      <div>
+                        <Label
+                          htmlFor="repairs"
+                          className="text-sm font-medium"
+                        >
+                          Repairs & Maintenance (annual)
+                        </Label>
+                        <CurrencyInput
+                          id="repairs"
+                          value={propertyData.repairs}
+                          onChange={(value) =>
+                            updateFieldWithCascade("repairs", value)
+                          }
+                          className="mt-1"
+                          placeholder="Enter repair costs"
+                        />
+                        {showModelPrompt(
+                          propertyData.repairs,
+                          "Repairs & Maintenance"
                         )}
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      </CardContent>
-    </Card>
+              </AccordionContent>
+            </AccordionItem>
 
-    {/* Confirmation Dialogs */}
-    <FieldUpdateConfirmDialog
-      open={!!pendingUpdate}
-      onOpenChange={(open) => !open && setPendingUpdate(null)}
-      onConfirm={handleConfirmUpdate}
-      title={
-        pendingUpdate?.confirmationType === 'construction'
-          ? "Auto-split Construction Contract Value"
-          : "Auto-update Construction Contract Value"
-      }
-      description={
-        pendingUpdate?.confirmationType === 'construction'
-          ? "This will automatically split the construction contract value into building and plant & equipment values."
-          : "This will automatically update the construction contract value based on your building and equipment values."
-      }
-      details={
-        pendingUpdate?.confirmationType === 'construction'
-          ? [
-              "Building Value: 90% of construction contract",
-              "Plant & Equipment: 10% of construction contract",
-              "You can manually adjust these values later"
-            ]
-          : [
-              "Construction Contract = Building Value + Plant & Equipment Value",
-              "This helps maintain accurate totals",
-              "You can manually adjust the contract value if needed"
-            ]
-      }
-    />
-
-    {/* Investor Selection Dialog */}
-    <Dialog open={isInvestorDialogOpen} onOpenChange={setIsInvestorDialogOpen}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Select Investor</DialogTitle>
-          <DialogDescription>
-            Choose an investor from your existing list. Their income details and Medicare Levy status will be automatically populated.
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="space-y-4">
-          {/* Search Input */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search investors..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-
-          {/* Investors List */}
-          <div className="max-h-60 overflow-y-auto space-y-2">
-            {investors.length === 0 ? (
-              <div className="text-center py-4">
-                <p className="text-sm text-muted-foreground">No investors found. Create some investors first.</p>
-              </div>
-            ) : (
-              investors
-                .filter(investor => 
-                  investor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  investor.id.toLowerCase().includes(searchTerm.toLowerCase())
-                )
-                .map(investor => (
-                  <div
-                    key={investor.id}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer"
-                    onClick={() => selectInvestor(investor)}
-                  >
-                    <div className="flex-1">
-                      <div className="font-medium">{investor.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        Total Income: {formatCurrency((investor.annualIncome || 0) + (investor.otherIncome || 0))}
+            {/* 8. Tax Optimization */}
+            <AccordionItem value="tax-optimization" className="border-b">
+              <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50">
+                <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <Calculator className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
+                    <span className="font-medium text-sm md:text-base truncate">
+                      Tax Optimization & Depreciation
+                    </span>
+                  </div>
+                  <AccordionCompletionIndicator
+                    status={taxOptimizationStatus}
+                  />
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pb-6">
+                <div className="space-y-6">
+                  {/* Depreciation Settings */}
+                  <div className="space-y-4">
+                    <h4 className="font-medium text-sm">
+                      Depreciation Strategy
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <Label
+                          htmlFor="depreciationMethod"
+                          className="text-sm font-medium"
+                        >
+                          Depreciation Method
+                        </Label>
+                        <Select
+                          value={propertyData.depreciationMethod}
+                          onValueChange={(
+                            value: "prime-cost" | "diminishing-value"
+                          ) => updateField("depreciationMethod", value)}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue placeholder="Select method" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="prime-cost">
+                              Prime Cost (Straight Line)
+                            </SelectItem>
+                            <SelectItem value="diminishing-value">
+                              Diminishing Value
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center space-x-2 mt-6">
+                        <input
+                          type="checkbox"
+                          id="isNewProperty"
+                          checked={propertyData.isNewProperty}
+                          onChange={(e) =>
+                            updateField("isNewProperty", e.target.checked)
+                          }
+                          className="rounded border-border"
+                        />
+                        <Label htmlFor="isNewProperty" className="text-sm">
+                          New Property (full depreciation available)
+                        </Label>
                       </div>
                     </div>
-                    <Button size="sm" variant="outline">
-                      Select
-                    </Button>
                   </div>
-                ))
-            )}
+
+                  {/* Property Ownership Allocation */}
+                  <div className="space-y-4">
+                    <h4 className="font-medium text-sm">
+                      Property Ownership Allocation
+                    </h4>
+                    <div className="text-xs text-muted-foreground mb-3">
+                      Configure ownership percentages to optimize tax outcomes
+                      across multiple investors.
+                    </div>
+                    {propertyData.investors.map((investor) => {
+                      const allocation = propertyData.ownershipAllocations.find(
+                        (a) => a.investorId === investor.id
+                      );
+                      return (
+                        <div
+                          key={investor.id}
+                          className="grid grid-cols-2 gap-4 items-center"
+                        >
+                          <Label className="text-sm">{investor.name}</Label>
+                          <PercentageInput
+                            id={`ownership-${investor.id}`}
+                            value={allocation?.ownershipPercentage || 0}
+                            onChange={(value) =>
+                              updateOwnershipAllocation(investor.id, value)
+                            }
+                            step="1"
+                          />
+                        </div>
+                      );
+                    })}
+                    <div className="text-sm text-muted-foreground">
+                      Total: {totalOwnership}%
+                      {totalOwnership !== 100 && (
+                        <span className="text-warning ml-2">
+                          ⚠️ Should total 100%
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Multi-Client Tax Summary */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium text-sm">
+                        Tax Impact by Client
+                      </h4>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">
+                          Total Tax Impact
+                        </span>
+                        <HoverCard openDelay={150}>
+                          <HoverCardTrigger asChild>
+                            <button
+                              type="button"
+                              className="inline-flex items-center text-muted-foreground hover:text-foreground"
+                            >
+                              <Info
+                                className="h-4 w-4"
+                                aria-label="Ownership split helper"
+                              />
+                            </button>
+                          </HoverCardTrigger>
+                          <HoverCardContent className="w-80">
+                            <div className="space-y-2">
+                              <div className="font-medium">
+                                Ownership Split Guide
+                              </div>
+                              {propertyData.investors.length === 2 ? (
+                                (() => {
+                                  const resultsByInvestor =
+                                    propertyData.investors.map((c) =>
+                                      investorTaxResults.find(
+                                        (r) => r.investor.id === c.id
+                                      )
+                                    );
+                                  const [a, b] = resultsByInvestor;
+                                  const totalPropertyTaxable =
+                                    investorTaxResults.reduce(
+                                      (sum, r) => sum + r.propertyTaxableIncome,
+                                      0
+                                    );
+                                  const fmt = (n: number) =>
+                                    `${n < 0 ? "-" : ""}$${Math.abs(
+                                      Math.round(n)
+                                    ).toLocaleString()}`;
+                                  const estimate = (shareA: number) => {
+                                    const shareB = 1 - shareA;
+                                    const mA = a?.marginalTaxRate ?? 0;
+                                    const mB = b?.marginalTaxRate ?? 0;
+                                    return (
+                                      totalPropertyTaxable *
+                                      (mA * shareA + mB * shareB)
+                                    );
+                                  };
+                                  const rows = [
+                                    {
+                                      label: "10% / 90%",
+                                      value: estimate(0.1),
+                                    },
+                                    {
+                                      label: "50% / 50%",
+                                      value: estimate(0.5),
+                                    },
+                                    {
+                                      label: "90% / 10%",
+                                      value: estimate(0.9),
+                                    },
+                                  ];
+                                  return (
+                                    <div className="text-sm">
+                                      <div className="text-xs text-muted-foreground mb-2">
+                                        Approximate using current marginal
+                                        rates. Actual results may differ.
+                                      </div>
+                                      <div className="space-y-1">
+                                        {rows.map((r) => (
+                                          <div
+                                            key={r.label}
+                                            className="flex items-center justify-between"
+                                          >
+                                            <span>{r.label}</span>
+                                            <span
+                                              className={
+                                                r.value < 0
+                                                  ? "text-success"
+                                                  : "text-destructive"
+                                              }
+                                            >
+                                              {fmt(r.value)}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  );
+                                })()
+                              ) : (
+                                <div className="text-xs text-muted-foreground">
+                                  Helper available when there are exactly two
+                                  investors.
+                                </div>
+                              )}
+                            </div>
+                          </HoverCardContent>
+                        </HoverCard>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      {investorTaxResults.map((result) => (
+                        <div
+                          key={result.investor.id}
+                          className="bg-muted/30 rounded-lg p-4 space-y-2"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-sm">
+                              {result.investor.name}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {(result.ownershipPercentage * 100).toFixed(0)}%
+                              ownership
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2 text-xs">
+                            <div>
+                              <span className="text-muted-foreground">
+                                Tax Without:
+                              </span>
+                              <div className="font-medium">
+                                ${result.taxWithoutProperty.toLocaleString()}
+                              </div>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">
+                                Tax With:
+                              </span>
+                              <div className="font-medium">
+                                ${result.taxWithProperty.toLocaleString()}
+                              </div>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">
+                                Tax Difference:
+                              </span>
+                              <div
+                                className={`font-medium ${
+                                  result.taxDifference > 0
+                                    ? "text-success"
+                                    : "text-destructive"
+                                }`}
+                              >
+                                $
+                                {Math.abs(
+                                  result.taxDifference
+                                ).toLocaleString()}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Total Tax Impact row */}
+                      <div className="flex items-center justify-between bg-primary/5 rounded-lg p-3 text-sm">
+                        <span className="font-medium">Total Tax Impact</span>
+                        <span
+                          className={`font-semibold ${
+                            investorTaxResults.reduce(
+                              (s, r) => s + r.taxDifference,
+                              0
+                            ) > 0
+                              ? "text-success"
+                              : "text-destructive"
+                          }`}
+                        >
+                          $
+                          {Math.abs(
+                            investorTaxResults.reduce(
+                              (s, r) => s + r.taxDifference,
+                              0
+                            )
+                          ).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Overall Tax Summary */}
+                  <div className="bg-primary/5 rounded-lg p-4 space-y-3">
+                    <div className="font-medium text-sm">
+                      Combined Household Summary
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">
+                          Total Household Income:
+                        </span>
+                        <div className="font-medium">
+                          ${totalTaxableIncome.toLocaleString()}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">
+                          Highest Marginal Rate:
+                        </span>
+                        <div className="font-medium">
+                          {(marginalTaxRate * 100).toFixed(0)}%
+                          {propertyData.investors.some(
+                            (c) => c.hasMedicareLevy
+                          ) && (
+                            <span className="text-muted-foreground">
+                              {" "}
+                              +2% Medicare
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </CardContent>
+      </Card>
+
+      {/* Confirmation Dialogs */}
+      <FieldUpdateConfirmDialog
+        open={!!pendingUpdate}
+        onOpenChange={(open) => !open && setPendingUpdate(null)}
+        onConfirm={handleConfirmUpdate}
+        title={
+          pendingUpdate?.confirmationType === "construction"
+            ? "Auto-split Construction Contract Value"
+            : "Auto-update Construction Contract Value"
+        }
+        description={
+          pendingUpdate?.confirmationType === "construction"
+            ? "This will automatically split the construction contract value into building and plant & equipment values."
+            : "This will automatically update the construction contract value based on your building and equipment values."
+        }
+        details={
+          pendingUpdate?.confirmationType === "construction"
+            ? [
+                "Building Value: 90% of construction contract",
+                "Plant & Equipment: 10% of construction contract",
+                "You can manually adjust these values later",
+              ]
+            : [
+                "Construction Contract = Building Value + Plant & Equipment Value",
+                "This helps maintain accurate totals",
+                "You can manually adjust the contract value if needed",
+              ]
+        }
+      />
+
+      {/* Investor Selection Dialog */}
+      <Dialog
+        open={isInvestorDialogOpen}
+        onOpenChange={setIsInvestorDialogOpen}
+      >
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Select Investor</DialogTitle>
+            <DialogDescription>
+              Choose an investor from your existing list. Their income details
+              and Medicare Levy status will be automatically populated.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search investors..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
+            {/* Investors List */}
+            <div className="max-h-60 overflow-y-auto space-y-2">
+              {investors.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-sm text-muted-foreground">
+                    No investors found. Create some investors first.
+                  </p>
+                </div>
+              ) : (
+                investors
+                  .filter(
+                    (investor) =>
+                      investor.name
+                        .toLowerCase()
+                        .includes(searchTerm.toLowerCase()) ||
+                      investor.id
+                        .toLowerCase()
+                        .includes(searchTerm.toLowerCase())
+                  )
+                  .map((investor) => (
+                    <div
+                      key={investor.id}
+                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer"
+                      onClick={() => selectInvestor(investor)}
+                    >
+                      <div className="flex-1">
+                        <div className="font-medium">{investor.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          Total Income:{" "}
+                          {formatCurrency(
+                            (investor.annualIncome || 0) +
+                              (investor.otherIncome || 0)
+                          )}
+                        </div>
+                      </div>
+                      <Button size="sm" variant="outline">
+                        Select
+                      </Button>
+                    </div>
+                  ))
+              )}
+            </div>
           </div>
-        </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setIsInvestorDialogOpen(false)}>
-            Cancel
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsInvestorDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-    {/* Equity Loan Calculator Dialog */}
-    <EquityLoanCalculator
-      open={showEquityCalculator}
-      onOpenChange={setShowEquityCalculator}
-      onApplyEquityLoan={(amount) => updateField('equityLoanAmount', amount)}
-    />
-  </div>
+      {/* Equity Loan Calculator Dialog */}
+      <EquityLoanCalculator
+        open={showEquityCalculator}
+        onOpenChange={setShowEquityCalculator}
+        onApplyEquityLoan={(amount) => updateField("equityLoanAmount", amount)}
+      />
+
+      <AddFundingDialog
+        open={showAddFundingDialog}
+        onOpenChange={setShowAddFundingDialog}
+        instanceId={instanceId}
+        onFundingAdded={handleFundingAdded}
+      />
+    </div>
   );
 };
