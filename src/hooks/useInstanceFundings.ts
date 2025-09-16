@@ -9,7 +9,10 @@ import {
   FundAvailabilityCheck,
 } from "@/types/funding";
 
-export function useInstanceFundings(instanceId?: string) {
+export function useInstanceFundings(
+  instanceId?: string,
+  onFundingChange?: () => void
+) {
   const { user } = useAuth();
   const [instanceFundings, setInstanceFundings] = useState<InstanceFunding[]>(
     []
@@ -170,6 +173,17 @@ export function useInstanceFundings(instanceId?: string) {
 
         if (error) throw error;
 
+        // Update the fund's available amount in the database
+        if (data.fund_type === "loan") {
+          await supabase.rpc("update_loan_fund_available_amount", {
+            fund_id: data.fund_id,
+          });
+        } else if (data.fund_type === "cash") {
+          await supabase.rpc("update_cash_fund_available_amount", {
+            fund_id: data.fund_id,
+          });
+        }
+
         // Get fund details separately
         let fundName = "Unknown Fund";
         let fundTotalAmount = 0;
@@ -214,6 +228,12 @@ export function useInstanceFundings(instanceId?: string) {
         };
 
         setInstanceFundings((prev) => [newFunding, ...prev]);
+
+        // Refresh funds if callback provided
+        if (onFundingChange) {
+          onFundingChange();
+        }
+
         toast.success("Funding added successfully");
         return newFunding;
       } catch (error) {
@@ -230,12 +250,30 @@ export function useInstanceFundings(instanceId?: string) {
       if (!user) return false;
 
       try {
+        // Get the current funding to know which fund to update
+        const currentFunding = instanceFundings.find((f) => f.id === id);
+        if (!currentFunding) {
+          toast.error("Funding not found");
+          return false;
+        }
+
         const { error } = await supabase
           .from("instance_fundings")
           .update(updates)
           .eq("id", id);
 
         if (error) throw error;
+
+        // Update the fund's available amount in the database
+        if (currentFunding.fund_type === "loan") {
+          await supabase.rpc("update_loan_fund_available_amount", {
+            fund_id: currentFunding.fund_id,
+          });
+        } else if (currentFunding.fund_type === "cash") {
+          await supabase.rpc("update_cash_fund_available_amount", {
+            fund_id: currentFunding.fund_id,
+          });
+        }
 
         setInstanceFundings((prev) =>
           prev.map((funding) =>
@@ -245,6 +283,11 @@ export function useInstanceFundings(instanceId?: string) {
           )
         );
 
+        // Refresh funds if callback provided
+        if (onFundingChange) {
+          onFundingChange();
+        }
+
         toast.success("Funding updated successfully");
         return true;
       } catch (error) {
@@ -253,7 +296,7 @@ export function useInstanceFundings(instanceId?: string) {
         return false;
       }
     },
-    [user]
+    [user, instanceFundings, onFundingChange]
   );
 
   const removeInstanceFunding = useCallback(
@@ -261,6 +304,13 @@ export function useInstanceFundings(instanceId?: string) {
       if (!user) return false;
 
       try {
+        // Get the current funding to know which fund to update
+        const currentFunding = instanceFundings.find((f) => f.id === id);
+        if (!currentFunding) {
+          toast.error("Funding not found");
+          return false;
+        }
+
         const { error } = await supabase
           .from("instance_fundings")
           .delete()
@@ -268,9 +318,26 @@ export function useInstanceFundings(instanceId?: string) {
 
         if (error) throw error;
 
+        // Update the fund's available amount in the database
+        if (currentFunding.fund_type === "loan") {
+          await supabase.rpc("update_loan_fund_available_amount", {
+            fund_id: currentFunding.fund_id,
+          });
+        } else if (currentFunding.fund_type === "cash") {
+          await supabase.rpc("update_cash_fund_available_amount", {
+            fund_id: currentFunding.fund_id,
+          });
+        }
+
         setInstanceFundings((prev) =>
           prev.filter((funding) => funding.id !== id)
         );
+
+        // Refresh funds if callback provided
+        if (onFundingChange) {
+          onFundingChange();
+        }
+
         toast.success("Funding removed successfully");
         return true;
       } catch (error) {
@@ -279,7 +346,7 @@ export function useInstanceFundings(instanceId?: string) {
         return false;
       }
     },
-    [user]
+    [user, instanceFundings, onFundingChange]
   );
 
   const checkFundAvailability = useCallback(

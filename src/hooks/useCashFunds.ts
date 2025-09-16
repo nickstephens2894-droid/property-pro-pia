@@ -26,17 +26,37 @@ export function useCashFunds() {
 
       if (error) throw error;
 
-      // Map database fields to frontend interface
-      const mappedCashFunds = (data || []).map((fund) => ({
-        id: fund.id,
-        name: fund.name,
-        fund_type: fund.fund_type || "Savings",
-        total_amount: Number(fund.total_amount) || 0,
-        available_amount: Number(fund.available_amount) || 0,
-        return_rate: Number(fund.return_rate) || 0,
-        created_at: fund.created_at,
-        updated_at: fund.updated_at,
-      }));
+      // Calculate available amounts dynamically for each fund
+      const mappedCashFunds = await Promise.all(
+        (data || []).map(async (fund) => {
+          // Get usage summary for this fund
+          const { data: usageData, error: usageError } = await supabase.rpc(
+            "get_fund_usage_summary",
+            {
+              p_fund_id: fund.id,
+              p_fund_type: "cash",
+            }
+          );
+
+          const usage = usageData?.[0] || {
+            total_allocated: 0,
+            total_used: 0,
+            available_amount: Number(fund.total_amount) || 0,
+            usage_percentage: 0,
+          };
+
+          return {
+            id: fund.id,
+            name: fund.name,
+            fund_type: fund.fund_type || "Savings",
+            total_amount: Number(fund.total_amount) || 0,
+            available_amount: Number(usage.available_amount) || 0,
+            return_rate: Number(fund.return_rate) || 0,
+            created_at: fund.created_at,
+            updated_at: fund.updated_at,
+          };
+        })
+      );
 
       setCashFunds(mappedCashFunds);
     } catch (error) {

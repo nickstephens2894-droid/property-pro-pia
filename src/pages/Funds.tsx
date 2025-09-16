@@ -39,21 +39,17 @@ import {
 
 export default function Funds() {
   const {
-    loanFunds,
     loanFundsWithUsage,
-    loading: loanFundsLoading,
+    cashFunds,
     createLoanFund,
     updateLoanFund,
     deleteLoanFund,
-  } = useLoanFunds();
-  const {
-    cashFunds,
-    loading: cashFundsLoading,
     createCashFund,
     updateCashFund,
     deleteCashFund,
-  } = useCashFunds();
-  const { instanceFundings } = useFunding();
+    instanceFundings,
+    loading,
+  } = useFunding();
 
   const [activeTab, setActiveTab] = useState("loans");
   const [isLoanDialogOpen, setIsLoanDialogOpen] = useState(false);
@@ -240,7 +236,7 @@ export default function Funds() {
     }
   };
 
-  if (loanFundsLoading || cashFundsLoading) {
+  if (loading) {
     return <LoadingSpinner message="Loading funds..." />;
   }
 

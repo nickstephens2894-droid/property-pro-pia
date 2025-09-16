@@ -6,6 +6,8 @@ import {
   InstanceFunding,
   CreateInstanceFundingRequest,
   FundAvailabilityCheck,
+  CashFund,
+  LoanFundWithUsage,
 } from "@/types/funding";
 
 interface FundingContextType {
@@ -20,12 +22,28 @@ interface FundingContextType {
   ) => Promise<boolean>;
   removeInstanceFunding: (id: string) => Promise<boolean>;
 
+  // Funds
+  cashFunds: CashFund[];
+  loanFundsWithUsage: LoanFundWithUsage[];
+
+  // Fund CRUD operations
+  createCashFund: (fundData: any) => Promise<CashFund | null>;
+  updateCashFund: (id: string, updates: any) => Promise<boolean>;
+  deleteCashFund: (id: string) => Promise<boolean>;
+  createLoanFund: (fundData: any) => Promise<any>;
+  updateLoanFund: (id: string, updates: any) => Promise<boolean>;
+  deleteLoanFund: (id: string) => Promise<boolean>;
+
   // Fund availability
   checkFundAvailability: (
     fundId: string,
     fundType: "loan" | "cash",
     amount: number
   ) => Promise<FundAvailabilityCheck>;
+
+  // Refresh functions
+  refreshCashFunds: () => Promise<void>;
+  refreshLoanFunds: () => Promise<void>;
 
   // Loading states
   loading: boolean;
@@ -47,16 +65,35 @@ interface FundingProviderProps {
 
 export const FundingProvider = ({ children }: FundingProviderProps) => {
   const {
+    loanFundsWithUsage,
+    loading: loanFundsLoading,
+    loadLoanFunds,
+    createLoanFund,
+    updateLoanFund,
+    deleteLoanFund,
+  } = useLoanFunds();
+  const {
+    cashFunds,
+    loading: cashFundsLoading,
+    loadCashFunds,
+    createCashFund,
+    updateCashFund,
+    deleteCashFund,
+  } = useCashFunds();
+
+  // Create a refresh function that refreshes both funds
+  const refreshFunds = async () => {
+    await Promise.all([loadCashFunds(), loadLoanFunds()]);
+  };
+
+  const {
     instanceFundings,
     loading: instanceFundingsLoading,
     addInstanceFunding,
     updateInstanceFunding,
     removeInstanceFunding,
     checkFundAvailability,
-  } = useInstanceFundings();
-
-  const { loading: loanFundsLoading } = useLoanFunds();
-  const { loading: cashFundsLoading } = useCashFunds();
+  } = useInstanceFundings(undefined, refreshFunds);
 
   const loading =
     instanceFundingsLoading || loanFundsLoading || cashFundsLoading;
@@ -66,7 +103,17 @@ export const FundingProvider = ({ children }: FundingProviderProps) => {
     addInstanceFunding,
     updateInstanceFunding,
     removeInstanceFunding,
+    cashFunds,
+    loanFundsWithUsage,
+    createCashFund,
+    updateCashFund,
+    deleteCashFund,
+    createLoanFund,
+    updateLoanFund,
+    deleteLoanFund,
     checkFundAvailability,
+    refreshCashFunds: loadCashFunds,
+    refreshLoanFunds: loadLoanFunds,
     loading,
   };
 
