@@ -55,8 +55,8 @@ function AppLayout() {
     "/auth",
   ];
   const isPublicPage = publicPages.includes(location.pathname);
-  const showPublicNav = !user && isPublicPage;
-  const showAppNav = user && !location.pathname.startsWith("/auth");
+  const showPublicNav = !user && isPublicPage && !hideNav;
+  const showAppNav = user && !location.pathname.startsWith("/auth") && !hideNav;
 
   return (
     <div className="min-h-screen">
