@@ -40,18 +40,23 @@ const queryClient = new QueryClient();
 
 function AppLayout() {
   const location = useLocation();
-<<<<<<< HEAD
   const hideNav =
     location.pathname.startsWith("/auth") || location.pathname === "/";
-=======
   const { user } = useAuth();
-  
+
   // Show public nav for non-authenticated users on public pages
-  const publicPages = ["/", "/how-it-works", "/individual", "/advisors", "/enterprise", "/signup", "/auth"];
+  const publicPages = [
+    "/",
+    "/how-it-works",
+    "/individual",
+    "/advisors",
+    "/enterprise",
+    "/signup",
+    "/auth",
+  ];
   const isPublicPage = publicPages.includes(location.pathname);
   const showPublicNav = !user && isPublicPage;
   const showAppNav = user && !location.pathname.startsWith("/auth");
->>>>>>> main
 
   return (
     <div className="min-h-screen">
@@ -62,7 +67,6 @@ function AppLayout() {
           <Route path="/auth" element={<Auth />} />
           <Route path="/" element={<Index />} />
           {/* <Route path="/projections" element={<RequireAuth><Projections /></RequireAuth>} /> */}
-<<<<<<< HEAD
           <Route
             path="/investors"
             element={
@@ -159,25 +163,107 @@ function AppLayout() {
               </RequireAuth>
             }
           />
-=======
-          <Route path="/investors" element={<RequireAuth><Investors /></RequireAuth>} />
-          <Route path="/investors/:id" element={<RequireAuth><InvestorDetail /></RequireAuth>} />
-          <Route path="/properties" element={<RequireAuth><Properties /></RequireAuth>} />
-          <Route path="/funds" element={<RequireAuth><Funds /></RequireAuth>} />
-          <Route path="/scenarios" element={<RequireAuth><Scenarios /></RequireAuth>} />
-          <Route path="/instances" element={<RequireAuth><Instances /></RequireAuth>} />
-          <Route path="/instances/add" element={<RequireAuth><AddInstance /></RequireAuth>} />
-          <Route path="/instances/:id" element={<RequireAuth><InstanceDetail /></RequireAuth>} />
-          <Route path="/projection-dashboard" element={<RequireAuth><ProjectionDashboard /></RequireAuth>} />
-          <Route path="/properties/create" element={<RequireAuth><CreateProperty /></RequireAuth>} />
-          <Route path="/properties/:propertyId/edit" element={<RequireAuth><EditProperty /></RequireAuth>} />
-          <Route path="/how-to" element={<RequireAuth><HowTo /></RequireAuth>} />
+          <Route
+            path="/investors"
+            element={
+              <RequireAuth>
+                <Investors />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/investors/:id"
+            element={
+              <RequireAuth>
+                <InvestorDetail />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/properties"
+            element={
+              <RequireAuth>
+                <Properties />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/funds"
+            element={
+              <RequireAuth>
+                <Funds />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/scenarios"
+            element={
+              <RequireAuth>
+                <Scenarios />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/instances"
+            element={
+              <RequireAuth>
+                <Instances />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/instances/add"
+            element={
+              <RequireAuth>
+                <AddInstance />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/instances/:id"
+            element={
+              <RequireAuth>
+                <InstanceDetail />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/projection-dashboard"
+            element={
+              <RequireAuth>
+                <ProjectionDashboard />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/properties/create"
+            element={
+              <RequireAuth>
+                <CreateProperty />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/properties/:propertyId/edit"
+            element={
+              <RequireAuth>
+                <EditProperty />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/how-to"
+            element={
+              <RequireAuth>
+                <HowTo />
+              </RequireAuth>
+            }
+          />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/individual" element={<Individual />} />
           <Route path="/advisors" element={<Advisors />} />
           <Route path="/enterprise" element={<Enterprise />} />
           <Route path="/signup" element={<SignUp />} />
->>>>>>> main
           <Route path="/spec" element={<SpecPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
