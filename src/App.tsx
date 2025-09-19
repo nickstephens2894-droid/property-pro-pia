@@ -7,6 +7,7 @@ import { PropertyDataProvider } from "./contexts/PropertyDataContext";
 import { InstancesProvider } from "./contexts/InstancesContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { FundingProvider } from "./contexts/FundingContext";
+import { ScenariosProvider } from "./contexts/ScenariosContext";
 import AppNav from "./components/AppNav";
 import PublicNav from "./components/PublicNav";
 import Index from "./pages/Index";
@@ -282,13 +283,15 @@ const App = () => (
           <PropertyDataProvider>
             <InstancesProvider>
               <FundingProvider>
-                <TooltipProvider>
-                  <Toaster />
-                  <Sonner />
-                  <BrowserRouter>
-                    <AppLayout />
-                  </BrowserRouter>
-                </TooltipProvider>
+                <ScenariosProvider>
+                  <TooltipProvider>
+                    <Toaster />
+                    <Sonner />
+                    <BrowserRouter>
+                      <AppLayout />
+                    </BrowserRouter>
+                  </TooltipProvider>
+                </ScenariosProvider>
               </FundingProvider>
             </InstancesProvider>
           </PropertyDataProvider>

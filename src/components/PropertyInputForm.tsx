@@ -140,6 +140,7 @@ interface PropertyInputFormProps {
   selectedModel?: any; // Optional prop for selected model
   isEditMode?: boolean; // Add edit mode prop
   instanceId?: string; // Instance ID for funding functionality
+  disableFunding?: boolean; // Disable funding functionality (for scenarios)
 }
 
 const PercentageInput = ({
@@ -248,6 +249,7 @@ export const PropertyInputForm = ({
   selectedModel,
   isEditMode = false,
   instanceId: propInstanceId,
+  disableFunding = false,
 }: PropertyInputFormProps) => {
   const isMobile = useIsMobile();
   const [openSections, setOpenSections] = useState<string[]>([]);
@@ -301,30 +303,40 @@ export const PropertyInputForm = ({
     loading: fundingLoading,
   } = useFunding();
 
-  // Get instance ID from props or use temp instance
-  const instanceId = propInstanceId || "temp-instance";
+  // Get instance ID from props or use temp instance (only if funding is enabled)
+  const instanceId = disableFunding
+    ? undefined
+    : propInstanceId || "temp-instance";
 
-  // Filter fundings for this specific instance
-  const instanceFundings = allInstanceFundings.filter(
-    (f) => f.instance_id === instanceId
-  );
+  // Filter fundings for this specific instance (only if funding is enabled)
+  const instanceFundings = disableFunding
+    ? []
+    : allInstanceFundings.filter((f) => f.instance_id === instanceId);
 
   // Funding handlers
   const handleFundingAdded = (funding: InstanceFunding) => {
-    setShowAddFundingDialog(false);
+    if (!disableFunding) {
+      setShowAddFundingDialog(false);
+    }
   };
 
   const handleEditFunding = (funding: InstanceFunding) => {
-    setEditingFunding(funding);
-    setShowAddFundingDialog(true);
+    if (!disableFunding) {
+      setEditingFunding(funding);
+      setShowAddFundingDialog(true);
+    }
   };
 
   const handleRemoveFunding = async (fundingId: string) => {
-    await removeInstanceFunding(fundingId);
+    if (!disableFunding) {
+      await removeInstanceFunding(fundingId);
+    }
   };
 
   const handleUpdateAmount = async (fundingId: string, amount: number) => {
-    await updateInstanceFunding(fundingId, { amount_allocated: amount });
+    if (!disableFunding) {
+      await updateInstanceFunding(fundingId, { amount_allocated: amount });
+    }
   };
 
   // Calculate total construction value
@@ -2054,54 +2066,56 @@ export const PropertyInputForm = ({
                     </CardContent>
                   </Card>
 
-                  {/* Allocated Funding Section */}
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-base">
-                          Allocated Funding
-                        </CardTitle>
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={() => setShowAddFundingDialog(true)}
-                          className="h-8"
-                        >
-                          Add Funding
-                        </Button>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {fundingLoading ? (
-                        <div className="flex items-center justify-center py-4">
-                          <div className="text-sm text-muted-foreground">
-                            Loading funding data...
-                          </div>
+                  {/* Allocated Funding Section - Only show if not disabled */}
+                  {!disableFunding && (
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-base">
+                            Allocated Funding
+                          </CardTitle>
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => setShowAddFundingDialog(true)}
+                            className="h-8"
+                          >
+                            Add Funding
+                          </Button>
                         </div>
-                      ) : instanceFundings.length === 0 ? (
-                        <div className="text-center py-6 text-muted-foreground">
-                          <div className="text-sm">
-                            No funding allocated yet
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {fundingLoading ? (
+                          <div className="flex items-center justify-center py-4">
+                            <div className="text-sm text-muted-foreground">
+                              Loading funding data...
+                            </div>
                           </div>
-                          <div className="text-xs mt-1">
-                            Click "Add Funding" to get started
+                        ) : instanceFundings.length === 0 ? (
+                          <div className="text-center py-6 text-muted-foreground">
+                            <div className="text-sm">
+                              No funding allocated yet
+                            </div>
+                            <div className="text-xs mt-1">
+                              Click "Add Funding" to get started
+                            </div>
                           </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          {instanceFundings.map((funding) => (
-                            <FundingCard
-                              key={funding.id}
-                              funding={funding}
-                              onEdit={handleEditFunding}
-                              onRemove={handleRemoveFunding}
-                              onUpdateAmount={handleUpdateAmount}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                        ) : (
+                          <div className="space-y-3">
+                            {instanceFundings.map((funding) => (
+                              <FundingCard
+                                key={funding.id}
+                                funding={funding}
+                                onEdit={handleEditFunding}
+                                onRemove={handleRemoveFunding}
+                                onUpdateAmount={handleUpdateAmount}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
 
                   {/* Main Loan Details - Collapsible */}
                   <Collapsible defaultOpen={true}>
@@ -3364,12 +3378,14 @@ export const PropertyInputForm = ({
         onApplyEquityLoan={(amount) => updateField("equityLoanAmount", amount)}
       />
 
-      <AddFundingDialog
-        open={showAddFundingDialog}
-        onOpenChange={setShowAddFundingDialog}
-        instanceId={instanceId}
-        onFundingAdded={handleFundingAdded}
-      />
+      {!disableFunding && (
+        <AddFundingDialog
+          open={showAddFundingDialog}
+          onOpenChange={setShowAddFundingDialog}
+          instanceId={instanceId}
+          onFundingAdded={handleFundingAdded}
+        />
+      )}
     </div>
   );
 };
