@@ -16,6 +16,7 @@ import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 // Import all the components from PropertyAnalysis and Projections
 import { PropertyInputForm } from "@/components/PropertyInputForm";
 import { FundingSummaryPanel } from "@/components/FundingSummaryPanel";
+import { ConstructionDetailsPanel } from "@/components/ConstructionDetailsPanel";
 
 import { PropertySummaryDashboard } from "@/components/PropertySummaryDashboard";
 import ProjectionsTable from "@/components/ProjectionsTable";
@@ -1771,11 +1772,21 @@ const InstanceDetail = () => {
           className="space-y-6"
         >
           <TabsList
-            className={`grid w-full grid-cols-2 ${isMobile ? "h-12" : ""}`}
+            className={`grid w-full ${
+              propertyData.isConstructionProject ? "grid-cols-3" : "grid-cols-2"
+            } ${isMobile ? "h-12" : ""}`}
           >
             <TabsTrigger value="analysis" className={isMobile ? "text-sm" : ""}>
               Analysis
             </TabsTrigger>
+            {propertyData.isConstructionProject && (
+              <TabsTrigger
+                value="construction"
+                className={isMobile ? "text-sm" : ""}
+              >
+                Construction
+              </TabsTrigger>
+            )}
             <TabsTrigger
               value="projections"
               className={isMobile ? "text-sm" : ""}
@@ -1941,6 +1952,38 @@ const InstanceDetail = () => {
               </div>
             </div>
           </TabsContent>
+
+          {/* Construction Tab */}
+          {propertyData.isConstructionProject && (
+            <TabsContent value="construction" className="space-y-6">
+              <div className="grid gap-6">
+                <ConstructionDetailsPanel
+                  propertyData={propertyData}
+                  updateField={updateField}
+                  isEditMode={isEditMode}
+                />
+
+                {/* Construction Period Table */}
+                {projections.some((p) => p.year === 0) && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Construction Period Summary</CardTitle>
+                      <CardDescription>
+                        Interest-only holding costs and tax impact during build
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ConstructionPeriodTable
+                        projection={projections.find((p) => p.year === 0)!}
+                        months={propertyData.constructionPeriod || 0}
+                        formatCurrency={formatCurrency}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </TabsContent>
+          )}
 
           {/* Projections Tab */}
           <TabsContent value="projections" className="space-y-6">

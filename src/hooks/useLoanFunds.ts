@@ -7,15 +7,7 @@ import { LoanFundWithUsage, FundUsageSummary } from "@/types/funding";
 export interface LoanFund {
   id: string;
   name: string;
-
-  // Construction Details
-  constructionPeriod: number;
-  constructionInterestRate: number;
-  progressPayment: {
-    weeks: number;
-    percentage: number;
-    description: string;
-  };
+  fund_category: "Cash" | "Debt";
 
   // Financing
   loanBalance: number;
@@ -34,13 +26,7 @@ export interface LoanFund {
 
 export interface CreateLoanFundData {
   name: string;
-  constructionPeriod: number;
-  constructionInterestRate: number;
-  progressPayment: {
-    weeks: number;
-    percentage: number;
-    description: string;
-  };
+  fund_category: "Cash" | "Debt";
   loanBalance: number;
   interestRate: number;
   loanTerm: number;
@@ -77,22 +63,13 @@ export function useLoanFunds() {
       const mappedLoanFunds = (data || []).map((fund) => ({
         id: fund.id,
         name: fund.name,
-        constructionPeriod: Number(fund.construction_period) || 9,
-        constructionInterestRate:
-          Number(fund.construction_interest_rate) || 7.5,
-        progressPayment: {
-          weeks: Number(fund.progress_payment_weeks) || 4,
-          percentage: Number(fund.progress_payment_percentage) || 5,
-          description:
-            fund.progress_payment_description ||
-            "4 Weeks - 5% of construction price",
-        },
+        fund_category: (fund.fund_category as "Cash" | "Debt") || "Debt",
         loanBalance: Number(fund.loan_balance) || 0,
         interestRate: Number(fund.interest_rate) || 0,
         loanTerm: Number(fund.loan_term) || 30,
         loanType: fund.loan_type || "IO,P&I",
         ioTerm: Number(fund.io_term) || 5,
-        loanPurpose: fund.loan_purpose || "Investment Mortgage",
+        loanPurpose: fund.loan_purpose || "Investment",
         fundsType: fund.funds_type || "Savings",
         fundAmount: Number(fund.fund_amount) || 0,
         fundReturn: Number(fund.fund_return) || 0,
@@ -166,11 +143,7 @@ export function useLoanFunds() {
           .from("loan_funds")
           .insert({
             name: fundData.name,
-            construction_period: fundData.constructionPeriod,
-            construction_interest_rate: fundData.constructionInterestRate,
-            progress_payment_weeks: fundData.progressPayment.weeks,
-            progress_payment_percentage: fundData.progressPayment.percentage,
-            progress_payment_description: fundData.progressPayment.description,
+            fund_category: fundData.fund_category,
             loan_balance: fundData.loanBalance,
             interest_rate: fundData.interestRate,
             loan_term: fundData.loanTerm,
@@ -207,18 +180,8 @@ export function useLoanFunds() {
 
         // Map frontend field names to database column names
         if (updates.name !== undefined) dbUpdates.name = updates.name;
-        if (updates.constructionPeriod !== undefined)
-          dbUpdates.construction_period = updates.constructionPeriod;
-        if (updates.constructionInterestRate !== undefined)
-          dbUpdates.construction_interest_rate =
-            updates.constructionInterestRate;
-        if (updates.progressPayment !== undefined) {
-          dbUpdates.progress_payment_weeks = updates.progressPayment.weeks;
-          dbUpdates.progress_payment_percentage =
-            updates.progressPayment.percentage;
-          dbUpdates.progress_payment_description =
-            updates.progressPayment.description;
-        }
+        if (updates.fund_category !== undefined)
+          dbUpdates.fund_category = updates.fund_category;
         if (updates.loanBalance !== undefined)
           dbUpdates.loan_balance = updates.loanBalance;
         if (updates.interestRate !== undefined)

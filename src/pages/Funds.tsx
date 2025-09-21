@@ -36,6 +36,7 @@ import {
   CashFund,
   CreateCashFundRequest,
 } from "@/types/funding";
+import { toast } from "sonner";
 
 export default function Funds() {
   const {
@@ -59,15 +60,7 @@ export default function Funds() {
 
   const [loanForm, setLoanForm] = useState<CreateLoanFundData>({
     name: "Home Loan",
-
-    // Construction Details
-    constructionPeriod: 9,
-    constructionInterestRate: 7.5,
-    progressPayment: {
-      weeks: 4,
-      percentage: 5,
-      description: "4 Weeks - 5% of construction price",
-    },
+    fund_category: "Debt",
 
     // Financing
     loanBalance: 600000,
@@ -75,7 +68,7 @@ export default function Funds() {
     loanTerm: 30,
     loanType: "IO,P&I",
     ioTerm: 5,
-    loanPurpose: "Investment Mortgage",
+    loanPurpose: "Investment",
     fundsType: "Savings",
     fundAmount: 50000,
     fundReturn: 5,
@@ -83,6 +76,7 @@ export default function Funds() {
 
   const [cashForm, setCashForm] = useState<CreateCashFundRequest>({
     name: "Emergency Savings",
+    fund_category: "Cash",
     fund_type: "Savings",
     total_amount: 0,
     return_rate: 0,
@@ -107,19 +101,13 @@ export default function Funds() {
   const resetLoanForm = () => {
     setLoanForm({
       name: "Home Loan",
-      constructionPeriod: 9,
-      constructionInterestRate: 7.5,
-      progressPayment: {
-        weeks: 4,
-        percentage: 5,
-        description: "4 Weeks - 5% of construction price",
-      },
+      fund_category: "Debt",
       loanBalance: 600000,
       interestRate: 6,
       loanTerm: 30,
       loanType: "IO,P&I",
       ioTerm: 5,
-      loanPurpose: "Investment Mortgage",
+      loanPurpose: "Investment",
       fundsType: "Savings",
       fundAmount: 50000,
       fundReturn: 5,
@@ -130,6 +118,7 @@ export default function Funds() {
   const resetCashForm = () => {
     setCashForm({
       name: "Emergency Savings",
+      fund_category: "Cash",
       fund_type: "Savings",
       total_amount: 0,
       return_rate: 0,
@@ -145,9 +134,7 @@ export default function Funds() {
   const openEditLoanDialog = (loanFund: LoanFund) => {
     setLoanForm({
       name: loanFund.name,
-      constructionPeriod: loanFund.constructionPeriod,
-      constructionInterestRate: loanFund.constructionInterestRate,
-      progressPayment: loanFund.progressPayment,
+      fund_category: loanFund.fund_category,
       loanBalance: loanFund.loanBalance,
       interestRate: loanFund.interestRate,
       loanTerm: loanFund.loanTerm,
@@ -170,6 +157,7 @@ export default function Funds() {
   const openEditCashDialog = (cashFund: CashFund) => {
     setCashForm({
       name: cashFund.name,
+      fund_category: cashFund.fund_category,
       fund_type: cashFund.fund_type,
       total_amount: cashFund.total_amount,
       return_rate: cashFund.return_rate,
@@ -180,6 +168,37 @@ export default function Funds() {
 
   const handleLoanSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validation based on fund category
+    if (loanForm.fund_category === "Cash") {
+      // Cash funds require fund amount and return rate
+      if (!loanForm.fundAmount || loanForm.fundAmount <= 0) {
+        toast.error("Fund amount is required for cash funds");
+        return;
+      }
+      if (loanForm.fundReturn < 0) {
+        toast.error("Return rate cannot be negative");
+        return;
+      }
+    } else if (loanForm.fund_category === "Debt") {
+      // Debt funds require loan-specific fields
+      if (!loanForm.loanBalance || loanForm.loanBalance <= 0) {
+        toast.error("Loan balance is required for debt funds");
+        return;
+      }
+      if (!loanForm.interestRate || loanForm.interestRate <= 0) {
+        toast.error("Interest rate is required for debt funds");
+        return;
+      }
+      if (!loanForm.loanTerm || loanForm.loanTerm <= 0) {
+        toast.error("Loan term is required for debt funds");
+        return;
+      }
+      if (!loanForm.fundAmount || loanForm.fundAmount <= 0) {
+        toast.error("Fund amount is required for debt funds");
+        return;
+      }
+    }
 
     try {
       if (editingLoanFund) {
@@ -209,6 +228,29 @@ export default function Funds() {
 
   const handleCashSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validation based on fund category
+    if (cashForm.fund_category === "Cash") {
+      // Cash funds require fund amount and return rate
+      if (!cashForm.total_amount || cashForm.total_amount <= 0) {
+        toast.error("Total amount is required for cash funds");
+        return;
+      }
+      if (cashForm.return_rate < 0) {
+        toast.error("Return rate cannot be negative");
+        return;
+      }
+    } else if (cashForm.fund_category === "Debt") {
+      // Debt funds require loan-specific fields (same validation as loan form)
+      if (!cashForm.total_amount || cashForm.total_amount <= 0) {
+        toast.error("Fund amount is required for debt funds");
+        return;
+      }
+      if (cashForm.return_rate < 0) {
+        toast.error("Return rate cannot be negative");
+        return;
+      }
+    }
 
     try {
       if (editingCashFund) {
@@ -365,12 +407,6 @@ export default function Funds() {
                               value={loanFund.usage_percentage || 0}
                               className="h-2"
                             />
-                          </div>
-                          <div className="mt-3 text-sm text-gray-600">
-                            <span>
-                              Progress Payment: {loanFund.progressPayment.weeks}{" "}
-                              weeks - {loanFund.progressPayment.percentage}%
-                            </span>
                           </div>
 
                           {/* Instance Usage Details */}
@@ -635,315 +671,307 @@ export default function Funds() {
               {editingLoanFund ? "Edit Loan Fund" : "Add New Loan Fund"}
             </DialogTitle>
             <DialogDescription>
-              Enter the loan details below. Fill in the construction details and
-              financing information.
+              Enter the loan details below. Fill in the financing information.
             </DialogDescription>
           </DialogHeader>
 
           <div className="overflow-y-auto max-h-[calc(90vh-140px)] pr-2">
             <form onSubmit={handleLoanSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="loanName">Loan Name</Label>
+                <Label htmlFor="loanName">Fund Name</Label>
                 <Input
                   id="loanName"
                   value={loanForm.name}
                   onChange={(e) =>
                     setLoanForm({ ...loanForm, name: e.target.value })
                   }
-                  placeholder="Enter loan name"
+                  placeholder="Enter fund name"
                   required
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="loanBalance">Loan Balance</Label>
-                  <Input
-                    id="loanBalance"
-                    type="number"
-                    value={loanForm.loanBalance}
-                    onChange={(e) =>
-                      setLoanForm({
-                        ...loanForm,
-                        loanBalance: Number(e.target.value),
-                      })
-                    }
-                    placeholder="Enter loan balance"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="originalAmount">Loan Amount</Label>
-                  <Input
-                    id="originalAmount"
-                    type="number"
-                    value={loanForm.fundAmount}
-                    onChange={(e) =>
-                      setLoanForm({
-                        ...loanForm,
-                        fundAmount: Number(e.target.value),
-                      })
-                    }
-                    placeholder="Enter loan amount"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="interestRate">Interest Rate (%)</Label>
-                  <Input
-                    id="interestRate"
-                    type="number"
-                    value={loanForm.interestRate}
-                    onChange={(e) =>
-                      setLoanForm({
-                        ...loanForm,
-                        interestRate: Number(e.target.value),
-                      })
-                    }
-                    placeholder="Enter interest rate"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="term">Loan Term (Years)</Label>
-                  <Input
-                    id="term"
-                    type="number"
-                    value={loanForm.loanTerm}
-                    onChange={(e) =>
-                      setLoanForm({
-                        ...loanForm,
-                        loanTerm: Number(e.target.value),
-                      })
-                    }
-                    placeholder="Enter loan term"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="loanType">Loan Type</Label>
-                  <Select
-                    value={loanForm.loanType}
-                    onValueChange={(value) =>
-                      setLoanForm({ ...loanForm, loanType: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select loan type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="IO,P&I">IO,P&I</SelectItem>
-                      <SelectItem value="IO">Interest Only</SelectItem>
-                      <SelectItem value="P&I">Principal & Interest</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="purpose">Loan Purpose</Label>
-                  <Input
-                    id="purpose"
-                    value={loanForm.loanPurpose}
-                    onChange={(e) =>
-                      setLoanForm({ ...loanForm, loanPurpose: e.target.value })
-                    }
-                    placeholder="Enter loan purpose"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="fundCategory">Fund Category</Label>
+                <Select
+                  value={loanForm.fund_category}
+                  onValueChange={(value) =>
+                    setLoanForm({
+                      ...loanForm,
+                      fund_category: value as "Cash" | "Debt",
+                    })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select fund category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Cash">Cash</SelectItem>
+                    <SelectItem value="Debt">Debt</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
-              {/* Construction Details Section */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-foreground">
-                  Construction Details
-                </h3>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="constructionPeriod">
-                      Construction Period (months)
-                    </Label>
-                    <Input
-                      id="constructionPeriod"
-                      type="number"
-                      value={loanForm.constructionPeriod}
-                      onChange={(e) =>
-                        setLoanForm({
-                          ...loanForm,
-                          constructionPeriod: Number(e.target.value),
-                        })
-                      }
-                      placeholder="9"
-                      min="1"
-                      max="60"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="constructionInterestRate">
-                      Construction Interest Rate (%)
-                    </Label>
-                    <Input
-                      id="constructionInterestRate"
-                      type="number"
-                      value={loanForm.constructionInterestRate}
-                      onChange={(e) =>
-                        setLoanForm({
-                          ...loanForm,
-                          constructionInterestRate: Number(e.target.value),
-                        })
-                      }
-                      placeholder="7.50"
-                      min="0"
-                      max="20"
-                      step="0.01"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">
-                    Progress Payments
-                  </Label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-3 bg-muted/30 rounded-lg">
-                    <div className="space-y-1">
-                      <Label className="text-xs">Weeks</Label>
+              {/* Debt-specific fields */}
+              {loanForm.fund_category === "Debt" && (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="loanBalance">Loan Balance</Label>
                       <Input
+                        id="loanBalance"
                         type="number"
-                        value={loanForm.progressPayment.weeks}
-                        onChange={(e) => {
-                          const newProgressPayment = {
-                            ...loanForm.progressPayment,
-                          };
-                          newProgressPayment.weeks = Number(e.target.value);
+                        value={loanForm.loanBalance}
+                        onChange={(e) =>
                           setLoanForm({
                             ...loanForm,
-                            progressPayment: newProgressPayment,
-                          });
-                        }}
-                        placeholder="4"
-                        min="1"
-                        className="h-8"
+                            loanBalance: Number(e.target.value),
+                          })
+                        }
+                        placeholder="Enter loan balance"
+                        required
                       />
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Percentage (%)</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="originalAmount">Loan Amount</Label>
                       <Input
+                        id="originalAmount"
                         type="number"
-                        value={loanForm.progressPayment.percentage}
-                        onChange={(e) => {
-                          const newProgressPayment = {
-                            ...loanForm.progressPayment,
-                          };
-                          newProgressPayment.percentage = Number(
-                            e.target.value
-                          );
+                        value={loanForm.fundAmount}
+                        onChange={(e) =>
                           setLoanForm({
                             ...loanForm,
-                            progressPayment: newProgressPayment,
-                          });
-                        }}
+                            fundAmount: Number(e.target.value),
+                          })
+                        }
+                        placeholder="Enter loan amount"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="interestRate">Interest Rate (%)</Label>
+                      <Input
+                        id="interestRate"
+                        type="number"
+                        value={loanForm.interestRate}
+                        onChange={(e) =>
+                          setLoanForm({
+                            ...loanForm,
+                            interestRate: Number(e.target.value),
+                          })
+                        }
+                        placeholder="Enter interest rate"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="term">Loan Term (Years)</Label>
+                      <Input
+                        id="term"
+                        type="number"
+                        value={loanForm.loanTerm}
+                        onChange={(e) =>
+                          setLoanForm({
+                            ...loanForm,
+                            loanTerm: Number(e.target.value),
+                          })
+                        }
+                        placeholder="Enter loan term"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="loanType">Loan Type</Label>
+                      <Select
+                        value={loanForm.loanType}
+                        onValueChange={(value) =>
+                          setLoanForm({ ...loanForm, loanType: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select loan type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="IO,P&I">IO,P&I</SelectItem>
+                          <SelectItem value="IO">Interest Only</SelectItem>
+                          <SelectItem value="P&I">
+                            Principal & Interest
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="purpose">Loan Purpose</Label>
+                      <Select
+                        value={loanForm.loanPurpose}
+                        onValueChange={(value) =>
+                          setLoanForm({ ...loanForm, loanPurpose: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select loan purpose" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Investment">Investment</SelectItem>
+                          <SelectItem value="Personal">Personal</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Cash-specific fields */}
+              {loanForm.fund_category === "Cash" && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-foreground">
+                    Cash Fund Details
+                  </h3>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="fundAmount">Fund Amount</Label>
+                      <Input
+                        id="fundAmount"
+                        type="number"
+                        value={loanForm.fundAmount}
+                        onChange={(e) =>
+                          setLoanForm({
+                            ...loanForm,
+                            fundAmount: Number(e.target.value),
+                          })
+                        }
+                        placeholder="Enter fund amount"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="fundsType">Fund Type</Label>
+                      <Select
+                        value={loanForm.fundsType}
+                        onValueChange={(value) =>
+                          setLoanForm({ ...loanForm, fundsType: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select fund type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Savings">Savings</SelectItem>
+                          <SelectItem value="Term Deposit">
+                            Term Deposit
+                          </SelectItem>
+                          <SelectItem value="High Yield Savings">
+                            High Yield Savings
+                          </SelectItem>
+                          <SelectItem value="Money Market">
+                            Money Market
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="fundReturn">Return Rate (%)</Label>
+                      <Input
+                        id="fundReturn"
+                        type="number"
+                        value={loanForm.fundReturn}
+                        onChange={(e) =>
+                          setLoanForm({
+                            ...loanForm,
+                            fundReturn: Number(e.target.value),
+                          })
+                        }
                         placeholder="5"
                         min="0"
-                        max="100"
-                        className="h-8"
+                        max="20"
+                        step="0.01"
+                        required
                       />
                     </div>
-                    <div className="space-y-1 sm:col-span-2 lg:col-span-1">
-                      <Label className="text-xs">Description</Label>
+                  </div>
+                </div>
+              )}
+
+              {/* Debt-specific additional fields */}
+              {loanForm.fund_category === "Debt" && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-foreground">
+                    Additional Debt Details
+                  </h3>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="ioTerm">IO Term (years)</Label>
                       <Input
-                        value={loanForm.progressPayment.description}
-                        onChange={(e) => {
-                          const newProgressPayment = {
-                            ...loanForm.progressPayment,
-                          };
-                          newProgressPayment.description = e.target.value;
+                        id="ioTerm"
+                        type="number"
+                        value={loanForm.ioTerm}
+                        onChange={(e) =>
                           setLoanForm({
                             ...loanForm,
-                            progressPayment: newProgressPayment,
-                          });
-                        }}
-                        placeholder="4 Weeks - 5% of construction price"
-                        className="h-8"
+                            ioTerm: Number(e.target.value),
+                          })
+                        }
+                        placeholder="5"
+                        min="0"
+                        max="30"
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="fundsType">Funds Type</Label>
+                      <Select
+                        value={loanForm.fundsType}
+                        onValueChange={(value) =>
+                          setLoanForm({ ...loanForm, fundsType: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select funds type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Savings">Savings</SelectItem>
+                          <SelectItem value="Term Deposits">
+                            Term Deposits
+                          </SelectItem>
+                          <SelectItem value="Redraw">Redraw</SelectItem>
+                          <SelectItem value="Offset">Offset</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="fundReturn">Fund Return (%)</Label>
+                      <Input
+                        id="fundReturn"
+                        type="number"
+                        value={loanForm.fundReturn}
+                        onChange={(e) =>
+                          setLoanForm({
+                            ...loanForm,
+                            fundReturn: Number(e.target.value),
+                          })
+                        }
+                        placeholder="5"
+                        min="0"
+                        max="20"
+                        step="0.01"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Savings & Term Deposit Only
+                      </p>
                     </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Financing Section */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-foreground">
-                  Financing
-                </h3>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="ioTerm">IO Term (years)</Label>
-                    <Input
-                      id="ioTerm"
-                      type="number"
-                      value={loanForm.ioTerm}
-                      onChange={(e) =>
-                        setLoanForm({
-                          ...loanForm,
-                          ioTerm: Number(e.target.value),
-                        })
-                      }
-                      placeholder="5"
-                      min="0"
-                      max="30"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="fundsType">Funds Type</Label>
-                    <Select
-                      value={loanForm.fundsType}
-                      onValueChange={(value) =>
-                        setLoanForm({ ...loanForm, fundsType: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select funds type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Savings">Savings</SelectItem>
-                        <SelectItem value="Term Deposits">
-                          Term Deposits
-                        </SelectItem>
-                        <SelectItem value="Redraw">Redraw</SelectItem>
-                        <SelectItem value="Offset">Offset</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="fundReturn">Fund Return (%)</Label>
-                    <Input
-                      id="fundReturn"
-                      type="number"
-                      value={loanForm.fundReturn}
-                      onChange={(e) =>
-                        setLoanForm({
-                          ...loanForm,
-                          fundReturn: Number(e.target.value),
-                        })
-                      }
-                      placeholder="5"
-                      min="0"
-                      max="20"
-                      step="0.01"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Savings & Term Deposit Only
-                    </p>
-                  </div>
-                </div>
-              </div>
+              )}
 
               <DialogFooter>
                 <Button
@@ -984,6 +1012,27 @@ export default function Funds() {
                 placeholder="e.g., Emergency Savings"
                 required
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="cash-category">Fund Category</Label>
+              <Select
+                value={cashForm.fund_category}
+                onValueChange={(value) =>
+                  setCashForm({
+                    ...cashForm,
+                    fund_category: value as "Cash" | "Debt",
+                  })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select fund category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Cash">Cash</SelectItem>
+                  <SelectItem value="Debt">Debt</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">

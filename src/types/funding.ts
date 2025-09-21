@@ -36,7 +36,8 @@ export interface UpdateInstanceFundingRequest {
 export interface CashFund {
   id: string;
   name: string;
-  fund_type: string;
+  fund_category: "Cash" | "Debt";
+  fund_type: string; // Subtype for Cash funds (Savings, Term Deposit, etc.)
   total_amount: number;
   available_amount: number;
   return_rate: number;
@@ -46,6 +47,7 @@ export interface CashFund {
 
 export interface CreateCashFundRequest {
   name: string;
+  fund_category: "Cash" | "Debt";
   fund_type: string;
   total_amount: number;
   return_rate: number;
@@ -53,6 +55,7 @@ export interface CreateCashFundRequest {
 
 export interface UpdateCashFundRequest {
   name?: string;
+  fund_category?: "Cash" | "Debt";
   fund_type?: string;
   total_amount?: number;
   return_rate?: number;
@@ -61,13 +64,7 @@ export interface UpdateCashFundRequest {
 export interface LoanFundWithUsage {
   id: string;
   name: string;
-  constructionPeriod: number;
-  constructionInterestRate: number;
-  progressPayment: {
-    weeks: number;
-    percentage: number;
-    description: string;
-  };
+  fund_category: "Cash" | "Debt";
   loanBalance: number;
   interestRate: number;
   loanTerm: number;

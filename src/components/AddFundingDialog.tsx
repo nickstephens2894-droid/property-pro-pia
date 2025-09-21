@@ -51,6 +51,9 @@ export function AddFundingDialog({
     message?: string;
   } | null>(null);
 
+  // Check if this is a temporary instance
+  const isTemporaryInstance = instanceId.startsWith("temp-");
+
   const { loanFundsWithUsage, getFundAvailability: checkLoanAvailability } =
     useLoanFunds();
   const { cashFunds, getFundAvailability: checkCashAvailability } =
@@ -154,10 +157,24 @@ export function AddFundingDialog({
           </DialogDescription>
         </DialogHeader>
 
+        {isTemporaryInstance && (
+          <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
+            <div className="flex items-center gap-2 text-yellow-700 dark:text-yellow-300">
+              <AlertCircle className="h-4 w-4" />
+              <span className="font-medium">Instance Not Saved</span>
+            </div>
+            <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-1">
+              Please save the instance first before adding funding. The instance
+              needs to be saved to the database before funding can be allocated.
+            </p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <Tabs
             value={activeTab}
             onValueChange={(value) => setActiveTab(value as "loan" | "cash")}
+            disabled={isTemporaryInstance}
           >
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="loan" className="flex items-center gap-2">
@@ -311,13 +328,18 @@ export function AddFundingDialog({
             <Button
               type="submit"
               disabled={
+                isTemporaryInstance ||
                 !selectedFundId ||
                 !amount ||
                 !availabilityCheck?.isAvailable ||
                 isSubmitting
               }
             >
-              {isSubmitting ? "Adding..." : "Add Funding"}
+              {isTemporaryInstance
+                ? "Save Instance First"
+                : isSubmitting
+                ? "Adding..."
+                : "Add Funding"}
             </Button>
           </DialogFooter>
         </form>
