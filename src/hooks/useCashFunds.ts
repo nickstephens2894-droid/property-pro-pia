@@ -48,6 +48,7 @@ export function useCashFunds() {
           return {
             id: fund.id,
             name: fund.name,
+            fund_category: (fund.fund_category as "Cash" | "Debt") || "Cash",
             fund_type: fund.fund_type || "Savings",
             total_amount: Number(fund.total_amount) || 0,
             available_amount: Number(usage.available_amount) || 0,
@@ -76,6 +77,7 @@ export function useCashFunds() {
           .from("cash_funds")
           .insert({
             name: fundData.name,
+            fund_category: fundData.fund_category,
             fund_type: fundData.fund_type,
             total_amount: fundData.total_amount,
             available_amount: fundData.total_amount, // Initially all is available
@@ -106,6 +108,8 @@ export function useCashFunds() {
         const dbUpdates: any = {};
 
         if (updates.name !== undefined) dbUpdates.name = updates.name;
+        if (updates.fund_category !== undefined)
+          dbUpdates.fund_category = updates.fund_category;
         if (updates.fund_type !== undefined)
           dbUpdates.fund_type = updates.fund_type;
         if (updates.total_amount !== undefined) {
