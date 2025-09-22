@@ -81,8 +81,15 @@ export default function Scenarios() {
     null
   );
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [scenarioToDelete, setScenarioToDelete] = useState<string | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    isOpen: boolean;
+    scenarioId: string | null;
+    scenarioName: string | null;
+  }>({
+    isOpen: false,
+    scenarioId: null,
+    scenarioName: null,
+  });
   const [isApplyDialogOpen, setIsApplyDialogOpen] = useState(false);
   const [scenarioToApply, setScenarioToApply] = useState<string | null>(null);
   const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(
@@ -109,19 +116,44 @@ export default function Scenarios() {
     }
   };
 
+  // New delete functionality - completely reimplemented
+  const openDeleteDialog = (scenarioId: string, scenarioName: string) => {
+    setDeleteDialog({
+      isOpen: true,
+      scenarioId,
+      scenarioName,
+    });
+  };
+
+  const closeDeleteDialog = () => {
+    setDeleteDialog({
+      isOpen: false,
+      scenarioId: null,
+      scenarioName: null,
+    });
+  };
+
   const handleDeleteScenario = async () => {
-    if (!scenarioToDelete) return;
+    if (!deleteDialog.scenarioId) {
+      console.error("No scenario ID provided for deletion");
+      return;
+    }
 
     try {
-      await deleteScenario(scenarioToDelete);
-      if (selectedScenarioId === scenarioToDelete) {
+      // Call the delete function from context
+      await deleteScenario(deleteDialog.scenarioId);
+
+      // Clear selection if we're deleting the currently selected scenario
+      if (selectedScenarioId === deleteDialog.scenarioId) {
         setSelectedScenarioId(null);
         setCurrentScenario(null);
       }
-      setIsDeleteDialogOpen(false);
-      setScenarioToDelete(null);
+
+      // Close dialog
+      closeDeleteDialog();
     } catch (error) {
       console.error("Error deleting scenario:", error);
+      // Error toast is handled in the context
     }
   };
 
@@ -374,7 +406,10 @@ export default function Scenarios() {
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
               <Button
                 variant="outline"
-                onClick={() => setScenarioToApply(currentScenarioData.id)}
+                onClick={() => {
+                  setScenarioToApply(currentScenarioData.id);
+                  setIsApplyDialogOpen(true);
+                }}
                 disabled={
                   !isApplyEnabled ||
                   currentScenarioData.scenario_instances.length === 0
@@ -386,8 +421,13 @@ export default function Scenarios() {
               </Button>
               <Button
                 variant="outline"
-                onClick={() => setScenarioToDelete(currentScenarioData.id)}
-                className="w-full sm:w-auto"
+                onClick={() =>
+                  openDeleteDialog(
+                    currentScenarioData.id,
+                    currentScenarioData.name
+                  )
+                }
+                className="w-full sm:w-auto text-destructive hover:text-destructive hover:bg-destructive/10"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete
@@ -659,8 +699,7 @@ export default function Scenarios() {
             {scenarios.map((scenario) => (
               <Card
                 key={scenario.id}
-                className="cursor-pointer hover:shadow-lg transition-shadow"
-                onClick={() => setSelectedScenarioId(scenario.id)}
+                className="hover:shadow-lg transition-shadow"
               >
                 <CardHeader>
                   <div className="flex items-start justify-between">
@@ -719,6 +758,33 @@ export default function Scenarios() {
                       </span>
                     </div>
                   </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 mt-4 pt-4 border-t">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedScenarioId(scenario.id);
+                      }}
+                      className="flex-1"
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Open
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openDeleteDialog(scenario.id, scenario.name);
+                      }}
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -734,23 +800,29 @@ export default function Scenarios() {
       />
 
       <ConfirmationDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
+        open={deleteDialog.isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeDeleteDialog();
+          }
+        }}
         title="Delete Scenario"
-        description="Are you sure you want to delete this scenario? This action cannot be undone and will remove all scenario instances."
+        description={`Are you sure you want to delete "${deleteDialog.scenarioName}"? This action cannot be undone and will remove all scenario instances.`}
         confirmText="Delete Scenario"
         cancelText="Cancel"
         variant="destructive"
         onConfirm={handleDeleteScenario}
-        onCancel={() => {
-          setIsDeleteDialogOpen(false);
-          setScenarioToDelete(null);
-        }}
+        onCancel={closeDeleteDialog}
       />
 
       <ConfirmationDialog
         open={isApplyDialogOpen}
-        onOpenChange={setIsApplyDialogOpen}
+        onOpenChange={(open) => {
+          setIsApplyDialogOpen(open);
+          if (!open) {
+            setScenarioToApply(null);
+          }
+        }}
         title="Apply Scenario Changes"
         description="This will apply all changes from this scenario to your real instances. This action cannot be undone."
         confirmText="Apply All Changes"

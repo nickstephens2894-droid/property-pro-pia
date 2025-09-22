@@ -41,7 +41,7 @@ export const ScenarioApplyDialog: React.FC<ScenarioApplyDialogProps> = ({
   const [applying, setApplying] = useState(false);
   const [resolutionStrategy, setResolutionStrategy] = useState<
     "overwrite" | "merge" | "skip"
-  >("overwrite");
+  >("merge");
   const [error, setError] = useState<string | null>(null);
 
   // Check for conflicts when dialog opens
@@ -179,6 +179,23 @@ export const ScenarioApplyDialog: React.FC<ScenarioApplyDialogProps> = ({
                   className="space-y-3"
                 >
                   <div className="flex items-start space-x-3 p-3 border rounded-lg">
+                    <RadioGroupItem value="merge" id="merge" className="mt-1" />
+                    <div className="flex-1 space-y-1">
+                      <Label
+                        htmlFor="merge"
+                        className="font-medium cursor-pointer"
+                      >
+                        Merge (Recommended)
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        Intelligently merge scenario changes with existing
+                        instance data. Preserves existing funding, investors,
+                        and property details while applying new changes.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-3 p-3 border rounded-lg">
                     <RadioGroupItem
                       value="overwrite"
                       id="overwrite"
@@ -189,27 +206,11 @@ export const ScenarioApplyDialog: React.FC<ScenarioApplyDialogProps> = ({
                         htmlFor="overwrite"
                         className="font-medium cursor-pointer"
                       >
-                        Overwrite (Recommended)
+                        Overwrite
                       </Label>
                       <p className="text-sm text-muted-foreground">
                         Replace the real instance with the scenario data. This
                         will overwrite any changes made to the real instance.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start space-x-3 p-3 border rounded-lg">
-                    <RadioGroupItem value="merge" id="merge" className="mt-1" />
-                    <div className="flex-1 space-y-1">
-                      <Label
-                        htmlFor="merge"
-                        className="font-medium cursor-pointer"
-                      >
-                        Merge
-                      </Label>
-                      <p className="text-sm text-muted-foreground">
-                        Attempt to merge changes intelligently. This may not
-                        work for all conflict types.
                       </p>
                     </div>
                   </div>
@@ -274,16 +275,19 @@ export const ScenarioApplyDialog: React.FC<ScenarioApplyDialogProps> = ({
                     </p>
                     <ul className="list-disc list-inside space-y-1 ml-2">
                       <li>
-                        All scenario changes will be applied to the real
-                        instance
+                        Scenario changes will be intelligently merged with
+                        existing instance data
+                      </li>
+                      <li>
+                        Existing funding, investors, and property details will
+                        be preserved
+                      </li>
+                      <li>
+                        New funding allocations will be added to existing ones
                       </li>
                       <li>The scenario instance will be marked as synced</li>
                       <li>
                         You can view the updated instance in the Instances tab
-                      </li>
-                      <li>
-                        Future changes to the scenario will update the same real
-                        instance
                       </li>
                     </ul>
                   </div>

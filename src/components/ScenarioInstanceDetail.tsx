@@ -331,7 +331,7 @@ export const ScenarioInstanceDetail: React.FC<ScenarioInstanceDetailProps> = ({
         description:
           result.operation_type === "create"
             ? "New instance created from scenario"
-            : "Instance updated with scenario changes",
+            : "Instance updated with merged scenario changes",
       });
       // Refresh the scenario data
       onUpdate();

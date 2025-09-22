@@ -613,12 +613,12 @@ export const ScenariosProvider: React.FC<ScenariosProviderProps> = ({
           }
         }
 
-        // Apply the scenario instance using the database function
+        // Apply the scenario instance using the database function with merge logic
         const { data: applyResult, error: applyError } = await supabase.rpc(
           "apply_scenario_instance",
           {
             p_scenario_instance_id: scenarioInstanceId,
-            p_resolution_strategy: options?.resolution_strategy || "overwrite",
+            p_resolution_strategy: options?.resolution_strategy || "merge",
           }
         );
 
