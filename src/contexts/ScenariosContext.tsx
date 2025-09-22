@@ -168,6 +168,9 @@ export const ScenariosProvider: React.FC<ScenariosProviderProps> = ({
         const newScenario: ScenarioWithInstances = {
           ...scenario,
           scenario_instances: [],
+          description: (scenario as any).description || data.description,
+          status: (scenario as any).status || "draft",
+          is_primary: (scenario as any).is_primary || false,
         };
 
         setScenarios((prev) => [newScenario, ...prev]);

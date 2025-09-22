@@ -793,13 +793,13 @@ BEGIN
   -- Call the new merge-based function and return the results
   RETURN QUERY 
   SELECT 
-    success,
-    message,
-    target_instance_id,
-    operation_type,
-    conflicts,
-    applied_at
-  FROM apply_scenario_instance_merge(p_scenario_instance_id, p_resolution_strategy);
+    merge_result.success,
+    merge_result.message,
+    merge_result.target_instance_id,
+    merge_result.operation_type,
+    merge_result.conflicts,
+    merge_result.applied_at
+  FROM apply_scenario_instance_merge(p_scenario_instance_id, p_resolution_strategy) AS merge_result;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

@@ -125,6 +125,14 @@ function AppLayout() {
             }
           />
           <Route
+            path="/instances/add/:scenarioId"
+            element={
+              <RequireAuth>
+                <AddInstance />
+              </RequireAuth>
+            }
+          />
+          <Route
             path="/instances/:id"
             element={
               <RequireAuth>

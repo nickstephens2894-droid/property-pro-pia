@@ -187,106 +187,11 @@ export default function Scenarios() {
     }
   };
 
-  const handleCreateNewInstance = async () => {
+  const handleCreateNewInstance = () => {
     if (!selectedScenarioId) return;
 
-    // Create a new scenario instance directly
-    try {
-      // Create default instance data
-      const defaultInstanceData = {
-        id: "", // Will be generated
-        name: "New Scenario Instance",
-        status: "draft" as const,
-        property_method: "built-first-owner",
-        funding_method: "loan-cash",
-        investors: [],
-        ownership_allocations: [],
-        is_construction_project: false,
-        purchase_price: 0,
-        weekly_rent: 0,
-        rental_growth_rate: 3,
-        vacancy_rate: 5,
-        construction_year: 0,
-        building_value: 0,
-        plant_equipment_value: 0,
-        land_value: 0,
-        construction_value: 0,
-        construction_period: 0,
-        construction_interest_rate: 7,
-        construction_progress_payments: [],
-        deposit: 0,
-        loan_amount: 0,
-        interest_rate: 7,
-        loan_term: 25,
-        lvr: 80,
-        main_loan_type: "pi" as const,
-        io_term_years: 5,
-        use_equity_funding: false,
-        primary_property_value: 0,
-        existing_debt: 0,
-        max_lvr: 80,
-        equity_loan_type: "pi" as const,
-        equity_loan_io_term_years: 5,
-        equity_loan_interest_rate: 7,
-        equity_loan_term: 25,
-        deposit_amount: 0,
-        minimum_deposit_required: 0,
-        holding_cost_funding: "cash" as const,
-        holding_cost_cash_percentage: 100,
-        capitalize_construction_costs: false,
-        construction_equity_repayment_type: "pi" as const,
-        land_holding_interest: 0,
-        construction_holding_interest: 0,
-        total_holding_costs: 0,
-        stamp_duty: 0,
-        legal_fees: 0,
-        inspection_fees: 0,
-        council_fees: 0,
-        architect_fees: 0,
-        site_costs: 0,
-        property_management: 0,
-        council_rates: 0,
-        insurance: 0,
-        repairs: 0,
-        depreciation_method: "prime-cost" as const,
-        is_new_property: false,
-        property_state: "VIC",
-        total_project_cost: 0,
-        equity_loan_amount: 0,
-        available_equity: 0,
-        minimum_cash_required: 0,
-        actual_cash_deposit: 0,
-        funding_shortfall: 0,
-        funding_surplus: 0,
-        projections: [],
-        assumptions: {},
-        weekly_cashflow_year1: 0,
-        tax_savings_year1: 0,
-        tax_savings_total: 0,
-        net_equity_at_year_to: 0,
-        roi_at_year_to: 0,
-        analysis_year_to: 30,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        user_id: user?.id || "",
-        property_model_id: null,
-        capital_growth_rate: 3,
-        weekly_after_tax_cash_flow_summary: 0,
-        tax_benefit_from_projections: 0,
-        equity_at_year_to: 0,
-      };
-
-      const newScenarioInstance = await createNewInstanceInScenario(
-        selectedScenarioId,
-        defaultInstanceData,
-        "New Scenario Instance"
-      );
-
-      // Navigate to the new scenario instance detail
-      setSelectedInstanceId(newScenarioInstance.id);
-    } catch (error) {
-      console.error("Error creating new scenario instance:", error);
-    }
+    // Navigate to the AddInstance page with scenario context
+    navigate(`/instances/add/${selectedScenarioId}`);
   };
 
   const handleInstanceClick = (instanceId: string) => {
@@ -555,7 +460,9 @@ export default function Scenarios() {
                       className="h-16 sm:h-20 flex flex-col items-center justify-center sm:col-span-2 lg:col-span-1"
                     >
                       <Plus className="h-5 w-5 sm:h-6 sm:w-6 mb-1 sm:mb-2" />
-                      <span className="text-xs sm:text-sm">Add Instance</span>
+                      <span className="text-xs sm:text-sm">
+                        Create New Instance
+                      </span>
                     </Button>
                   </div>
                 </CardContent>
@@ -600,7 +507,7 @@ export default function Scenarios() {
                       className="w-full sm:w-auto"
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Create New
+                      Create New Instance
                     </Button>
                   </div>
                 </CardContent>
@@ -620,7 +527,7 @@ export default function Scenarios() {
                       </p>
                       <Button onClick={handleCreateNewInstance}>
                         <Plus className="h-4 w-4 mr-2" />
-                        Add First Instance
+                        Create First Instance
                       </Button>
                     </CardContent>
                   </Card>

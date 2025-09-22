@@ -8,12 +8,32 @@ export type ScenarioInstance =
 export type ScenarioApplication =
   Database["public"]["Tables"]["scenario_applications"]["Row"];
 
-// Extended types for frontend use
-export interface ScenarioWithInstances extends Scenario {
-  scenario_instances: ScenarioInstanceWithData[];
+// Temporary types for missing tables in Supabase types
+export interface ScenarioInstanceRow {
+  id: string;
+  scenario_id: string;
+  original_instance_id?: string;
+  instance_data: any;
+  scenario_name: string;
+  overrides: any;
+  created_at: string;
+  updated_at: string;
 }
 
-export interface ScenarioInstanceWithData extends ScenarioInstance {
+// Extended types for frontend use
+export interface ScenarioWithInstances extends Scenario {
+  scenario_instances?: ScenarioInstanceWithData[];
+  // Additional properties that exist in the database but not in the generated types
+  description?: string;
+  status?: string;
+  is_primary?: boolean;
+  // Properties from the actual database schema
+  is_core?: boolean;
+  owner_user_id?: string;
+  snapshot?: any;
+}
+
+export interface ScenarioInstanceWithData extends ScenarioInstanceRow {
   // Computed properties
   is_modified: boolean;
   has_conflicts: boolean;
