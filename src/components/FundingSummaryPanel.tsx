@@ -28,6 +28,9 @@ export function FundingSummaryPanel({
 }: FundingSummaryPanelProps) {
   const { instanceFundings } = useFunding();
 
+  // Check if this is a temporary instance
+  const isTemporaryInstance = instanceId.startsWith("temp-");
+
   // Filter fundings for this specific instance
   const fundings = instanceFundings.filter((f) => f.instance_id === instanceId);
   const totalAllocated = fundings.reduce(
@@ -64,6 +67,20 @@ export function FundingSummaryPanel({
 
   return (
     <div className="space-y-6">
+      {/* Temporary Instance Warning */}
+      {isTemporaryInstance && (
+        <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+          <div className="flex items-center gap-2 text-yellow-700 dark:text-yellow-300">
+            <AlertTriangle className="h-4 w-4" />
+            <span className="font-medium">Instance Not Saved</span>
+          </div>
+          <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-1">
+            Save the instance first to add funding. Funding cannot be allocated
+            to unsaved instances.
+          </p>
+        </div>
+      )}
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
@@ -279,9 +296,19 @@ export function FundingSummaryPanel({
               <p className="text-sm text-muted-foreground mb-4">
                 Add funding sources to track your project's financial resources
               </p>
-              <Button onClick={onAddFunding}>
+              <Button
+                onClick={onAddFunding}
+                disabled={isTemporaryInstance}
+                title={
+                  isTemporaryInstance
+                    ? "Save the instance first before adding funding"
+                    : ""
+                }
+              >
                 <Plus className="h-4 w-4 mr-2" />
-                Add First Funding
+                {isTemporaryInstance
+                  ? "Save Instance First"
+                  : "Add First Funding"}
               </Button>
             </div>
           )}

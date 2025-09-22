@@ -146,6 +146,12 @@ export function useInstanceFundings(
     async (fundingData: CreateInstanceFundingRequest) => {
       if (!user) return null;
 
+      // Check if this is a temporary instance ID
+      if (fundingData.instance_id.startsWith("temp-")) {
+        toast.error("Please save the instance first before adding funding");
+        return null;
+      }
+
       try {
         // Check fund availability first
         const availability = await checkFundAvailability(
@@ -249,14 +255,20 @@ export function useInstanceFundings(
     async (id: string, updates: UpdateInstanceFundingRequest) => {
       if (!user) return false;
 
-      try {
-        // Get the current funding to know which fund to update
-        const currentFunding = instanceFundings.find((f) => f.id === id);
-        if (!currentFunding) {
-          toast.error("Funding not found");
-          return false;
-        }
+      // Get the current funding to know which fund to update
+      const currentFunding = instanceFundings.find((f) => f.id === id);
+      if (!currentFunding) {
+        toast.error("Funding not found");
+        return false;
+      }
 
+      // Check if this is a temporary instance ID
+      if (currentFunding.instance_id.startsWith("temp-")) {
+        toast.error("Please save the instance first before updating funding");
+        return false;
+      }
+
+      try {
         const { error } = await supabase
           .from("instance_fundings")
           .update(updates)
@@ -303,14 +315,20 @@ export function useInstanceFundings(
     async (id: string) => {
       if (!user) return false;
 
-      try {
-        // Get the current funding to know which fund to update
-        const currentFunding = instanceFundings.find((f) => f.id === id);
-        if (!currentFunding) {
-          toast.error("Funding not found");
-          return false;
-        }
+      // Get the current funding to know which fund to update
+      const currentFunding = instanceFundings.find((f) => f.id === id);
+      if (!currentFunding) {
+        toast.error("Funding not found");
+        return false;
+      }
 
+      // Check if this is a temporary instance ID
+      if (currentFunding.instance_id.startsWith("temp-")) {
+        toast.error("Please save the instance first before removing funding");
+        return false;
+      }
+
+      try {
         const { error } = await supabase
           .from("instance_fundings")
           .delete()
