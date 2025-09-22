@@ -562,6 +562,191 @@ export const ScenariosProvider: React.FC<ScenariosProviderProps> = ({
     [user, isScenariosEnabled]
   );
 
+  // Refresh scenario instance from parent instance
+  const refreshScenarioInstance = useCallback(
+    async (scenarioInstanceId: string): Promise<ScenarioInstanceWithData> => {
+      if (!user) throw new Error("User not authenticated");
+      if (!isScenariosEnabled) throw new Error("Scenarios feature is disabled");
+
+      try {
+        console.log(
+          "🔄 Starting refresh for scenario instance:",
+          scenarioInstanceId
+        );
+
+        let updatedScenarioInstance;
+
+        // Try using the database function first
+        try {
+          const { data: refreshResult, error: refreshError } =
+            await supabase.rpc("refresh_scenario_instance" as any, {
+              p_scenario_instance_id: scenarioInstanceId,
+            });
+
+          console.log("📊 Refresh result:", { refreshResult, refreshError });
+
+          if (refreshError) {
+            console.error("❌ Refresh error:", refreshError);
+            throw refreshError;
+          }
+
+          const result = refreshResult?.[0];
+          if (!result || !result.success) {
+            console.error("❌ Refresh failed:", result);
+            throw new Error(
+              result?.message || "Failed to refresh scenario instance"
+            );
+          }
+
+          console.log("✅ Refresh successful:", result);
+
+          // Get the updated scenario instance after RPC refresh
+          const { data: updatedInstance, error: fetchError } = await supabase
+            .from("scenario_instances" as any)
+            .select("*")
+            .eq("id", scenarioInstanceId)
+            .single();
+
+          if (fetchError) throw fetchError;
+          updatedScenarioInstance = updatedInstance;
+        } catch (rpcError) {
+          console.log(
+            "⚠️ RPC function not available, falling back to manual refresh"
+          );
+
+          // Fallback: Manual refresh if RPC function doesn't exist
+          const { data: scenarioInstance, error: fetchError } = await supabase
+            .from("scenario_instances" as any)
+            .select("*")
+            .eq("id", scenarioInstanceId)
+            .single();
+
+          if (fetchError) throw fetchError;
+          if (!scenarioInstance.original_instance_id) {
+            throw new Error("Cannot refresh - no parent instance found");
+          }
+
+          // Get the current parent instance data
+          const { data: parentInstance, error: parentError } = await supabase
+            .from("instances")
+            .select("*")
+            .eq("id", scenarioInstance.original_instance_id)
+            .single();
+
+          if (parentError) throw parentError;
+
+          // Update the scenario instance with fresh data from parent
+          const { data: updatedInstance, error: updateError } = await supabase
+            .from("scenario_instances" as any)
+            .update({
+              instance_data: parentInstance,
+              last_synced_at: new Date().toISOString(),
+              status: "synced",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", scenarioInstanceId)
+            .select()
+            .single();
+
+          if (updateError) throw updateError;
+          updatedScenarioInstance = updatedInstance;
+
+          // Refresh funding data from parent instance
+          console.log("🔄 Refreshing funding data from parent instance");
+
+          // Delete existing scenario funding
+          const { error: deleteFundingError } = await supabase
+            .from("scenario_instance_fundings" as any)
+            .delete()
+            .eq("scenario_instance_id", scenarioInstanceId);
+
+          if (deleteFundingError) {
+            console.warn(
+              "⚠️ Warning: Could not delete existing funding:",
+              deleteFundingError
+            );
+          }
+
+          // Get parent instance funding
+          const { data: parentFunding, error: fundingError } = await supabase
+            .from("instance_fundings")
+            .select("*")
+            .eq("instance_id", scenarioInstance.original_instance_id);
+
+          if (fundingError) {
+            console.warn(
+              "⚠️ Warning: Could not fetch parent funding:",
+              fundingError
+            );
+          } else if (parentFunding && parentFunding.length > 0) {
+            // Copy funding data to scenario
+            const fundingInserts = parentFunding.map((funding) => ({
+              scenario_instance_id: scenarioInstanceId,
+              fund_id: funding.fund_id,
+              fund_type: funding.fund_type,
+              amount_allocated: funding.amount_allocated,
+              amount_used: funding.amount_used,
+              allocation_date: funding.allocation_date,
+              notes: funding.notes,
+            }));
+
+            const { error: insertFundingError } = await supabase
+              .from("scenario_instance_fundings" as any)
+              .insert(fundingInserts);
+
+            if (insertFundingError) {
+              console.warn(
+                "⚠️ Warning: Could not insert funding data:",
+                insertFundingError
+              );
+            } else {
+              console.log(
+                `✅ Refreshed ${parentFunding.length} funding records`
+              );
+            }
+          }
+
+          console.log("✅ Manual refresh successful");
+        }
+
+        // Convert to ScenarioInstanceWithData format
+        const refreshedInstance: ScenarioInstanceWithData = {
+          ...updatedScenarioInstance,
+          is_modified: false,
+          has_conflicts: false,
+          last_modified_at: updatedScenarioInstance.updated_at,
+          instance_data_parsed:
+            updatedScenarioInstance.instance_data as InstanceData,
+        };
+
+        // Update scenarios state
+        setScenarios((prev) =>
+          prev.map((s) => ({
+            ...s,
+            scenario_instances: s.scenario_instances.map((si) =>
+              si.id === scenarioInstanceId ? refreshedInstance : si
+            ),
+          }))
+        );
+
+        toast.success(
+          "Scenario instance and funding refreshed with latest parent data"
+        );
+        return refreshedInstance;
+      } catch (err) {
+        console.error("Error refreshing scenario instance:", err);
+        const errorMessage =
+          err instanceof Error
+            ? err.message
+            : "Failed to refresh scenario instance";
+        setError(errorMessage);
+        toast.error(errorMessage);
+        throw err;
+      }
+    },
+    [user, isScenariosEnabled]
+  );
+
   // Apply scenario instance (create or update real instance)
   const applyScenarioInstance = useCallback(
     async (
@@ -966,6 +1151,7 @@ export const ScenariosProvider: React.FC<ScenariosProviderProps> = ({
     createNewInstanceInScenario,
     updateScenarioInstance,
     removeInstanceFromScenario,
+    refreshScenarioInstance,
 
     // Apply operations
     applyScenarioInstance,

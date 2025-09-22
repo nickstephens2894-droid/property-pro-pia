@@ -18,6 +18,7 @@ import {
   Clock,
   Edit,
   Trash2,
+  RefreshCw,
 } from "lucide-react";
 import {
   ScenarioWithInstances,
@@ -92,7 +93,11 @@ export const ScenarioInstanceDetail: React.FC<ScenarioInstanceDetailProps> = ({
     calculateHoldingCosts,
     applyPreset,
   } = usePropertyData();
-  const { updateScenarioInstance, applyScenarioInstance } = useScenarios();
+  const {
+    updateScenarioInstance,
+    applyScenarioInstance,
+    refreshScenarioInstance,
+  } = useScenarios();
   const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState("analysis");
@@ -101,6 +106,7 @@ export const ScenarioInstanceDetail: React.FC<ScenarioInstanceDetailProps> = ({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isApplyDialogOpen, setIsApplyDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [yearRange, setYearRange] = useState<[number, number]>([1, 30]);
   const [viewMode, setViewMode] = useState<"year" | "table">("table");
@@ -341,6 +347,59 @@ export const ScenarioInstanceDetail: React.FC<ScenarioInstanceDetailProps> = ({
         description: result.error || "Failed to apply scenario changes",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleRefresh = async () => {
+    if (!scenarioInstance.original_instance_id) {
+      toast({
+        title: "Cannot refresh",
+        description: "This instance was not copied from an existing instance",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      console.log(
+        "🔄 Starting refresh for scenario instance:",
+        scenarioInstance.id
+      );
+      setRefreshing(true);
+
+      const refreshedInstance = await refreshScenarioInstance(
+        scenarioInstance.id
+      );
+      console.log(
+        "✅ Refresh completed, refreshed instance:",
+        refreshedInstance
+      );
+
+      // Reset data loaded state to reload the refreshed data
+      setIsDataLoaded(false);
+      setHasUnsavedChanges(false);
+      setIsEditMode(false);
+
+      // Refresh the parent component
+      onUpdate();
+
+      toast({
+        title: "Refresh successful",
+        description:
+          "Scenario instance and funding have been updated with latest parent data",
+      });
+    } catch (error) {
+      console.error("❌ Error refreshing scenario instance:", error);
+      toast({
+        title: "Refresh failed",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to refresh scenario instance. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -687,6 +746,20 @@ export const ScenarioInstanceDetail: React.FC<ScenarioInstanceDetailProps> = ({
                   <Edit className="h-4 w-4 mr-2" />
                   Edit
                 </Button>
+                {scenarioInstance.original_instance_id && (
+                  <Button
+                    variant="outline"
+                    onClick={handleRefresh}
+                    disabled={refreshing}
+                  >
+                    {refreshing ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                    ) : (
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                    )}
+                    {refreshing ? "Refreshing..." : "Refresh from Parent"}
+                  </Button>
+                )}
                 {scenarioInstance.status === "draft" ||
                 scenarioInstance.status === "conflict" ? (
                   <Button

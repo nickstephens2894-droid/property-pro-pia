@@ -66,6 +66,7 @@ export default function Scenarios() {
     addInstanceToScenario,
     createNewInstanceInScenario,
     removeInstanceFromScenario,
+    refreshScenarioInstance,
     applyScenarioInstance,
     applyAllScenarioInstances,
     setCurrentScenario,
@@ -184,6 +185,14 @@ export default function Scenarios() {
       await addInstanceToScenario(selectedScenarioId, instanceId);
     } catch (error) {
       console.error("Error adding instance to scenario:", error);
+    }
+  };
+
+  const handleRefreshInstance = async (scenarioInstanceId: string) => {
+    try {
+      await refreshScenarioInstance(scenarioInstanceId);
+    } catch (error) {
+      console.error("Error refreshing scenario instance:", error);
     }
   };
 
@@ -540,6 +549,9 @@ export default function Scenarios() {
                         onEdit={() => handleInstanceClick(scenarioInstance.id)}
                         onRemove={() =>
                           removeInstanceFromScenario(scenarioInstance.id)
+                        }
+                        onRefresh={() =>
+                          handleRefreshInstance(scenarioInstance.id)
                         }
                         onApply={() =>
                           applyScenarioInstance(scenarioInstance.id)

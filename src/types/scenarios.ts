@@ -16,6 +16,8 @@ export interface ScenarioInstanceRow {
   instance_data: any;
   scenario_name: string;
   overrides: any;
+  status?: "draft" | "active" | "synced" | "conflict";
+  last_synced_at?: string;
   created_at: string;
   updated_at: string;
 }
@@ -325,6 +327,9 @@ export interface ScenariosContextType {
     data: UpdateScenarioInstanceRequest
   ) => Promise<ScenarioInstance>;
   removeInstanceFromScenario: (scenarioInstanceId: string) => Promise<void>;
+  refreshScenarioInstance: (
+    scenarioInstanceId: string
+  ) => Promise<ScenarioInstanceWithData>;
 
   // Apply operations
   applyScenarioInstance: (

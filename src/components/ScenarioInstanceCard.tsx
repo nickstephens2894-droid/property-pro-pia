@@ -16,6 +16,7 @@ import {
   CheckCircle,
   Clock,
   Layers,
+  RefreshCw,
 } from "lucide-react";
 import { ScenarioInstanceWithData } from "@/types/scenarios";
 import { formatCurrency, formatDate } from "@/utils/formatters";
@@ -25,7 +26,9 @@ interface ScenarioInstanceCardProps {
   onEdit: () => void;
   onRemove: () => void;
   onApply: () => void;
+  onRefresh?: () => void;
   canApply: boolean;
+  isRefreshing?: boolean;
 }
 
 export const ScenarioInstanceCard: React.FC<ScenarioInstanceCardProps> = ({
@@ -33,7 +36,9 @@ export const ScenarioInstanceCard: React.FC<ScenarioInstanceCardProps> = ({
   onEdit,
   onRemove,
   onApply,
+  onRefresh,
   canApply,
+  isRefreshing = false,
 }) => {
   const getStatusIcon = () => {
     switch (scenarioInstance.status) {
@@ -184,12 +189,29 @@ export const ScenarioInstanceCard: React.FC<ScenarioInstanceCardProps> = ({
             Edit
           </Button>
 
+          {scenarioInstance.original_instance_id && onRefresh && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              className="flex-1 order-2 sm:order-2"
+            >
+              {isRefreshing ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              {isRefreshing ? "Refreshing..." : "Refresh"}
+            </Button>
+          )}
+
           {canApplyInstance && (
             <Button
               variant="default"
               size="sm"
               onClick={onApply}
-              className="flex-1 order-2 sm:order-2"
+              className="flex-1 order-3 sm:order-3"
             >
               <Play className="h-4 w-4 mr-2" />
               Apply
@@ -200,7 +222,7 @@ export const ScenarioInstanceCard: React.FC<ScenarioInstanceCardProps> = ({
             variant="outline"
             size="sm"
             onClick={onRemove}
-            className="text-destructive hover:text-destructive order-3 sm:order-3 sm:w-auto"
+            className="text-destructive hover:text-destructive order-4 sm:order-4 sm:w-auto"
           >
             <Trash2 className="h-4 w-4 sm:mr-2" />
             <span className="sm:hidden">Remove</span>
