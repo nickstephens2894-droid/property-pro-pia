@@ -48,6 +48,7 @@ import { ScenarioProjectionsEnhanced } from "@/components/ScenarioProjectionsEnh
 import { ScenarioInstanceCard } from "@/components/ScenarioInstanceCard";
 import { CreateScenarioDialog } from "@/components/CreateScenarioDialog";
 import { ScenarioInstanceDetail } from "@/components/ScenarioInstanceDetail";
+import { ScenarioComparison } from "@/components/ScenarioComparison";
 
 export default function Scenarios() {
   const navigate = useNavigate();
@@ -96,6 +97,7 @@ export default function Scenarios() {
   const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(
     null
   );
+  const [isComparisonOpen, setIsComparisonOpen] = useState(false);
 
   // Get current scenario
   const currentScenarioData = selectedScenarioId
@@ -211,6 +213,14 @@ export default function Scenarios() {
     setSelectedInstanceId(null);
   };
 
+  const handleOpenComparison = () => {
+    setIsComparisonOpen(true);
+  };
+
+  const handleCloseComparison = () => {
+    setIsComparisonOpen(false);
+  };
+
   // Show loading state first
   if (loading) {
     return (
@@ -270,6 +280,16 @@ export default function Scenarios() {
           </div>
         </div>
       </div>
+    );
+  }
+
+  // Show comparison view
+  if (isComparisonOpen) {
+    return (
+      <ScenarioComparison
+        scenarios={scenarios}
+        onClose={handleCloseComparison}
+      />
     );
   }
 
@@ -588,13 +608,25 @@ export default function Scenarios() {
               Experiment with copies of your investment instances safely
             </p>
           </div>
-          <Button
-            onClick={() => setIsCreateDialogOpen(true)}
-            className="w-full sm:w-auto"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Create Scenario
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-2">
+            {scenarios.length >= 2 && (
+              <Button
+                variant="outline"
+                onClick={handleOpenComparison}
+                className="w-full sm:w-auto"
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Compare Scenarios
+              </Button>
+            )}
+            <Button
+              onClick={() => setIsCreateDialogOpen(true)}
+              className="w-full sm:w-auto"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Scenario
+            </Button>
+          </div>
         </div>
 
         {/* Scenarios Grid */}
