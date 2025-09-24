@@ -1,13 +1,20 @@
 import React from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface YearProjection {
   year: number;
   totalInterest: number;
   mainLoanPayment: number;
   equityLoanPayment: number;
-  mainLoanIOStatus: 'IO' | 'P&I';
-  equityLoanIOStatus: 'IO' | 'P&I';
+  mainLoanIOStatus: "IO" | "P&I";
+  equityLoanIOStatus: "IO" | "P&I";
   taxableIncome: number;
   taxBenefit: number;
   afterTaxCashFlow: number;
@@ -20,7 +27,9 @@ interface ConstructionPeriodTableProps {
   formatCurrency: (amount: number) => string;
 }
 
-const ConstructionPeriodTable: React.FC<ConstructionPeriodTableProps> = ({ projection, months, formatCurrency }) => {
+export const ConstructionPeriodTable: React.FC<
+  ConstructionPeriodTableProps
+> = ({ projection, months, formatCurrency }) => {
   return (
     <div className="w-full overflow-x-auto">
       <Table>
@@ -37,35 +46,51 @@ const ConstructionPeriodTable: React.FC<ConstructionPeriodTableProps> = ({ proje
           </TableRow>
           <TableRow>
             <TableCell>Main Loan Status</TableCell>
-            <TableCell className="text-right">{projection.mainLoanIOStatus}</TableCell>
+            <TableCell className="text-right">
+              {projection.mainLoanIOStatus}
+            </TableCell>
           </TableRow>
           <TableRow>
             <TableCell>Equity Loan Status</TableCell>
-            <TableCell className="text-right">{projection.equityLoanIOStatus}</TableCell>
+            <TableCell className="text-right">
+              {projection.equityLoanIOStatus}
+            </TableCell>
           </TableRow>
           <TableRow>
             <TableCell>Main Loan Payment (IO)</TableCell>
-            <TableCell className="text-right">{formatCurrency(projection.mainLoanPayment)}</TableCell>
+            <TableCell className="text-right">
+              {formatCurrency(projection.mainLoanPayment)}
+            </TableCell>
           </TableRow>
           <TableRow>
             <TableCell>Equity Loan Payment (IO)</TableCell>
-            <TableCell className="text-right">{formatCurrency(projection.equityLoanPayment)}</TableCell>
+            <TableCell className="text-right">
+              {formatCurrency(projection.equityLoanPayment)}
+            </TableCell>
           </TableRow>
           <TableRow>
             <TableCell>Total Interest (Holding Costs)</TableCell>
-            <TableCell className="text-right">{formatCurrency(projection.totalInterest)}</TableCell>
+            <TableCell className="text-right">
+              {formatCurrency(projection.totalInterest)}
+            </TableCell>
           </TableRow>
           <TableRow>
             <TableCell>Tax Benefit</TableCell>
-            <TableCell className="text-right">{formatCurrency(projection.taxBenefit)}</TableCell>
+            <TableCell className="text-right">
+              {formatCurrency(projection.taxBenefit)}
+            </TableCell>
           </TableRow>
           <TableRow>
             <TableCell>After-Tax Cash Flow</TableCell>
-            <TableCell className="text-right">{formatCurrency(projection.afterTaxCashFlow)}</TableCell>
+            <TableCell className="text-right">
+              {formatCurrency(projection.afterTaxCashFlow)}
+            </TableCell>
           </TableRow>
           <TableRow>
             <TableCell>Cumulative Cash Flow</TableCell>
-            <TableCell className="text-right">{formatCurrency(projection.cumulativeCashFlow)}</TableCell>
+            <TableCell className="text-right">
+              {formatCurrency(projection.cumulativeCashFlow)}
+            </TableCell>
           </TableRow>
         </TableBody>
       </Table>

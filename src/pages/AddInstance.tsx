@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -25,6 +25,8 @@ import { PropertySelector } from "@/components/PropertySelector";
 // Import the context hook
 import { usePropertyData } from "@/contexts/PropertyDataContext";
 import { useInstances } from "@/contexts/InstancesContext";
+import { useScenarios } from "@/contexts/ScenariosContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { PROPERTY_METHODS } from "@/types/presets";
 
 // Import utility functions
@@ -88,6 +90,7 @@ type Assumptions = {
 
 const AddInstance = () => {
   const navigate = useNavigate();
+  const { scenarioId } = useParams<{ scenarioId?: string }>();
   const isMobile = useIsMobile();
   const {
     propertyData,
@@ -99,10 +102,20 @@ const AddInstance = () => {
     resetToDefaults,
   } = usePropertyData();
   const { createInstance, loading: instancesLoading } = useInstances();
+  const { createNewInstanceInScenario, scenarios } = useScenarios();
+  const { user } = useAuth();
+
+  // Determine if we're in scenario context
+  const isScenarioContext = Boolean(scenarioId);
+  const currentScenario = isScenarioContext
+    ? scenarios.find((s) => s.id === scenarioId)
+    : null;
 
   // State for the instance
   const [instanceName, setInstanceName] = useState(
-    "New Property Investment Instance"
+    isScenarioContext
+      ? "New Scenario Instance"
+      : "New Property Investment Instance"
   );
   const [activeTab, setActiveTab] = useState("analysis");
   const [yearRange, setYearRange] = useState<[number, number]>([1, 30]);
@@ -973,6 +986,7 @@ const AddInstance = () => {
 
       // Prepare the instance data for database
       const instanceData = {
+        id: "", // Will be generated
         name: instanceName,
         source_model_id: selectedModel?.id || null,
         property_method: propertyData.currentPropertyMethod || null,
@@ -1037,6 +1051,26 @@ const AddInstance = () => {
         total_project_cost: totalProjectCost,
         equity_loan_amount: equityLoanAmount,
         available_equity: 0, // Will be calculated by the service
+        minimum_cash_required: 0,
+        actual_cash_deposit: 0,
+        funding_shortfall: 0,
+        funding_surplus: 0,
+        projections: [],
+        assumptions: {},
+        weekly_cashflow_year1: 0,
+        tax_savings_year1: 0,
+        tax_savings_total: 0,
+        net_equity_at_year_to: 0,
+        roi_at_year_to: 0,
+        analysis_year_to: 30,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        user_id: user?.id || "",
+        property_model_id: null,
+        capital_growth_rate: 3,
+        weekly_after_tax_cash_flow_summary: 0,
+        tax_benefit_from_projections: 0,
+        equity_at_year_to: 0,
         status: "draft" as const,
       };
 
@@ -1044,14 +1078,28 @@ const AddInstance = () => {
       console.log("Property state value:", propertyData.propertyState);
       console.log("Property state type:", typeof propertyData.propertyState);
 
-      // Create the instance in the database
-      const newInstance = await createInstance(instanceData);
+      if (isScenarioContext && scenarioId) {
+        // Create scenario instance
+        const newScenarioInstance = await createNewInstanceInScenario(
+          scenarioId,
+          instanceData,
+          instanceName
+        );
+        console.log(
+          "Scenario instance created successfully:",
+          newScenarioInstance
+        );
 
-      // Show success message
-      console.log("Instance created successfully:", newInstance);
+        // Navigate back to scenario
+        navigate(`/scenarios`);
+      } else {
+        // Create regular instance
+        const newInstance = await createInstance(instanceData);
+        console.log("Instance created successfully:", newInstance);
 
-      // Navigate to instances list
-      navigate("/instances");
+        // Navigate to instances list
+        navigate("/instances");
+      }
     } catch (error) {
       console.error("Failed to save instance:", error);
 
@@ -1066,7 +1114,11 @@ const AddInstance = () => {
   };
 
   const handleBack = () => {
-    navigate("/instances");
+    if (isScenarioContext) {
+      navigate("/scenarios");
+    } else {
+      navigate("/instances");
+    }
   };
 
   return (
@@ -1083,7 +1135,7 @@ const AddInstance = () => {
               className="text-muted-foreground hover:text-foreground"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Instances
+              {isScenarioContext ? "Back to Scenarios" : "Back to Instances"}
             </Button>
           </div>
 
@@ -1118,8 +1170,12 @@ const AddInstance = () => {
                   </div>
                   <CardDescription className="text-sm">
                     {selectedModel
-                      ? "Name populated from selected property - you can edit if needed"
-                      : "Select a property above to auto-populate the instance name and property details"}
+                      ? `Name populated from selected property - you can edit if needed${
+                          isScenarioContext ? " (for scenario)" : ""
+                        }`
+                      : `Select a property above to auto-populate the instance name and property details${
+                          isScenarioContext ? " (for scenario)" : ""
+                        }`}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-0">
@@ -1192,8 +1248,12 @@ const AddInstance = () => {
                   </div>
                   <div className="text-xs text-primary-foreground/80">
                     {instancesLoading
-                      ? "Creating your instance..."
-                      : "Create your instance"}
+                      ? `Creating your ${
+                          isScenarioContext ? "scenario instance" : "instance"
+                        }...`
+                      : `Create your ${
+                          isScenarioContext ? "scenario instance" : "instance"
+                        }`}
                   </div>
                 </div>
               </Button>
