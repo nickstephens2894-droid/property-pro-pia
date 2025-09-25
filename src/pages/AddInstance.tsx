@@ -25,6 +25,7 @@ import { PropertySelector } from "@/components/PropertySelector";
 // Import the context hook
 import { usePropertyData } from "@/contexts/PropertyDataContext";
 import { useInstances } from "@/contexts/InstancesContext";
+import { CreateInstanceRequestFrontend } from "@/services/instancesService";
 import { useScenarios } from "@/contexts/ScenariosContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { PROPERTY_METHODS } from "@/types/presets";
@@ -985,8 +986,7 @@ const AddInstance = () => {
       }
 
       // Prepare the instance data for database
-      const instanceData = {
-        id: "", // Will be generated
+      const instanceData: CreateInstanceRequestFrontend = {
         name: instanceName,
         source_model_id: selectedModel?.id || null,
         property_method: propertyData.currentPropertyMethod || null,
@@ -1065,12 +1065,7 @@ const AddInstance = () => {
         analysis_year_to: 30,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        user_id: user?.id || "",
-        property_model_id: null,
         capital_growth_rate: 3,
-        weekly_after_tax_cash_flow_summary: 0,
-        tax_benefit_from_projections: 0,
-        equity_at_year_to: 0,
         status: "draft" as const,
       };
 
@@ -1079,10 +1074,15 @@ const AddInstance = () => {
       console.log("Property state type:", typeof propertyData.propertyState);
 
       if (isScenarioContext && scenarioId) {
-        // Create scenario instance
+        // Create scenario instance - add id field for scenario context
+        const scenarioInstanceData = {
+          ...instanceData,
+          id: crypto.randomUUID(), // Generate temporary UUID for scenario
+          status: "draft" as const,
+        };
         const newScenarioInstance = await createNewInstanceInScenario(
           scenarioId,
-          instanceData,
+          scenarioInstanceData as any,
           instanceName
         );
         console.log(

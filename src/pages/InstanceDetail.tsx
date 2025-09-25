@@ -181,6 +181,32 @@ const InstanceDetail = () => {
                   rentalGrowthRate: instanceData.rental_growth_rate,
                   vacancyRate: instanceData.vacancy_rate,
                   constructionYear: instanceData.construction_year,
+                  propertyWorkflowType:
+                    (instanceData as any).property_workflow_type || "new",
+
+                  // Current Property Data (for current properties)
+                  currentPropertyValue:
+                    (instanceData as any).current_property_value || 0,
+                  currentLoanBalance:
+                    (instanceData as any).current_loan_balance || 0,
+                  currentEquityLoanBalance:
+                    (instanceData as any).current_equity_loan_balance || 0,
+                  originalPurchasePrice:
+                    (instanceData as any).original_purchase_price || 0,
+                  originalPurchaseDate:
+                    (instanceData as any).original_purchase_date || "",
+                  originalStampDuty:
+                    (instanceData as any).original_stamp_duty || 0,
+                  originalLegalFees:
+                    (instanceData as any).original_legal_fees || 0,
+                  originalInspectionFees:
+                    (instanceData as any).original_inspection_fees || 0,
+
+                  // Essential Funding (for new properties)
+                  depositAmount: (instanceData as any).deposit_amount || 0,
+                  selectedFundingStrategy:
+                    (instanceData as any).selected_funding_strategy || "",
+
                   buildingValue: instanceData.building_value,
                   plantEquipmentValue: instanceData.plant_equipment_value,
                   landValue: instanceData.land_value,
@@ -206,7 +232,6 @@ const InstanceDetail = () => {
                   equityLoanInterestRate:
                     instanceData.equity_loan_interest_rate,
                   equityLoanTerm: instanceData.equity_loan_term,
-                  depositAmount: instanceData.deposit_amount,
                   minimumDepositRequired: instanceData.minimum_deposit_required,
                   holdingCostFunding: instanceData.holding_cost_funding as
                     | "cash"
@@ -371,6 +396,7 @@ const InstanceDetail = () => {
       property_type: propertyData.propertyType || "Apartment",
       property_method:
         propertyData.currentPropertyMethod || "built-first-owner",
+      property_workflow_type: propertyData.propertyWorkflowType || "new",
       location: propertyData.location || "NSW",
       purchase_price: propertyData.purchasePrice || 0,
       weekly_rent: propertyData.weeklyRent || 0,
@@ -415,7 +441,6 @@ const InstanceDetail = () => {
       equity_loan_io_term_years: propertyData.equityLoanIoTermYears || 3,
       equity_loan_interest_rate: propertyData.equityLoanInterestRate || 7.2,
       equity_loan_term: propertyData.equityLoanTerm || 25,
-      deposit_amount: propertyData.depositAmount || 0,
       minimum_deposit_required: propertyData.minimumDepositRequired || 0,
       holding_cost_funding: propertyData.holdingCostFunding || "cash",
       holding_cost_cash_percentage:
@@ -448,6 +473,20 @@ const InstanceDetail = () => {
       depreciation_method: propertyData.depreciationMethod || "prime-cost",
       funding_method: propertyData.currentFundingMethod,
       property_state: propertyData.propertyState || "VIC",
+
+      // Current Property Data (for current properties)
+      current_property_value: propertyData.currentPropertyValue || 0,
+      current_loan_balance: propertyData.currentLoanBalance || 0,
+      current_equity_loan_balance: propertyData.currentEquityLoanBalance || 0,
+      original_purchase_price: propertyData.originalPurchasePrice || 0,
+      original_purchase_date: propertyData.originalPurchaseDate || null,
+      original_stamp_duty: propertyData.originalStampDuty || 0,
+      original_legal_fees: propertyData.originalLegalFees || 0,
+      original_inspection_fees: propertyData.originalInspectionFees || 0,
+
+      // Essential Funding (for new properties)
+      deposit_amount: propertyData.depositAmount || 0,
+      selected_funding_strategy: propertyData.selectedFundingStrategy || null,
     };
   };
 
@@ -533,6 +572,29 @@ const InstanceDetail = () => {
               rentalGrowthRate: instance.rental_growth_rate,
               vacancyRate: instance.vacancy_rate,
               constructionYear: instance.construction_year,
+              propertyWorkflowType:
+                (instance as any).property_workflow_type || "new",
+
+              // Current Property Data (for current properties)
+              currentPropertyValue:
+                (instance as any).current_property_value || 0,
+              currentLoanBalance: (instance as any).current_loan_balance || 0,
+              currentEquityLoanBalance:
+                (instance as any).current_equity_loan_balance || 0,
+              originalPurchasePrice:
+                (instance as any).original_purchase_price || 0,
+              originalPurchaseDate:
+                (instance as any).original_purchase_date || "",
+              originalStampDuty: (instance as any).original_stamp_duty || 0,
+              originalLegalFees: (instance as any).original_legal_fees || 0,
+              originalInspectionFees:
+                (instance as any).original_inspection_fees || 0,
+
+              // Essential Funding (for new properties)
+              depositAmount: (instance as any).deposit_amount || 0,
+              selectedFundingStrategy:
+                (instance as any).selected_funding_strategy || "",
+
               buildingValue: instance.building_value,
               plantEquipmentValue: instance.plant_equipment_value,
               landValue: instance.land_value,
@@ -558,7 +620,6 @@ const InstanceDetail = () => {
               equityLoanIoTermYears: instance.equity_loan_io_term_years,
               equityLoanInterestRate: instance.equity_loan_interest_rate,
               equityLoanTerm: instance.equity_loan_term,
-              depositAmount: instance.deposit_amount,
               minimumDepositRequired: instance.minimum_deposit_required,
               holdingCostFunding: instance.holding_cost_funding as
                 | "cash"
@@ -1602,6 +1663,24 @@ const InstanceDetail = () => {
                     isEditMode={isEditMode}
                   />
                 </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <div
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      (instance as any).property_workflow_type === "current"
+                        ? "bg-blue-100 text-blue-800"
+                        : "bg-green-100 text-green-800"
+                    }`}
+                  >
+                    {(instance as any).property_workflow_type === "current"
+                      ? "Current Property"
+                      : "New Property"}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {(instance as any).property_workflow_type === "current"
+                      ? "Already owned property with historical data"
+                      : "Property to be purchased with projected calculations"}
+                  </div>
+                </div>
                 <CardDescription
                   className={`${isMobile ? "text-sm" : "text-base"}`}
                 >
@@ -1813,6 +1892,7 @@ const InstanceDetail = () => {
                     marginalTaxRate={0.3} // Will be calculated
                     isEditMode={isEditMode}
                     instanceId={id!}
+                    disabled={true} // Disable property type selection in instance details
                   />
                 </div>
               </div>

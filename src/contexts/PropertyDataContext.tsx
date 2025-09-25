@@ -1,5 +1,16 @@
-import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
-import { PropertyMethod, FundingMethod } from '@/types/presets';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useCallback,
+} from "react";
+import { PropertyMethod, FundingMethod } from "@/types/presets";
+import {
+  applyFundingStrategy,
+  getAvailableFundingStrategies,
+  validateFundingStrategy,
+} from "@/utils/fundingStrategyUtils";
 
 interface Investor {
   id: string;
@@ -18,10 +29,13 @@ export interface PropertyData {
   // Multi-investor structure
   investors: Investor[];
   ownershipAllocations: OwnershipAllocation[];
-  
+
+  // Property Type Distinction
+  propertyWorkflowType: "new" | "current"; // 'new' = to be purchased, 'current' = already owned
+
   // Project Type
   isConstructionProject: boolean;
-  
+
   // Basic Property Details - Enhanced
   purchasePrice: number;
   weeklyRent: number;
@@ -30,82 +44,96 @@ export interface PropertyData {
   constructionYear: number;
   buildingValue: number;
   plantEquipmentValue: number;
-  
+
+  // Current Property Value (for current properties)
+  currentPropertyValue: number;
+
+  // Historical Purchase Data (for current properties)
+  originalPurchasePrice: number;
+  originalPurchaseDate: string; // ISO date string
+  originalStampDuty: number;
+  originalLegalFees: number;
+  originalInspectionFees: number;
+
+  // Current Loan Balances (for current properties)
+  currentLoanBalance: number;
+  currentEquityLoanBalance: number;
+
   // Construction-specific
   landValue: number;
   constructionValue: number;
   constructionPeriod: number; // months
   constructionInterestRate: number; // Main loan rate during construction
   postConstructionRateReduction: number; // Rate reduction after construction (e.g., 0.5%)
-  
+
   // Construction Progress Payments
   constructionProgressPayments: Array<{
     id: string;
     percentage: number;
     month: number;
     description: string;
-  }>; 
-  
+  }>;
+
   // Traditional Financing
   deposit: number;
   loanAmount: number;
   interestRate: number;
   loanTerm: number;
   lvr: number; // Loan to Value Ratio
-  
+
   // Enhanced Loan Options
-  mainLoanType: 'io' | 'pi';
+  mainLoanType: "io" | "pi";
   ioTermYears: number;
-  
+
   // Equity Funding Enhanced
   useEquityFunding: boolean;
   primaryPropertyValue: number;
   existingDebt: number;
   maxLVR: number;
   equityLoanAmount: number; // The calculated/entered equity loan amount
-  equityLoanType: 'io' | 'pi';
+  equityLoanType: "io" | "pi";
   equityLoanIoTermYears: number;
   equityLoanInterestRate: number;
   equityLoanTerm: number;
-  
+
   // Deposit Management
   depositAmount: number;
   minimumDepositRequired: number;
-  
+
   // Holding Costs During Construction
-  holdingCostFunding: 'cash' | 'debt' | 'hybrid';
+  holdingCostFunding: "cash" | "debt" | "hybrid";
   holdingCostCashPercentage: number; // For hybrid funding
   // Capitalisation option and equity repayments during construction
   capitalizeConstructionCosts: boolean;
-  constructionEquityRepaymentType: 'io' | 'pi';
-  
+  constructionEquityRepaymentType: "io" | "pi";
+
   // Separate interest calculations for tax purposes
   landHoldingInterest: number; // Land-related interest (non-deductible)
   constructionHoldingInterest: number; // Construction-related interest (deductible)
   totalHoldingCosts: number; // Total holding costs during construction
-  
+
   // Purchase Costs
   stampDuty: number;
   legalFees: number;
   inspectionFees: number;
-  
+
   // Construction Costs
   councilFees: number;
   architectFees: number;
   siteCosts: number;
-  
+
   // Annual Expenses
   propertyManagement: number;
   councilRates: number;
   insurance: number;
   repairs: number;
-  
+
   // Depreciation fields
-  depreciationMethod: 'prime-cost' | 'diminishing-value';
+  depreciationMethod: "prime-cost" | "diminishing-value";
   isNewProperty: boolean;
 
   // Property State for stamp duty calculations
-  propertyState: 'ACT' | 'NSW' | 'NT' | 'QLD' | 'SA' | 'TAS' | 'VIC' | 'WA';
+  propertyState: "ACT" | "NSW" | "NT" | "QLD" | "SA" | "TAS" | "VIC" | "WA";
 
   // Additional property metadata
   propertyType: string;
@@ -114,6 +142,9 @@ export interface PropertyData {
   // Preset tracking
   currentPropertyMethod?: PropertyMethod;
   currentFundingMethod?: FundingMethod;
+
+  // Funding Strategy Selection (for new properties)
+  selectedFundingStrategy?: FundingMethod;
 }
 
 interface PropertyDataContextType {
@@ -121,20 +152,24 @@ interface PropertyDataContextType {
   setPropertyData: React.Dispatch<React.SetStateAction<PropertyData>>;
   updateField: (field: keyof PropertyData, value: any) => void;
   updateFieldWithConfirmation: (
-    field: keyof PropertyData, 
+    field: keyof PropertyData,
     value: number | boolean | string,
     onConfirm?: () => void
   ) => void;
-  applyPreset: (presetData: Partial<PropertyData>, propertyMethod?: PropertyMethod, fundingMethod?: FundingMethod) => void;
+  applyPreset: (
+    presetData: Partial<PropertyData>,
+    propertyMethod?: PropertyMethod,
+    fundingMethod?: FundingMethod
+  ) => void;
   loadScenario: (scenarioData: PropertyData) => void;
   resetToDefaults: () => void;
   calculateEquityLoanAmount: () => number;
   calculateTotalProjectCost: () => number;
   calculateAvailableEquity: () => number;
-  calculateHoldingCosts: () => { 
-    landInterest: number; 
+  calculateHoldingCosts: () => {
+    landInterest: number;
     stampDutyInterest: number;
-    constructionInterest: number; 
+    constructionInterest: number;
     developmentCostsInterest: number;
     transactionCostsInterest: number;
     total: number;
@@ -169,18 +204,32 @@ interface PropertyDataContextType {
     equitySurplus: number;
     offsetAccountBalance: number;
   };
+  applyFundingStrategy: (strategy: FundingMethod) => {
+    success: boolean;
+    error?: string;
+  };
+  getAvailableFundingStrategies: () => FundingMethod[];
+  validateFundingStrategy: (strategy: FundingMethod) => {
+    isValid: boolean;
+    error?: string;
+  };
 }
 
-const PropertyDataContext = createContext<PropertyDataContextType | undefined>(undefined);
+const PropertyDataContext = createContext<PropertyDataContextType | undefined>(
+  undefined
+);
 
 const defaultPropertyData: PropertyData = {
   // Multi-investor structure - Start with empty investors
   investors: [],
   ownershipAllocations: [],
-  
+
+  // Property Type Distinction
+  propertyWorkflowType: "new", // Default to new property
+
   // Project Type
   isConstructionProject: false,
-  
+
   // Basic Property Details - Enhanced (Start empty, populated from model)
   purchasePrice: 0,
   weeklyRent: 0,
@@ -189,107 +238,135 @@ const defaultPropertyData: PropertyData = {
   constructionYear: 2024,
   buildingValue: 0,
   plantEquipmentValue: 0,
-  
+
+  // Current Property Value (for current properties)
+  currentPropertyValue: 0,
+
+  // Historical Purchase Data (for current properties)
+  originalPurchasePrice: 0,
+  originalPurchaseDate: "",
+  originalStampDuty: 0,
+  originalLegalFees: 0,
+  originalInspectionFees: 0,
+
+  // Current Loan Balances (for current properties)
+  currentLoanBalance: 0,
+  currentEquityLoanBalance: 0,
+
   // Construction-specific (for construction projects) - Start empty
   landValue: 0,
   constructionValue: 0,
   constructionPeriod: 0,
   constructionInterestRate: 0,
   postConstructionRateReduction: 0.5, // Default 0.5% reduction after construction
-  
+
   // Construction Progress Payments
   constructionProgressPayments: [
-    { id: '1', percentage: 10, month: 1, description: 'Site preparation & slab' },
-    { id: '2', percentage: 20, month: 2, description: 'Frame & roof' },
-    { id: '3', percentage: 25, month: 4, description: 'Lock-up stage' },
-    { id: '4', percentage: 25, month: 6, description: 'Fixing stage' },
-    { id: '5', percentage: 20, month: 8, description: 'Completion' }
+    {
+      id: "1",
+      percentage: 10,
+      month: 1,
+      description: "Site preparation & slab",
+    },
+    { id: "2", percentage: 20, month: 2, description: "Frame & roof" },
+    { id: "3", percentage: 25, month: 4, description: "Lock-up stage" },
+    { id: "4", percentage: 25, month: 6, description: "Fixing stage" },
+    { id: "5", percentage: 20, month: 8, description: "Completion" },
   ],
-  
+
   // Traditional Financing (Start empty, populated from model)
   deposit: 0,
   loanAmount: 0,
   interestRate: 0,
   loanTerm: 30,
   lvr: 80,
-  
+
   // Enhanced Loan Options
-  mainLoanType: 'pi',
+  mainLoanType: "pi",
   ioTermYears: 5,
-  
+
   // Equity Funding Enhanced
   useEquityFunding: false,
   primaryPropertyValue: 1000000,
   existingDebt: 400000,
   maxLVR: 80,
   equityLoanAmount: 0, // Calculated/entered equity loan amount
-  equityLoanType: 'pi',
+  equityLoanType: "pi",
   equityLoanIoTermYears: 3,
   equityLoanInterestRate: 7.2, // Higher rate for equity loans
   equityLoanTerm: 25,
-  
+
   // Deposit Management - Auto-calculated
   depositAmount: 194600, // Actual amount needed for 20% + costs
   minimumDepositRequired: 194600,
-  
+
   // Holding Costs During Construction
-  holdingCostFunding: 'cash',
+  holdingCostFunding: "cash",
   holdingCostCashPercentage: 100,
   capitalizeConstructionCosts: false,
-  constructionEquityRepaymentType: 'io',
-  
+  constructionEquityRepaymentType: "io",
+
   // Separate interest calculations for tax purposes - Auto-calculated
   landHoldingInterest: 0,
   constructionHoldingInterest: 0,
   totalHoldingCosts: 0,
-  
+
   // Purchase Costs (Start empty, populated from model)
   stampDuty: 0,
   legalFees: 0,
   inspectionFees: 0,
-  
+
   // Construction Costs (Start empty, populated from model)
   councilFees: 0,
   architectFees: 0,
   siteCosts: 0,
-  
+
   // Annual Expenses (Start empty, populated from model)
   propertyManagement: 0,
   councilRates: 0,
   insurance: 0,
   repairs: 0,
-  
+
   // Depreciation / Tax
-  depreciationMethod: 'prime-cost',
+  depreciationMethod: "prime-cost",
   isNewProperty: true,
-  
+
   // Property State for stamp duty calculations
-  propertyState: 'VIC',
+  propertyState: "VIC",
 
   // Additional property metadata
-  propertyType: 'Apartment',
-  location: 'NSW',
+  propertyType: "Apartment",
+  location: "NSW",
 
   // Preset tracking
   currentPropertyMethod: undefined,
   currentFundingMethod: undefined,
+
+  // Funding Strategy Selection (for new properties)
+  selectedFundingStrategy: undefined,
 };
 
 export const PropertyDataProvider = ({ children }: { children: ReactNode }) => {
-  const [propertyData, setPropertyData] = useState<PropertyData>(defaultPropertyData);
+  const [propertyData, setPropertyData] =
+    useState<PropertyData>(defaultPropertyData);
 
   // Auto-sync interest rate for construction projects
   const updateField = useCallback((field: keyof PropertyData, value: any) => {
-    setPropertyData(prev => {
+    setPropertyData((prev) => {
       const updated = { ...prev, [field]: value };
-      
+
       // Auto-sync interest rate for construction projects
       if (updated.isConstructionProject) {
-        if (field === 'constructionInterestRate' || field === 'postConstructionRateReduction') {
-          updated.interestRate = updated.constructionInterestRate - updated.postConstructionRateReduction;
+        if (
+          field === "constructionInterestRate" ||
+          field === "postConstructionRateReduction"
+        ) {
+          updated.interestRate =
+            updated.constructionInterestRate -
+            updated.postConstructionRateReduction;
         }
       }
-      
+
       return updated;
     });
   }, []);
@@ -297,31 +374,57 @@ export const PropertyDataProvider = ({ children }: { children: ReactNode }) => {
   // Centralized calculations (existing code omitted for brevity)
   const calculateEquityLoanAmount = () => {
     if (!propertyData.useEquityFunding) return 0;
-    
+
     const totalProjectCost = calculateTotalProjectCost();
-    const shortfallAfterMainLoan = Math.max(0, totalProjectCost - propertyData.loanAmount);
-    const availableEquity = Math.max(0, propertyData.primaryPropertyValue * (propertyData.maxLVR / 100) - propertyData.existingDebt);
-    
+    const shortfallAfterMainLoan = Math.max(
+      0,
+      totalProjectCost - propertyData.loanAmount
+    );
+    const availableEquity = Math.max(
+      0,
+      propertyData.primaryPropertyValue * (propertyData.maxLVR / 100) -
+        propertyData.existingDebt
+    );
+
     // Use equity to cover shortfall up to available equity
     return Math.min(shortfallAfterMainLoan, availableEquity);
   };
 
   const calculateTotalProjectCost = () => {
-    const purchaseCosts = propertyData.stampDuty + propertyData.legalFees + propertyData.inspectionFees;
-    const constructionCosts = propertyData.councilFees + propertyData.architectFees + propertyData.siteCosts;
-    const baseCost = propertyData.isConstructionProject 
-      ? propertyData.landValue + propertyData.constructionValue 
+    const purchaseCosts =
+      propertyData.stampDuty +
+      propertyData.legalFees +
+      propertyData.inspectionFees;
+    const constructionCosts =
+      propertyData.councilFees +
+      propertyData.architectFees +
+      propertyData.siteCosts;
+    const baseCost = propertyData.isConstructionProject
+      ? propertyData.landValue + propertyData.constructionValue
       : propertyData.purchasePrice;
-    return baseCost + purchaseCosts + constructionCosts + propertyData.totalHoldingCosts;
+    return (
+      baseCost +
+      purchaseCosts +
+      constructionCosts +
+      propertyData.totalHoldingCosts
+    );
   };
 
   const calculateAvailableEquity = () => {
-    return Math.max(0, propertyData.primaryPropertyValue * (propertyData.maxLVR / 100) - propertyData.existingDebt);
+    return Math.max(
+      0,
+      propertyData.primaryPropertyValue * (propertyData.maxLVR / 100) -
+        propertyData.existingDebt
+    );
   };
 
   const calculateHoldingCosts = () => {
     // Only calculate for construction projects
-    if (!propertyData.isConstructionProject || propertyData.constructionPeriod === 0 || propertyData.constructionInterestRate === 0) {
+    if (
+      !propertyData.isConstructionProject ||
+      propertyData.constructionPeriod === 0 ||
+      propertyData.constructionInterestRate === 0
+    ) {
       return {
         landInterest: 0,
         stampDutyInterest: 0,
@@ -334,35 +437,64 @@ export const PropertyDataProvider = ({ children }: { children: ReactNode }) => {
         averageMonthlyInterest: 0,
         monthlyBreakdown: [],
         costBreakdown: {
-          land: { amount: 0, timing: 'From settlement', deductible: false },
-          stampDuty: { amount: 0, timing: 'From settlement', deductible: false },
-          construction: { amount: 0, timing: 'From each drawdown', deductible: true },
-          developmentCosts: { amount: 0, timing: 'From payment date', deductible: true },
-          transactionCosts: { amount: 0, timing: 'From settlement', deductible: true }
-        }
+          land: { amount: 0, timing: "From settlement", deductible: false },
+          stampDuty: {
+            amount: 0,
+            timing: "From settlement",
+            deductible: false,
+          },
+          construction: {
+            amount: 0,
+            timing: "From each drawdown",
+            deductible: true,
+          },
+          developmentCosts: {
+            amount: 0,
+            timing: "From payment date",
+            deductible: true,
+          },
+          transactionCosts: {
+            amount: 0,
+            timing: "From settlement",
+            deductible: true,
+          },
+        },
       };
     }
 
     // Validation
-    if (propertyData.constructionPeriod < 1 || propertyData.constructionPeriod > 60) {
-      console.warn('Construction period should be between 1-60 months');
+    if (
+      propertyData.constructionPeriod < 1 ||
+      propertyData.constructionPeriod > 60
+    ) {
+      console.warn("Construction period should be between 1-60 months");
     }
-    if (propertyData.constructionInterestRate < 0.01 || propertyData.constructionInterestRate > 20) {
-      console.warn('Interest rate should be between 0.01% and 20%');
+    if (
+      propertyData.constructionInterestRate < 0.01 ||
+      propertyData.constructionInterestRate > 20
+    ) {
+      console.warn("Interest rate should be between 0.01% and 20%");
     }
 
     const monthlyRate = propertyData.constructionInterestRate / 100 / 12;
-    const constructionPeriodMonths = Math.max(1, propertyData.constructionPeriod);
+    const constructionPeriodMonths = Math.max(
+      1,
+      propertyData.constructionPeriod
+    );
 
     // Land Interest (Non-deductible): Monthly compound from settlement
-    const landInterest = propertyData.landValue > 0 
-      ? propertyData.landValue * ((Math.pow(1 + monthlyRate, constructionPeriodMonths) - 1))
-      : 0;
+    const landInterest =
+      propertyData.landValue > 0
+        ? propertyData.landValue *
+          (Math.pow(1 + monthlyRate, constructionPeriodMonths) - 1)
+        : 0;
 
     // Stamp Duty Interest (Non-deductible): Monthly compound from settlement
-    const stampDutyInterest = propertyData.stampDuty > 0
-      ? propertyData.stampDuty * ((Math.pow(1 + monthlyRate, constructionPeriodMonths) - 1))
-      : 0;
+    const stampDutyInterest =
+      propertyData.stampDuty > 0
+        ? propertyData.stampDuty *
+          (Math.pow(1 + monthlyRate, constructionPeriodMonths) - 1)
+        : 0;
 
     // Construction Interest (Deductible): Progressive drawdown calculation
     let constructionInterest = 0;
@@ -374,42 +506,61 @@ export const PropertyDataProvider = ({ children }: { children: ReactNode }) => {
     }> = [];
 
     // Sort payments by month to ensure proper progressive calculation
-    const sortedPayments = [...propertyData.constructionProgressPayments].sort((a, b) => a.month - b.month);
-    
+    const sortedPayments = [...propertyData.constructionProgressPayments].sort(
+      (a, b) => a.month - b.month
+    );
+
     for (const payment of sortedPayments) {
-      const paymentAmount = (payment.percentage / 100) * propertyData.constructionValue;
-      const monthsRemaining = Math.max(0, constructionPeriodMonths - payment.month);
-      
+      const paymentAmount =
+        (payment.percentage / 100) * propertyData.constructionValue;
+      const monthsRemaining = Math.max(
+        0,
+        constructionPeriodMonths - payment.month
+      );
+
       if (monthsRemaining > 0 && paymentAmount > 0) {
         // Calculate interest from drawdown month to end of construction
-        const paymentInterest = paymentAmount * ((Math.pow(1 + monthlyRate, monthsRemaining) - 1));
+        const paymentInterest =
+          paymentAmount * (Math.pow(1 + monthlyRate, monthsRemaining) - 1);
         constructionInterest += paymentInterest;
-        
+
         monthlyBreakdown.push({
           month: payment.month,
           drawdown: paymentAmount,
           interestAccrued: paymentInterest,
-          cumulativeInterest: constructionInterest
+          cumulativeInterest: constructionInterest,
         });
       }
     }
 
     // Development Costs Interest (Deductible): Typically paid upfront, full period compound
-    const developmentCosts = propertyData.councilFees + propertyData.architectFees + propertyData.siteCosts;
-    const developmentCostsInterest = developmentCosts > 0
-      ? developmentCosts * ((Math.pow(1 + monthlyRate, constructionPeriodMonths) - 1))
-      : 0;
+    const developmentCosts =
+      propertyData.councilFees +
+      propertyData.architectFees +
+      propertyData.siteCosts;
+    const developmentCostsInterest =
+      developmentCosts > 0
+        ? developmentCosts *
+          (Math.pow(1 + monthlyRate, constructionPeriodMonths) - 1)
+        : 0;
 
     // Transaction Costs Interest (Deductible): Paid at settlement, full period compound
-    const transactionCosts = propertyData.legalFees + propertyData.inspectionFees;
-    const transactionCostsInterest = transactionCosts > 0
-      ? transactionCosts * ((Math.pow(1 + monthlyRate, constructionPeriodMonths) - 1))
-      : 0;
+    const transactionCosts =
+      propertyData.legalFees + propertyData.inspectionFees;
+    const transactionCostsInterest =
+      transactionCosts > 0
+        ? transactionCosts *
+          (Math.pow(1 + monthlyRate, constructionPeriodMonths) - 1)
+        : 0;
 
-    const totalDeductible = constructionInterest + developmentCostsInterest + transactionCostsInterest;
+    const totalDeductible =
+      constructionInterest +
+      developmentCostsInterest +
+      transactionCostsInterest;
     const totalNonDeductible = landInterest + stampDutyInterest;
     const total = totalDeductible + totalNonDeductible;
-    const averageMonthlyInterest = constructionPeriodMonths > 0 ? total / constructionPeriodMonths : 0;
+    const averageMonthlyInterest =
+      constructionPeriodMonths > 0 ? total / constructionPeriodMonths : 0;
 
     return {
       landInterest: Math.round(landInterest),
@@ -423,32 +574,32 @@ export const PropertyDataProvider = ({ children }: { children: ReactNode }) => {
       averageMonthlyInterest: Math.round(averageMonthlyInterest),
       monthlyBreakdown,
       costBreakdown: {
-        land: { 
-          amount: Math.round(landInterest), 
-          timing: 'From settlement', 
-          deductible: false 
+        land: {
+          amount: Math.round(landInterest),
+          timing: "From settlement",
+          deductible: false,
         },
-        stampDuty: { 
-          amount: Math.round(stampDutyInterest), 
-          timing: 'From settlement', 
-          deductible: false 
+        stampDuty: {
+          amount: Math.round(stampDutyInterest),
+          timing: "From settlement",
+          deductible: false,
         },
-        construction: { 
-          amount: Math.round(constructionInterest), 
-          timing: 'From each drawdown', 
-          deductible: true 
+        construction: {
+          amount: Math.round(constructionInterest),
+          timing: "From each drawdown",
+          deductible: true,
         },
-        developmentCosts: { 
-          amount: Math.round(developmentCostsInterest), 
-          timing: 'From payment date (typically upfront)', 
-          deductible: true 
+        developmentCosts: {
+          amount: Math.round(developmentCostsInterest),
+          timing: "From payment date (typically upfront)",
+          deductible: true,
         },
-        transactionCosts: { 
-          amount: Math.round(transactionCostsInterest), 
-          timing: 'From settlement', 
-          deductible: true 
-        }
-      }
+        transactionCosts: {
+          amount: Math.round(transactionCostsInterest),
+          timing: "From settlement",
+          deductible: true,
+        },
+      },
     };
   };
 
@@ -459,18 +610,18 @@ export const PropertyDataProvider = ({ children }: { children: ReactNode }) => {
 
   const calculateOptimalMainLoan = () => {
     const totalProjectCost = calculateTotalProjectCost();
-    const propertyValue = propertyData.isConstructionProject 
-      ? propertyData.landValue + propertyData.constructionValue 
+    const propertyValue = propertyData.isConstructionProject
+      ? propertyData.landValue + propertyData.constructionValue
       : propertyData.purchasePrice;
-    
+
     // Calculate maximum loan based on LVR
     const maxLoanByLVR = (propertyValue * propertyData.lvr) / 100;
-    
+
     // Calculate maximum loan based on funding requirement
     const cashDeposit = propertyData.depositAmount || 0;
     const equityLoan = propertyData.equityLoanAmount || 0;
     const maxLoanByFunding = totalProjectCost - cashDeposit - equityLoan;
-    
+
     // Take the minimum to respect both LVR and funding constraints
     return Math.max(0, Math.min(maxLoanByLVR, maxLoanByFunding));
   };
@@ -478,28 +629,34 @@ export const PropertyDataProvider = ({ children }: { children: ReactNode }) => {
   const calculateFundingAnalysis = () => {
     const totalProjectCost = calculateTotalProjectCost();
     const availableEquity = calculateAvailableEquity();
-    
+
     // Use the equity loan amount from user input (calculated via EquityLoanCalculator)
-    const equityLoanAmount = propertyData.useEquityFunding 
-      ? (propertyData.equityLoanAmount || 0)
+    const equityLoanAmount = propertyData.useEquityFunding
+      ? propertyData.equityLoanAmount || 0
       : 0;
-    
-    // Calculate optimal main loan based on LVR and funding constraints  
-    const propertyValue = propertyData.isConstructionProject 
-      ? propertyData.landValue + propertyData.constructionValue 
+
+    // Calculate optimal main loan based on LVR and funding constraints
+    const propertyValue = propertyData.isConstructionProject
+      ? propertyData.landValue + propertyData.constructionValue
       : propertyData.purchasePrice;
     const maxLoanByLVR = (propertyValue * propertyData.lvr) / 100;
-    const optimalMainLoan = Math.min(maxLoanByLVR, totalProjectCost - equityLoanAmount - (propertyData.depositAmount || 0));
+    const optimalMainLoan = Math.min(
+      maxLoanByLVR,
+      totalProjectCost - equityLoanAmount - (propertyData.depositAmount || 0)
+    );
     const actualMainLoan = propertyData.loanAmount || optimalMainLoan;
-    
+
     const actualCashDeposit = propertyData.depositAmount || 0;
-    
+
     // Total funding provided
     const totalFunding = actualMainLoan + equityLoanAmount + actualCashDeposit;
-    
+
     // Calculate minimum cash required to complete the project
-    const minimumCashRequired = Math.max(0, totalProjectCost - actualMainLoan - equityLoanAmount);
-    
+    const minimumCashRequired = Math.max(
+      0,
+      totalProjectCost - actualMainLoan - equityLoanAmount
+    );
+
     return {
       totalProjectCost,
       mainLoanAmount: actualMainLoan,
@@ -513,13 +670,21 @@ export const PropertyDataProvider = ({ children }: { children: ReactNode }) => {
       isEquityEnabled: propertyData.useEquityFunding,
       equitySurplus: Math.max(0, availableEquity - equityLoanAmount),
       offsetAccountBalance: Math.max(0, totalFunding - totalProjectCost),
-      lvrUtilization: actualMainLoan > 0 && propertyData.lvr > 0 ? (actualMainLoan / ((propertyData.isConstructionProject ? propertyData.landValue + propertyData.constructionValue : propertyData.purchasePrice) * propertyData.lvr / 100)) * 100 : 0,
+      lvrUtilization:
+        actualMainLoan > 0 && propertyData.lvr > 0
+          ? (actualMainLoan /
+              (((propertyData.isConstructionProject
+                ? propertyData.landValue + propertyData.constructionValue
+                : propertyData.purchasePrice) *
+                propertyData.lvr) /
+                100)) *
+            100
+          : 0,
     };
   };
 
-
   const updateFieldWithConfirmation = (
-    field: keyof PropertyData, 
+    field: keyof PropertyData,
     value: number | boolean | string,
     onConfirm?: () => void
   ) => {
@@ -527,12 +692,16 @@ export const PropertyDataProvider = ({ children }: { children: ReactNode }) => {
     onConfirm?.();
   };
 
-  const applyPreset = (presetData: Partial<PropertyData>, propertyMethod?: PropertyMethod, fundingMethod?: FundingMethod) => {
-    setPropertyData(prev => ({
+  const applyPreset = (
+    presetData: Partial<PropertyData>,
+    propertyMethod?: PropertyMethod,
+    fundingMethod?: FundingMethod
+  ) => {
+    setPropertyData((prev) => ({
       ...prev,
       ...presetData,
       currentPropertyMethod: propertyMethod ?? prev.currentPropertyMethod,
-      currentFundingMethod: fundingMethod ?? prev.currentFundingMethod
+      currentFundingMethod: fundingMethod ?? prev.currentFundingMethod,
     }));
   };
 
@@ -542,26 +711,50 @@ export const PropertyDataProvider = ({ children }: { children: ReactNode }) => {
 
   const resetToDefaults = () => {
     // Deep clone to avoid accidental mutation of shared defaults
-    const cloned: PropertyData = JSON.parse(JSON.stringify(defaultPropertyData));
+    const cloned: PropertyData = JSON.parse(
+      JSON.stringify(defaultPropertyData)
+    );
     setPropertyData(cloned);
   };
 
+  // Funding Strategy Functions
+  const applyFundingStrategyToProperty = (strategy: FundingMethod) => {
+    const result = applyFundingStrategy(propertyData, strategy);
+    if (result.success && result.data) {
+      setPropertyData((prev) => ({ ...prev, ...result.data }));
+    }
+    return result;
+  };
+
+  const getAvailableStrategies = () => {
+    return getAvailableFundingStrategies(propertyData);
+  };
+
+  const validateStrategy = (strategy: FundingMethod) => {
+    return validateFundingStrategy(propertyData, strategy);
+  };
+
   return (
-    <PropertyDataContext.Provider value={{ 
-      propertyData, 
-      setPropertyData, 
-      updateField, 
-      updateFieldWithConfirmation,
-      applyPreset,
-      loadScenario,
-      resetToDefaults,
-      calculateEquityLoanAmount,
-      calculateTotalProjectCost,
-      calculateAvailableEquity,
-      calculateHoldingCosts,
-      calculateMinimumDeposit,
-      calculateFundingAnalysis
-    }}>
+    <PropertyDataContext.Provider
+      value={{
+        propertyData,
+        setPropertyData,
+        updateField,
+        updateFieldWithConfirmation,
+        applyPreset,
+        loadScenario,
+        resetToDefaults,
+        calculateEquityLoanAmount,
+        calculateTotalProjectCost,
+        calculateAvailableEquity,
+        calculateHoldingCosts,
+        calculateMinimumDeposit,
+        calculateFundingAnalysis,
+        applyFundingStrategy: applyFundingStrategyToProperty,
+        getAvailableFundingStrategies: getAvailableStrategies,
+        validateFundingStrategy: validateStrategy,
+      }}
+    >
       {children}
     </PropertyDataContext.Provider>
   );
@@ -570,7 +763,9 @@ export const PropertyDataProvider = ({ children }: { children: ReactNode }) => {
 export const usePropertyData = () => {
   const context = useContext(PropertyDataContext);
   if (context === undefined) {
-    throw new Error('usePropertyData must be used within a PropertyDataProvider');
+    throw new Error(
+      "usePropertyData must be used within a PropertyDataProvider"
+    );
   }
   return context;
 };

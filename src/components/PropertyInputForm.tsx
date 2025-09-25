@@ -37,6 +37,9 @@ import { InstanceFunding } from "@/types/funding";
 import { ValidationWarnings } from "@/components/ValidationWarnings";
 import StampDutyCalculator from "@/components/StampDutyCalculator";
 import EquityLoanCalculator from "@/components/EquityLoanCalculator";
+import { PropertyTypeSelector } from "@/components/PropertyTypeSelector";
+import { FundingStrategySelector } from "@/components/FundingStrategySelector";
+import { CurrentPropertyDataForm } from "@/components/CurrentPropertyDataForm";
 import { useFieldConfirmations } from "@/hooks/useFieldConfirmations";
 import { useInputProtection } from "@/hooks/useInputProtection";
 import { usePropertyData, PropertyData } from "@/contexts/PropertyDataContext";
@@ -141,6 +144,7 @@ interface PropertyInputFormProps {
   isEditMode?: boolean; // Add edit mode prop
   instanceId?: string; // Instance ID for funding functionality
   disableFunding?: boolean; // Disable funding functionality (for scenarios)
+  disabled?: boolean; // Disable property type selection (for instance details)
 }
 
 const PercentageInput = ({
@@ -250,6 +254,7 @@ export const PropertyInputForm = ({
   isEditMode = false,
   instanceId: propInstanceId,
   disableFunding = false,
+  disabled = false,
 }: PropertyInputFormProps) => {
   const isMobile = useIsMobile();
   const [openSections, setOpenSections] = useState<string[]>([]);
@@ -274,6 +279,7 @@ export const PropertyInputForm = ({
     calculateAvailableEquity,
     calculateHoldingCosts: ctxCalculateHoldingCosts,
     calculateFundingAnalysis,
+    applyFundingStrategy,
   } = usePropertyData();
   const [pendingUpdate, setPendingUpdate] = useState<{
     field: keyof PropertyData;
@@ -740,6 +746,16 @@ export const PropertyInputForm = ({
         </div>
       )}
 
+      {/* Property Type Selection */}
+      <PropertyTypeSelector
+        propertyData={propertyData}
+        onPropertyTypeChange={(type) =>
+          updateField("propertyWorkflowType", type)
+        }
+        className="mb-6"
+        disabled={disabled}
+      />
+
       {/* Mobile Progress Summary */}
       {isMobile && (
         <Card className="border-primary/20">
@@ -1148,6 +1164,28 @@ export const PropertyInputForm = ({
                 </div>
               </AccordionContent>
             </AccordionItem>
+
+            {/* Current Property Data - Only for current properties */}
+            {propertyData.propertyWorkflowType === "current" && (
+              <AccordionItem value="current-property-data" className="border-b">
+                <AccordionTrigger className="px-4 md:px-6 py-4 md:py-5 hover:bg-muted/50">
+                  <div className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <Home className="h-5 w-5 md:h-4 md:w-4 text-primary flex-shrink-0" />
+                      <span className="font-medium text-sm md:text-base truncate">
+                        Current Property Data
+                      </span>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 md:px-6 pb-4 md:pb-6">
+                  <CurrentPropertyDataForm
+                    propertyData={propertyData}
+                    updateField={updateField}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            )}
 
             {/* 3. Construction Costs */}
             {propertyData.isConstructionProject && (
@@ -1957,114 +1995,72 @@ export const PropertyInputForm = ({
                     );
                   })()}
 
-                  {/* Essential Funding Inputs - Card Layout */}
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">
-                        Essential Funding
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {/* Cash Deposit */}
-                      <div className="space-y-2">
-                        <Label
-                          htmlFor="depositAmount"
-                          className="text-sm font-medium"
-                        >
-                          Cash Deposit
-                        </Label>
-                        <CurrencyInput
-                          id="depositAmount"
-                          value={propertyData.depositAmount}
-                          onChange={(value) =>
-                            updateFieldWithCascade("depositAmount", value)
-                          }
-                          className="min-h-[48px]"
-                          placeholder="Enter deposit amount"
-                        />
-                      </div>
-
-                      {/* Equity Toggle */}
-                      <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                        <div className="flex-1">
+                  {/* Essential Funding Inputs - Card Layout - Only for new properties */}
+                  {propertyData.propertyWorkflowType === "new" && (
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base">
+                          Essential Funding
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {/* Cash Deposit */}
+                        <div className="space-y-2">
                           <Label
-                            htmlFor="useEquityFunding"
-                            className="text-sm font-medium cursor-pointer"
+                            htmlFor="depositAmount"
+                            className="text-sm font-medium"
                           >
-                            Use Equity Funding
+                            Cash Deposit
                           </Label>
-                          <div className="text-xs text-muted-foreground">
-                            Access property equity
-                          </div>
+                          <CurrencyInput
+                            id="depositAmount"
+                            value={propertyData.depositAmount}
+                            onChange={(value) =>
+                              updateFieldWithCascade("depositAmount", value)
+                            }
+                            className="min-h-[48px]"
+                            placeholder="Enter deposit amount"
+                          />
                         </div>
-                        <Switch
-                          id="useEquityFunding"
-                          checked={propertyData.useEquityFunding}
-                          onCheckedChange={(checked) =>
-                            updateField("useEquityFunding", checked)
-                          }
-                        />
-                      </div>
 
-                      {/* Quick Funding Method Selection */}
-                      <div className="space-y-3">
-                        <Label className="text-sm font-medium">
-                          Funding Strategy
-                        </Label>
-                        <div className="grid grid-cols-1 gap-2">
-                          {Object.entries(FUNDING_METHODS).map(
-                            ([key, method]) => {
-                              const active =
-                                propertyData.currentFundingMethod ===
-                                (key as FundingMethod);
-                              return (
-                                <Button
-                                  key={key}
-                                  type="button"
-                                  variant={active ? "default" : "outline"}
-                                  size="sm"
-                                  className="justify-start h-12 text-left"
-                                  onClick={() => {
-                                    const fundingData = getFundingMethodData(
-                                      key as FundingMethod,
-                                      propertyData.purchasePrice || 0
-                                    );
-                                    Object.entries(fundingData).forEach(
-                                      ([field, value]) => {
-                                        if (value !== undefined) {
-                                          updateField(
-                                            field as keyof PropertyData,
-                                            value
-                                          );
-                                        }
-                                      }
-                                    );
-                                    updateField(
-                                      "currentFundingMethod",
-                                      key as FundingMethod
-                                    );
-                                  }}
-                                >
-                                  <div className="flex items-center gap-2 w-full">
-                                    <div
-                                      className={`w-2 h-2 rounded-full ${
-                                        active
-                                          ? "bg-primary-foreground"
-                                          : "bg-muted-foreground"
-                                      }`}
-                                    />
-                                    <span className="text-sm">
-                                      {method.name}
-                                    </span>
-                                  </div>
-                                </Button>
+                        {/* Equity Toggle */}
+                        <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                          <div className="flex-1">
+                            <Label
+                              htmlFor="useEquityFunding"
+                              className="text-sm font-medium cursor-pointer"
+                            >
+                              Use Equity Funding
+                            </Label>
+                            <div className="text-xs text-muted-foreground">
+                              Access property equity
+                            </div>
+                          </div>
+                          <Switch
+                            id="useEquityFunding"
+                            checked={propertyData.useEquityFunding}
+                            onCheckedChange={(checked) =>
+                              updateField("useEquityFunding", checked)
+                            }
+                          />
+                        </div>
+
+                        {/* Funding Strategy Selection */}
+                        <FundingStrategySelector
+                          propertyData={propertyData}
+                          onStrategySelect={(strategy) => {
+                            const result = applyFundingStrategy(strategy);
+                            if (!result.success) {
+                              console.error(
+                                "Failed to apply funding strategy:",
+                                result.error
                               );
                             }
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                          }}
+                        />
+                      </CardContent>
+                    </Card>
+                  )}
 
                   {/* Allocated Funding Section - Only show if not disabled */}
                   {!disableFunding && (
