@@ -42,6 +42,7 @@ import { ConstructionStagesTable } from "@/components/ConstructionStagesTable";
 import { useToast } from "@/components/ui/use-toast";
 import { CreatePropertyFormData } from "@/types/propertyModels";
 import { PropertyTypeSelector } from "@/components/PropertyTypeSelector";
+import { FundingStrategySelector } from "@/components/FundingStrategySelector";
 
 interface CreatePropertyForm extends CreatePropertyFormData {
   location: Jurisdiction;
@@ -94,6 +95,18 @@ const CreateProperty = () => {
     // Essential Funding (for new properties)
     depositAmount: 0,
     selectedFundingStrategy: "",
+
+    // Database fields (snake_case)
+    original_purchase_price: 0,
+    original_purchase_date: "",
+    original_stamp_duty: 0,
+    original_legal_fees: 0,
+    original_inspection_fees: 0,
+    current_property_value: 0,
+    current_loan_balance: 0,
+    current_equity_loan_balance: 0,
+    selected_funding_strategy: "",
+    deposit_amount: 0,
 
     construction_year: new Date().getFullYear(),
     is_construction_project: false,
@@ -239,7 +252,7 @@ const CreateProperty = () => {
         current_loan_balance: currentLoanBalance,
         current_equity_loan_balance: currentEquityLoanBalance,
         original_purchase_price: originalPurchasePrice,
-        original_purchase_date: originalPurchaseDate,
+        original_purchase_date: originalPurchaseDate || null, // Convert empty string to null
         original_stamp_duty: originalStampDuty,
         original_legal_fees: originalLegalFees,
         original_inspection_fees: originalInspectionFees,
@@ -313,6 +326,7 @@ const CreateProperty = () => {
                   <PropertyTypeSelector
                     propertyData={{
                       propertyWorkflowType: formData.propertyType, // This should be "new" or "current"
+                      propertyType: formData.propertyType,
                       // Add other required fields with default values
                       investors: [],
                       ownershipAllocations: [],
@@ -377,7 +391,6 @@ const CreateProperty = () => {
                       depreciationMethod: formData.depreciation_method,
                       isNewProperty: true,
                       propertyState: formData.location,
-                      propertyType: formData.property_type, // This is the property category (Apartment, House, etc.)
                       location: formData.location,
                       currentPropertyMethod: formData.property_method as any,
                       currentFundingMethod: undefined,
@@ -392,6 +405,93 @@ const CreateProperty = () => {
                     }
                   />
                 </div>
+
+                {/* Funding Strategy Selection - Only for new properties */}
+                {formData.propertyType === "new" && (
+                  <div className="p-6 border-b">
+                    <FundingStrategySelector
+                      propertyData={{
+                        propertyWorkflowType: formData.propertyType,
+                        propertyType: formData.propertyType,
+                        investors: [],
+                        ownershipAllocations: [],
+                        isConstructionProject: formData.is_construction_project,
+                        purchasePrice: formData.purchase_price,
+                        weeklyRent: formData.weekly_rent,
+                        rentalGrowthRate: formData.rental_growth_rate,
+                        vacancyRate: formData.vacancy_rate,
+                        constructionYear: formData.construction_year,
+                        buildingValue: formData.building_value,
+                        plantEquipmentValue: formData.plant_equipment_value,
+                        currentPropertyValue: 0,
+                        originalPurchasePrice: 0,
+                        originalPurchaseDate: "",
+                        originalStampDuty: 0,
+                        originalLegalFees: 0,
+                        originalInspectionFees: 0,
+                        currentLoanBalance: 0,
+                        currentEquityLoanBalance: 0,
+                        landValue: formData.land_value,
+                        constructionValue: formData.construction_value,
+                        constructionPeriod: formData.construction_period,
+                        constructionInterestRate:
+                          formData.construction_interest_rate,
+                        postConstructionRateReduction: 0.5,
+                        constructionProgressPayments: [],
+                        deposit: 0,
+                        loanAmount: 0,
+                        interestRate: 0,
+                        loanTerm: 30,
+                        lvr: 80,
+                        mainLoanType: "pi",
+                        ioTermYears: 5,
+                        useEquityFunding: false,
+                        primaryPropertyValue: 0,
+                        existingDebt: 0,
+                        maxLVR: 80,
+                        equityLoanAmount: 0,
+                        equityLoanType: "pi",
+                        equityLoanIoTermYears: 3,
+                        equityLoanInterestRate: 7.2,
+                        equityLoanTerm: 25,
+                        depositAmount: formData.depositAmount,
+                        minimumDepositRequired: 0,
+                        holdingCostFunding: "cash",
+                        holdingCostCashPercentage: 100,
+                        capitalizeConstructionCosts: false,
+                        constructionEquityRepaymentType: "io",
+                        landHoldingInterest: 0,
+                        constructionHoldingInterest: 0,
+                        totalHoldingCosts: 0,
+                        stampDuty: formData.stamp_duty,
+                        legalFees: formData.legal_fees,
+                        inspectionFees: formData.inspection_fees,
+                        councilFees: formData.council_fees,
+                        architectFees: formData.architect_fees,
+                        siteCosts: formData.site_costs,
+                        propertyManagement: formData.property_management,
+                        councilRates: formData.council_rates,
+                        insurance: formData.insurance,
+                        repairs: formData.repairs,
+                        depreciationMethod: formData.depreciation_method,
+                        isNewProperty: true,
+                        propertyState: formData.location,
+                        location: formData.location,
+                        currentPropertyMethod: formData.property_method as any,
+                        currentFundingMethod: undefined,
+                        selectedFundingStrategy:
+                          formData.selectedFundingStrategy as any,
+                      }}
+                      onStrategySelect={(strategy) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          selectedFundingStrategy: strategy,
+                          selected_funding_strategy: strategy,
+                        }))
+                      }
+                    />
+                  </div>
+                )}
 
                 <Accordion
                   type="multiple"

@@ -28,6 +28,7 @@ import { ValidationWarnings } from "@/components/ValidationWarnings";
 // Import the context hook
 import { usePropertyData } from "@/contexts/PropertyDataContext";
 import { useInstances } from "@/contexts/InstancesContext";
+import { useFunding } from "@/contexts/FundingContext";
 import { Database } from "@/integrations/supabase/types";
 
 type Instance = Database["public"]["Tables"]["instances"]["Row"];
@@ -113,6 +114,8 @@ const InstanceDetail = () => {
     loading: instancesLoading,
     deleteInstance,
   } = useInstances();
+  const { refreshCashFunds, refreshLoanFunds, refreshInstanceFundings } =
+    useFunding();
   const { toast } = useToast();
 
   // State for the instance
@@ -276,6 +279,19 @@ const InstanceDetail = () => {
                 "⚠️ Skipping preset application - edit mode or has unsaved changes"
               );
               setIsDataLoaded(true);
+
+              // Refresh funding data to ensure we have the latest fund allocations
+              try {
+                await Promise.all([
+                  refreshCashFunds(),
+                  refreshLoanFunds(),
+                  refreshInstanceFundings(),
+                ]);
+                console.log("🔄 Funding data refreshed for instance:", id);
+              } catch (refreshError) {
+                console.error("Error refreshing funding data:", refreshError);
+                // Don't show error to user as the main operation succeeded
+              }
             }
           }
         } catch (error) {
@@ -294,6 +310,9 @@ const InstanceDetail = () => {
     isDataLoaded,
     isEditMode,
     hasUnsavedChanges,
+    refreshCashFunds,
+    refreshLoanFunds,
+    refreshInstanceFundings,
   ]);
 
   // Track changes to mark as unsaved with improved logic
@@ -1852,7 +1871,7 @@ const InstanceDetail = () => {
         >
           <TabsList
             className={`grid w-full ${
-              propertyData.isConstructionProject ? "grid-cols-3" : "grid-cols-2"
+              propertyData.isConstructionProject ? "grid-cols-4" : "grid-cols-3"
             } ${isMobile ? "h-12" : ""}`}
           >
             <TabsTrigger value="analysis" className={isMobile ? "text-sm" : ""}>
@@ -1866,6 +1885,9 @@ const InstanceDetail = () => {
                 Construction
               </TabsTrigger>
             )}
+            <TabsTrigger value="funding" className={isMobile ? "text-sm" : ""}>
+              Funding
+            </TabsTrigger>
             <TabsTrigger
               value="projections"
               className={isMobile ? "text-sm" : ""}
@@ -2064,6 +2086,19 @@ const InstanceDetail = () => {
               </div>
             </TabsContent>
           )}
+
+          {/* Funding Tab */}
+          <TabsContent value="funding" className="space-y-6">
+            <div className="grid gap-6">
+              <FundingSummaryPanel
+                instanceId={id!}
+                totalRequired={totalProjectCost}
+                onAddFunding={() => {
+                  // This will be handled by the FundingSummaryPanel component
+                }}
+              />
+            </div>
+          </TabsContent>
 
           {/* Projections Tab */}
           <TabsContent value="projections" className="space-y-6">

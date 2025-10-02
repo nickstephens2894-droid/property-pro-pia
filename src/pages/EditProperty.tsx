@@ -358,7 +358,7 @@ const EditProperty = () => {
         current_loan_balance: currentLoanBalance,
         current_equity_loan_balance: currentEquityLoanBalance,
         original_purchase_price: originalPurchasePrice,
-        original_purchase_date: originalPurchaseDate,
+        original_purchase_date: originalPurchaseDate || null,
         original_stamp_duty: originalStampDuty,
         original_legal_fees: originalLegalFees,
         original_inspection_fees: originalInspectionFees,

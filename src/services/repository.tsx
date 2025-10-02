@@ -160,7 +160,7 @@ export function useRepository() {
       const { data, error } = await supabase
         .from("scenarios")
         .select("id, name, is_core, created_at, snapshot")
-        .eq("owner_user_id", userId)
+        .eq("user_id", userId)
         .order("created_at", { ascending: true });
 
       dbScenarios = data;

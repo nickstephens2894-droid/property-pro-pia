@@ -44,6 +44,7 @@ interface FundingContextType {
   // Refresh functions
   refreshCashFunds: () => Promise<void>;
   refreshLoanFunds: () => Promise<void>;
+  refreshInstanceFundings: () => Promise<void>;
 
   // Loading states
   loading: boolean;
@@ -93,6 +94,7 @@ export const FundingProvider = ({ children }: FundingProviderProps) => {
     updateInstanceFunding,
     removeInstanceFunding,
     checkFundAvailability,
+    loadInstanceFundings,
   } = useInstanceFundings(undefined, refreshFunds);
 
   const loading =
@@ -114,6 +116,7 @@ export const FundingProvider = ({ children }: FundingProviderProps) => {
     checkFundAvailability,
     refreshCashFunds: loadCashFunds,
     refreshLoanFunds: loadLoanFunds,
+    refreshInstanceFundings: loadInstanceFundings,
     loading,
   };
 

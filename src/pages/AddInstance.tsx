@@ -28,7 +28,10 @@ import { useInstances } from "@/contexts/InstancesContext";
 import { CreateInstanceRequestFrontend } from "@/services/instancesService";
 import { useScenarios } from "@/contexts/ScenariosContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { PROPERTY_METHODS } from "@/types/presets";
+import { useFunding } from "@/contexts/FundingContext";
+import { createFundsForStrategy } from "@/services/fundingStrategyService";
+import { PROPERTY_METHODS, FundingMethod } from "@/types/presets";
+import { useToast } from "@/hooks/use-toast";
 
 // Import utility functions
 import { downloadInputsCsv } from "@/utils/csvExport";
@@ -105,6 +108,9 @@ const AddInstance = () => {
   const { createInstance, loading: instancesLoading } = useInstances();
   const { createNewInstanceInScenario, scenarios } = useScenarios();
   const { user } = useAuth();
+  const { toast } = useToast();
+  const { refreshCashFunds, refreshLoanFunds, refreshInstanceFundings } =
+    useFunding();
 
   // Determine if we're in scenario context
   const isScenarioContext = Boolean(scenarioId);
@@ -1097,6 +1103,74 @@ const AddInstance = () => {
         const newInstance = await createInstance(instanceData);
         console.log("Instance created successfully:", newInstance);
 
+        // Create funds based on funding strategy for new properties
+        console.log("Debug funding conditions:", {
+          propertyWorkflowType: propertyData.propertyWorkflowType,
+          selectedFundingStrategy: propertyData.selectedFundingStrategy,
+          willCreateFunds:
+            propertyData.propertyWorkflowType === "new" &&
+            propertyData.selectedFundingStrategy,
+        });
+
+        if (
+          propertyData.propertyWorkflowType === "new" &&
+          propertyData.selectedFundingStrategy
+        ) {
+          console.log(
+            "Creating funds for funding strategy:",
+            propertyData.selectedFundingStrategy
+          );
+
+          try {
+            const fundingResult = await createFundsForStrategy(
+              propertyData.selectedFundingStrategy as FundingMethod,
+              newInstance.id,
+              propertyData,
+              user?.id || ""
+            );
+
+            if (fundingResult.success) {
+              console.log(
+                "Funds created successfully:",
+                fundingResult.createdFunds
+              );
+              toast({
+                title: "Success",
+                description: `Created ${fundingResult.createdFunds.length} funds for your property investment`,
+              });
+
+              // Refresh funding data to show the new funds immediately
+              try {
+                await Promise.all([
+                  refreshCashFunds(),
+                  refreshLoanFunds(),
+                  refreshInstanceFundings(),
+                ]);
+                console.log("Funding data refreshed successfully");
+              } catch (refreshError) {
+                console.error("Error refreshing funding data:", refreshError);
+                // Don't show error to user as the main operation succeeded
+              }
+            } else {
+              console.error("Failed to create funds:", fundingResult.error);
+              toast({
+                title: "Warning",
+                description:
+                  "Instance created but failed to create funding sources",
+                variant: "destructive",
+              });
+            }
+          } catch (error) {
+            console.error("Error creating funds:", error);
+            toast({
+              title: "Warning",
+              description:
+                "Instance created but failed to create funding sources",
+              variant: "destructive",
+            });
+          }
+        }
+
         // Navigate to instances list
         navigate("/instances");
       }
@@ -1312,9 +1386,17 @@ const AddInstance = () => {
                 depreciationMethod:
                   propertyData.depreciation_method || "prime-cost",
                 isNewProperty: propertyData.is_new_property || true,
+
+                // Critical fields for automatic funding
+                propertyWorkflowType:
+                  propertyData.property_workflow_type || "new",
+                selectedFundingStrategy:
+                  propertyData.selected_funding_strategy || null,
+                depositAmount: propertyData.deposit_amount || 0,
               };
 
               console.log("Mapped data to apply:", mappedData);
+              console.log("Property model data:", propertyData);
               applyPreset(mappedData, propertyData.property_method);
               console.log("Property data applied via applyPreset");
             }}

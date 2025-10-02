@@ -107,6 +107,21 @@ export interface CreatePropertyFormData {
   repairs: number;
   depreciation_method: PropertyModel["depreciation_method"];
   is_new_property: boolean;
+
+  // Historical Purchase Data (for current properties)
+  original_purchase_price: number;
+  original_purchase_date: string | null;
+  original_stamp_duty: number;
+  original_legal_fees: number;
+  original_inspection_fees: number;
+
+  // Current Property Data (for current properties)
+  current_property_value: number;
+  current_loan_balance: number;
+  current_equity_loan_balance: number;
+
+  // Funding Strategy (for new properties)
+  selected_funding_strategy: string | null;
   deposit_amount: number;
 }
 

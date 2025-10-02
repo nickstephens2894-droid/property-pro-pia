@@ -706,6 +706,18 @@ export type Database = {
           updated_at: string;
           vacancy_rate: number;
           weekly_rent: number;
+          // New columns added in migrations
+          property_workflow_type: string;
+          original_purchase_price: number;
+          original_purchase_date: string | null;
+          original_stamp_duty: number;
+          original_legal_fees: number;
+          original_inspection_fees: number;
+          current_property_value: number;
+          current_loan_balance: number;
+          current_equity_loan_balance: number;
+          selected_funding_strategy: string | null;
+          deposit_amount: number;
         };
         Insert: {
           architect_fees?: number;
@@ -741,6 +753,18 @@ export type Database = {
           updated_at?: string;
           vacancy_rate?: number;
           weekly_rent?: number;
+          // New columns added in migrations
+          property_workflow_type?: string;
+          original_purchase_price?: number;
+          original_purchase_date?: string | null;
+          original_stamp_duty?: number;
+          original_legal_fees?: number;
+          original_inspection_fees?: number;
+          current_property_value?: number;
+          current_loan_balance?: number;
+          current_equity_loan_balance?: number;
+          selected_funding_strategy?: string | null;
+          deposit_amount?: number;
         };
         Update: {
           architect_fees?: number;
@@ -776,6 +800,18 @@ export type Database = {
           updated_at?: string;
           vacancy_rate?: number;
           weekly_rent?: number;
+          // New columns added in migrations
+          property_workflow_type?: string;
+          original_purchase_price?: number;
+          original_purchase_date?: string | null;
+          original_stamp_duty?: number;
+          original_legal_fees?: number;
+          original_inspection_fees?: number;
+          current_property_value?: number;
+          current_loan_balance?: number;
+          current_equity_loan_balance?: number;
+          selected_funding_strategy?: string | null;
+          deposit_amount?: number;
         };
         Relationships: [];
       };
@@ -785,7 +821,7 @@ export type Database = {
           id: string;
           is_core: boolean;
           name: string;
-          owner_user_id: string;
+          user_id: string;
           snapshot: Json | null;
           updated_at: string;
         };
@@ -794,7 +830,7 @@ export type Database = {
           id?: string;
           is_core?: boolean;
           name: string;
-          owner_user_id: string;
+          user_id: string;
           snapshot?: Json | null;
           updated_at?: string;
         };
@@ -803,7 +839,7 @@ export type Database = {
           id?: string;
           is_core?: boolean;
           name?: string;
-          owner_user_id?: string;
+          user_id?: string;
           snapshot?: Json | null;
           updated_at?: string;
         };

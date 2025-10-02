@@ -28,7 +28,7 @@ export const applyFundingStrategy = (
 ): FundingStrategyResult => {
   try {
     // Only apply funding strategies to new properties
-    if (propertyData.propertyType !== "new") {
+    if (propertyData.propertyWorkflowType !== "new") {
       return {
         success: false,
         error: "Funding strategies can only be applied to new properties",
@@ -102,7 +102,7 @@ export const validateFundingStrategy = (
   strategy: FundingMethod
 ): { isValid: boolean; error?: string } => {
   // Only new properties can use funding strategies
-  if (propertyData.propertyType !== "new") {
+  if (propertyData.propertyWorkflowType !== "new") {
     return {
       isValid: false,
       error: "Funding strategies can only be applied to new properties",
@@ -193,6 +193,3 @@ export const calculateFundingRequirements = (propertyData: PropertyData) => {
       : 0,
   };
 };
-
-
-
