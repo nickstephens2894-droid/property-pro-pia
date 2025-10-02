@@ -51,3 +51,6 @@ WHERE property_type IS NULL;
 UPDATE instances 
 SET current_property_value = purchase_price 
 WHERE current_property_value = 0 AND purchase_price > 0;
+
+
+

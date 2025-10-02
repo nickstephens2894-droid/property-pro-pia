@@ -193,3 +193,6 @@ export const calculateFundingRequirements = (propertyData: PropertyData) => {
       : 0,
   };
 };
+
+
+
